@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rmw_robotops</name>
+  <version>0.1.0</version>
+  <description>
+    ROS2 RMW implementation that wraps underlying RMW (FastDDS, CycloneDDS, etc.)
+    to add distributed tracing capabilities with OpenTelemetry context propagation.
+  </description>
+
+  <maintainer email="kristophm@robotops.com">Kristoph Matthews</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_ros</buildtool_depend>
+
+  <!-- Core RMW dependencies -->
+  <depend>rcutils</depend>
+  <depend>rmw</depend>
+  <depend>rcpputils</depend>
+
+  <!-- Message dependencies -->
+  <depend>robotops_msgs</depend>
+  <depend>rosidl_runtime_c</depend>
+  <depend>rosidl_typesupport_introspection_c</depend>
+  <depend>rosidl_typesupport_introspection_cpp</depend>
+
+  <!-- FastDDS dependencies (can be swapped at runtime) -->
+  <depend>rmw_fastrtps_cpp</depend>
+  <depend>rmw_fastrtps_shared_cpp</depend>
+  <depend>fastrtps</depend>
+  <depend>fastcdr</depend>
+
+  <!-- Testing dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>rmw_implementation_cmake</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <rmw_typesupport>cpp</rmw_typesupport>
+  </export>
+</package>
