@@ -70,11 +70,13 @@ void store_publisher_metadata(
     PublisherMetadata metadata;
 
     // Store node name and namespace
-    std::strncpy(metadata.node_name, node->name, MAX_NODE_NAME_LENGTH - 1);
-    metadata.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+    size_t name_len = std::min(std::strlen(node->name), MAX_NODE_NAME_LENGTH - 1);
+    std::memcpy(metadata.node_name, node->name, name_len);
+    metadata.node_name[name_len] = '\0';
 
-    std::strncpy(metadata.node_namespace, node->namespace_, MAX_NODE_NAME_LENGTH - 1);
-    metadata.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+    size_t ns_len = std::min(std::strlen(node->namespace_), MAX_NODE_NAME_LENGTH - 1);
+    std::memcpy(metadata.node_namespace, node->namespace_, ns_len);
+    metadata.node_namespace[ns_len] = '\0';
 
     // Store message type name from type support
     if (type_support != nullptr && type_support->data != nullptr) {
@@ -213,12 +215,12 @@ rmw_publish(
       event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
-      // Copy trace context
-      std::strncpy(event.trace_id, context.trace_id, TRACE_ID_LENGTH);
+      // Copy trace context (using memcpy for fixed-length hex strings)
+      std::memcpy(event.trace_id, context.trace_id, TRACE_ID_LENGTH);
       event.trace_id[TRACE_ID_LENGTH] = '\0';
-      std::strncpy(event.span_id, context.span_id, SPAN_ID_LENGTH);
+      std::memcpy(event.span_id, context.span_id, SPAN_ID_LENGTH);
       event.span_id[SPAN_ID_LENGTH] = '\0';
-      std::strncpy(event.parent_span_id, context.parent_span_id, SPAN_ID_LENGTH);
+      std::memcpy(event.parent_span_id, context.parent_span_id, SPAN_ID_LENGTH);
       event.parent_span_id[SPAN_ID_LENGTH] = '\0';
 
       // No span links for publish operations (used for fan-in scenarios)
@@ -235,14 +237,18 @@ rmw_publish(
       // Retrieve publisher metadata (node name, namespace, message type)
       PublisherMetadata metadata;
       if (get_publisher_metadata(publisher, metadata)) {
-        std::strncpy(event.node_name, metadata.node_name, MAX_NODE_NAME_LENGTH - 1);
-        event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+        // Use strlcpy-style pattern: copy at most size-1, then null-terminate
+        size_t node_name_len = std::min(std::strlen(metadata.node_name), MAX_NODE_NAME_LENGTH - 1);
+        std::memcpy(event.node_name, metadata.node_name, node_name_len);
+        event.node_name[node_name_len] = '\0';
 
-        std::strncpy(event.node_namespace, metadata.node_namespace, MAX_NODE_NAME_LENGTH - 1);
-        event.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), MAX_NODE_NAME_LENGTH - 1);
+        std::memcpy(event.node_namespace, metadata.node_namespace, node_ns_len);
+        event.node_namespace[node_ns_len] = '\0';
 
-        std::strncpy(event.message_type, metadata.message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
-        event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
+        size_t msg_type_len = std::min(std::strlen(metadata.message_type), MAX_MESSAGE_TYPE_LENGTH - 1);
+        std::memcpy(event.message_type, metadata.message_type, msg_type_len);
+        event.message_type[msg_type_len] = '\0';
       } else {
         // Metadata not found - leave fields empty
         event.node_name[0] = '\0';

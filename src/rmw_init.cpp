@@ -14,9 +14,13 @@
 
 #include "rmw/rmw.h"
 #include "rmw/error_handling.h"
+#include "rmw/init_options.h"
+#include "rmw/security_options.h"
 
 #include "rmw_robotops/config.hpp"
 #include "rmw_robotops/trace_publisher.hpp"
+
+#include "rcutils/allocator.h"
 
 #include <dlfcn.h>
 #include <cstdio>
@@ -54,6 +58,14 @@ rmw_ret_t (* underlying_rmw_destroy_node)(rmw_node_t *) = nullptr;
 rmw_ret_t (* underlying_rmw_init)(
   const rmw_init_options_t *, rmw_context_t *) = nullptr;
 rmw_ret_t (* underlying_rmw_shutdown)(rmw_context_t *) = nullptr;
+
+// Init options functions
+rmw_init_options_t (* underlying_rmw_get_zero_initialized_init_options)(void) = nullptr;
+rmw_ret_t (* underlying_rmw_init_options_init)(
+  rmw_init_options_t *, rcutils_allocator_t) = nullptr;
+rmw_ret_t (* underlying_rmw_init_options_copy)(
+  const rmw_init_options_t *, rmw_init_options_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_init_options_fini)(rmw_init_options_t *) = nullptr;
 }
 
 static void * underlying_rmw_lib = nullptr;
@@ -119,6 +131,16 @@ static bool load_underlying_rmw() noexcept
   success &= load_function(underlying_rmw_lib, "rmw_destroy_node", underlying_rmw_destroy_node);
   success &= load_function(underlying_rmw_lib, "rmw_init", underlying_rmw_init);
   success &= load_function(underlying_rmw_lib, "rmw_shutdown", underlying_rmw_shutdown);
+  success &= load_function(
+    underlying_rmw_lib,
+    "rmw_get_zero_initialized_init_options",
+    underlying_rmw_get_zero_initialized_init_options);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_init_options_init", underlying_rmw_init_options_init);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_init_options_copy", underlying_rmw_init_options_copy);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_init_options_fini", underlying_rmw_init_options_fini);
 
   if (!success) {
     dlclose(underlying_rmw_lib);
@@ -192,6 +214,82 @@ const char *
 rmw_get_implementation_identifier()
 {
   return "rmw_robotops";
+}
+
+rmw_init_options_t
+rmw_get_zero_initialized_init_options()
+{
+  if (underlying_rmw_lib == nullptr) {
+    load_underlying_rmw();
+  }
+
+  if (underlying_rmw_get_zero_initialized_init_options != nullptr) {
+    return underlying_rmw_get_zero_initialized_init_options();
+  }
+
+  // Fallback if function not available
+  rmw_init_options_t options;
+  options.instance_id = 0;
+  options.implementation_identifier = rmw_get_implementation_identifier();
+  options.allocator = rcutils_get_default_allocator();
+  options.impl = nullptr;
+  options.enclave = nullptr;
+  options.domain_id = RMW_DEFAULT_DOMAIN_ID;
+  options.security_options = rmw_get_zero_initialized_security_options();
+  options.localhost_only = RMW_LOCALHOST_ONLY_DEFAULT;
+  return options;
+}
+
+rmw_ret_t
+rmw_init_options_init(rmw_init_options_t * init_options, rcutils_allocator_t allocator)
+{
+  if (underlying_rmw_lib == nullptr) {
+    if (!load_underlying_rmw()) {
+      RMW_SET_ERROR_MSG("Failed to load underlying RMW implementation");
+      return RMW_RET_ERROR;
+    }
+  }
+
+  if (underlying_rmw_init_options_init == nullptr) {
+    RMW_SET_ERROR_MSG("Underlying RMW init_options_init function not loaded");
+    return RMW_RET_ERROR;
+  }
+
+  return underlying_rmw_init_options_init(init_options, allocator);
+}
+
+rmw_ret_t
+rmw_init_options_copy(const rmw_init_options_t * src, rmw_init_options_t * dst)
+{
+  if (underlying_rmw_lib == nullptr) {
+    if (!load_underlying_rmw()) {
+      RMW_SET_ERROR_MSG("Failed to load underlying RMW implementation");
+      return RMW_RET_ERROR;
+    }
+  }
+
+  if (underlying_rmw_init_options_copy == nullptr) {
+    RMW_SET_ERROR_MSG("Underlying RMW init_options_copy function not loaded");
+    return RMW_RET_ERROR;
+  }
+
+  return underlying_rmw_init_options_copy(src, dst);
+}
+
+rmw_ret_t
+rmw_init_options_fini(rmw_init_options_t * init_options)
+{
+  if (underlying_rmw_lib == nullptr) {
+    // Already unloaded, nothing to do
+    return RMW_RET_OK;
+  }
+
+  if (underlying_rmw_init_options_fini == nullptr) {
+    RMW_SET_ERROR_MSG("Underlying RMW init_options_fini function not loaded");
+    return RMW_RET_ERROR;
+  }
+
+  return underlying_rmw_init_options_fini(init_options);
 }
 
 }  // extern "C"

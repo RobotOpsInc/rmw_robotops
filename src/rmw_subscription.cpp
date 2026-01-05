@@ -70,11 +70,13 @@ void store_subscription_metadata(
     SubscriptionMetadata metadata;
 
     // Store node name and namespace
-    std::strncpy(metadata.node_name, node->name, MAX_NODE_NAME_LENGTH - 1);
-    metadata.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+    size_t name_len = std::min(std::strlen(node->name), MAX_NODE_NAME_LENGTH - 1);
+    std::memcpy(metadata.node_name, node->name, name_len);
+    metadata.node_name[name_len] = '\0';
 
-    std::strncpy(metadata.node_namespace, node->namespace_, MAX_NODE_NAME_LENGTH - 1);
-    metadata.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+    size_t ns_len = std::min(std::strlen(node->namespace_), MAX_NODE_NAME_LENGTH - 1);
+    std::memcpy(metadata.node_namespace, node->namespace_, ns_len);
+    metadata.node_namespace[ns_len] = '\0';
 
     // Store message type name from type support
     if (type_support != nullptr && type_support->data != nullptr) {
@@ -210,14 +212,14 @@ rmw_take(
       if (context_found && !extracted_context.is_empty()) {
         // Create new span with extracted context as parent
         TraceContext new_context;
-        std::strncpy(new_context.trace_id, extracted_context.trace_id, TRACE_ID_LENGTH);
+        std::memcpy(new_context.trace_id, extracted_context.trace_id, TRACE_ID_LENGTH);
         new_context.trace_id[TRACE_ID_LENGTH] = '\0';
 
         // Generate new span_id for this subscription event
         generate_span_id(new_context.span_id);
 
         // Set parent to the publisher's span
-        std::strncpy(
+        std::memcpy(
           new_context.parent_span_id,
           extracted_context.span_id,
           SPAN_ID_LENGTH);
@@ -245,11 +247,11 @@ rmw_take(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
       TraceContext current = get_trace_context();
-      std::strncpy(event.trace_id, current.trace_id, TRACE_ID_LENGTH);
+      std::memcpy(event.trace_id, current.trace_id, TRACE_ID_LENGTH);
       event.trace_id[TRACE_ID_LENGTH] = '\0';
-      std::strncpy(event.span_id, current.span_id, SPAN_ID_LENGTH);
+      std::memcpy(event.span_id, current.span_id, SPAN_ID_LENGTH);
       event.span_id[SPAN_ID_LENGTH] = '\0';
-      std::strncpy(event.parent_span_id, current.parent_span_id, SPAN_ID_LENGTH);
+      std::memcpy(event.parent_span_id, current.parent_span_id, SPAN_ID_LENGTH);
       event.parent_span_id[SPAN_ID_LENGTH] = '\0';
 
       // No span links for subscribe operations
@@ -265,14 +267,17 @@ rmw_take(
       // Retrieve subscription metadata (node name, namespace, message type)
       SubscriptionMetadata metadata;
       if (get_subscription_metadata(subscription, metadata)) {
-        std::strncpy(event.node_name, metadata.node_name, MAX_NODE_NAME_LENGTH - 1);
-        event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+        size_t node_name_len = std::min(std::strlen(metadata.node_name), MAX_NODE_NAME_LENGTH - 1);
+        std::memcpy(event.node_name, metadata.node_name, node_name_len);
+        event.node_name[node_name_len] = '\0';
 
-        std::strncpy(event.node_namespace, metadata.node_namespace, MAX_NODE_NAME_LENGTH - 1);
-        event.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), MAX_NODE_NAME_LENGTH - 1);
+        std::memcpy(event.node_namespace, metadata.node_namespace, node_ns_len);
+        event.node_namespace[node_ns_len] = '\0';
 
-        std::strncpy(event.message_type, metadata.message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
-        event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
+        size_t msg_type_len = std::min(std::strlen(metadata.message_type), MAX_MESSAGE_TYPE_LENGTH - 1);
+        std::memcpy(event.message_type, metadata.message_type, msg_type_len);
+        event.message_type[msg_type_len] = '\0';
       } else {
         // Metadata not found - leave fields empty
         event.node_name[0] = '\0';
@@ -336,10 +341,10 @@ rmw_take_with_info(
 
       if (context_found && !extracted_context.is_empty()) {
         TraceContext new_context;
-        std::strncpy(new_context.trace_id, extracted_context.trace_id, TRACE_ID_LENGTH);
+        std::memcpy(new_context.trace_id, extracted_context.trace_id, TRACE_ID_LENGTH);
         new_context.trace_id[TRACE_ID_LENGTH] = '\0';
         generate_span_id(new_context.span_id);
-        std::strncpy(
+        std::memcpy(
           new_context.parent_span_id,
           extracted_context.span_id,
           SPAN_ID_LENGTH);
@@ -358,11 +363,11 @@ rmw_take_with_info(
         std::chrono::system_clock::now().time_since_epoch()).count();
 
       TraceContext current = get_trace_context();
-      std::strncpy(event.trace_id, current.trace_id, TRACE_ID_LENGTH);
+      std::memcpy(event.trace_id, current.trace_id, TRACE_ID_LENGTH);
       event.trace_id[TRACE_ID_LENGTH] = '\0';
-      std::strncpy(event.span_id, current.span_id, SPAN_ID_LENGTH);
+      std::memcpy(event.span_id, current.span_id, SPAN_ID_LENGTH);
       event.span_id[SPAN_ID_LENGTH] = '\0';
-      std::strncpy(event.parent_span_id, current.parent_span_id, SPAN_ID_LENGTH);
+      std::memcpy(event.parent_span_id, current.parent_span_id, SPAN_ID_LENGTH);
       event.parent_span_id[SPAN_ID_LENGTH] = '\0';
 
       // No span links for subscribe operations
@@ -378,14 +383,17 @@ rmw_take_with_info(
       // Retrieve subscription metadata (node name, namespace, message type)
       SubscriptionMetadata metadata;
       if (get_subscription_metadata(subscription, metadata)) {
-        std::strncpy(event.node_name, metadata.node_name, MAX_NODE_NAME_LENGTH - 1);
-        event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+        size_t node_name_len = std::min(std::strlen(metadata.node_name), MAX_NODE_NAME_LENGTH - 1);
+        std::memcpy(event.node_name, metadata.node_name, node_name_len);
+        event.node_name[node_name_len] = '\0';
 
-        std::strncpy(event.node_namespace, metadata.node_namespace, MAX_NODE_NAME_LENGTH - 1);
-        event.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), MAX_NODE_NAME_LENGTH - 1);
+        std::memcpy(event.node_namespace, metadata.node_namespace, node_ns_len);
+        event.node_namespace[node_ns_len] = '\0';
 
-        std::strncpy(event.message_type, metadata.message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
-        event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
+        size_t msg_type_len = std::min(std::strlen(metadata.message_type), MAX_MESSAGE_TYPE_LENGTH - 1);
+        std::memcpy(event.message_type, metadata.message_type, msg_type_len);
+        event.message_type[msg_type_len] = '\0';
       } else {
         // Metadata not found - leave fields empty
         event.node_name[0] = '\0';

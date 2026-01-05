@@ -129,7 +129,7 @@ TEST(MetadataExtractionTest, MetadataFieldsHaveCorrectLengths) {
   std::memset(long_node_name, 'a', MAX_NODE_NAME_LENGTH - 1);
   long_node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
 
-  std::strncpy(event.node_name, long_node_name, MAX_NODE_NAME_LENGTH - 1);
+  std::memcpy(event.node_name, long_node_name, MAX_NODE_NAME_LENGTH - 1);
   event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
 
   EXPECT_EQ(MAX_NODE_NAME_LENGTH - 1, std::strlen(event.node_name));
@@ -139,7 +139,7 @@ TEST(MetadataExtractionTest, MetadataFieldsHaveCorrectLengths) {
   std::memset(long_message_type, 'b', MAX_MESSAGE_TYPE_LENGTH - 1);
   long_message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
 
-  std::strncpy(event.message_type, long_message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
+  std::memcpy(event.message_type, long_message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
   event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
 
   EXPECT_EQ(MAX_MESSAGE_TYPE_LENGTH - 1, std::strlen(event.message_type));

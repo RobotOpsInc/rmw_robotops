@@ -70,7 +70,27 @@ colcon test --packages-select rmw_robotops --ctest-args -R test_safety
 
 ### Environment
 
-All development happens in Docker containers (ROS2 Jazzy doesn't run natively on macOS).
+**CRITICAL**: This project is developed on macOS where ROS2 is not installed natively.
+
+**ALL ROS2 commands, builds, and tests MUST be executed inside Docker containers.**
+
+Never attempt to run:
+- `colcon build`
+- `colcon test`
+- `ros2` commands
+- `source /opt/ros/*/setup.bash`
+- Any ROS2-related operations
+
+...directly on the host macOS system. Always use Docker:
+
+```bash
+# Correct: Run commands in Docker
+docker-compose run --rm dev bash -c "colcon build ..."
+docker-compose run --rm test bash -c "colcon test ..."
+
+# Wrong: Run commands on macOS
+colcon build  # This will fail - ROS2 not installed!
+```
 
 ### Multi-Stage Dockerfile
 
