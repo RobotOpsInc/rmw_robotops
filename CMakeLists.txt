@@ -39,6 +39,7 @@ add_library(${PROJECT_NAME} SHARED
   src/span_id_generator.cpp
   src/dds_metadata.cpp
   src/config.cpp
+  src/rmw_stubs.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

@@ -66,9 +66,10 @@ rmw_ret_t (* underlying_rmw_init_options_init)(
 rmw_ret_t (* underlying_rmw_init_options_copy)(
   const rmw_init_options_t *, rmw_init_options_t *) = nullptr;
 rmw_ret_t (* underlying_rmw_init_options_fini)(rmw_init_options_t *) = nullptr;
-}
 
-static void * underlying_rmw_lib = nullptr;
+// Exported for use by rmw_stubs.cpp
+void * underlying_rmw_lib = nullptr;
+}
 
 /// Load function from underlying RMW library
 template<typename FuncPtr>
@@ -89,7 +90,8 @@ static bool load_function(
 }
 
 /// Load underlying RMW implementation dynamically
-static bool load_underlying_rmw() noexcept
+/// Exported for use by rmw_stubs.cpp
+extern "C" bool load_underlying_rmw() noexcept
 {
   using namespace rmw_robotops;
 

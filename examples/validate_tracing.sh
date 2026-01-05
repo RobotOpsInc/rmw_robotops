@@ -118,17 +118,23 @@ cat > trace_monitor.py << 'EOF'
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 from robotops_msgs.msg import TraceEvent
 import sys
 
 class TraceMonitor(Node):
     def __init__(self):
         super().__init__('trace_monitor')
+
+        # Match trace publisher's QoS (BEST_EFFORT)
+        qos_profile = QoSProfile(depth=100)
+        qos_profile.reliability = ReliabilityPolicy.BEST_EFFORT
+
         self.subscription = self.create_subscription(
             TraceEvent,
             '/robotops/trace_events',
             self.trace_callback,
-            100)  # Large queue for trace events
+            qos_profile)
         self.trace_count = 0
         self.publish_events = []
         self.subscribe_events = []
