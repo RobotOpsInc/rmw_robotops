@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest.h>
+
 #include <cstring>
 #include <thread>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 #include "rmw_robotops/trace_context.hpp"
 
@@ -63,9 +63,13 @@ TEST(TraceContextTest, GetSetContext) {
 
   // Set a context
   TraceContext new_ctx;
-  std::snprintf(new_ctx.trace_id, sizeof(new_ctx.trace_id), "%s", "0123456789abcdef0123456789abcdef");
+  std::snprintf(
+    new_ctx.trace_id, sizeof(new_ctx.trace_id), "%s",
+    "0123456789abcdef0123456789abcdef");
   std::snprintf(new_ctx.span_id, sizeof(new_ctx.span_id), "%s", "fedcba9876543210");
-  std::snprintf(new_ctx.parent_span_id, sizeof(new_ctx.parent_span_id), "%s", "0011223344556677");
+  std::snprintf(
+    new_ctx.parent_span_id, sizeof(new_ctx.parent_span_id), "%s",
+    "0011223344556677");
 
   set_trace_context(new_ctx);
 
@@ -102,9 +106,13 @@ TEST(TraceContextTest, GetOrMintCreatesNewContext) {
 TEST(TraceContextTest, GetOrMintReturnsExistingContext) {
   // Set a context
   TraceContext existing;
-  std::snprintf(existing.trace_id, sizeof(existing.trace_id), "%s", "aaaabbbbccccddddeeeeffffgggghhhh");
+  std::snprintf(
+    existing.trace_id, sizeof(existing.trace_id), "%s",
+    "aaaabbbbccccddddeeeeffffgggghhhh");
   std::snprintf(existing.span_id, sizeof(existing.span_id), "%s", "1111222233334444");
-  std::snprintf(existing.parent_span_id, sizeof(existing.parent_span_id), "%s", "5555666677778888");
+  std::snprintf(
+    existing.parent_span_id, sizeof(existing.parent_span_id), "%s",
+    "5555666677778888");
   set_trace_context(existing);
 
   // Should return the existing context, not mint a new one

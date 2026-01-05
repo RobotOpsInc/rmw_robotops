@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest.h>
+
 #include <chrono>
 #include <thread>
-
-#include <gtest/gtest.h>
 
 #include "rmw_robotops/config.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
