@@ -20,7 +20,11 @@
 
 #include "rmw_robotops/trace_event_queue.hpp"
 
-using namespace rmw_robotops;
+using rmw_robotops::DEFAULT_TRACE_QUEUE_SIZE;
+using rmw_robotops::get_trace_event_queue;
+using rmw_robotops::LockFreeQueue;
+using rmw_robotops::OP_PUBLISH;
+using rmw_robotops::TraceEvent;
 
 TEST(LockFreeQueueTest, EmptyOnConstruction) {
   LockFreeQueue<10> queue;

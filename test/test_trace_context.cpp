@@ -20,7 +20,13 @@
 #include <thread>
 #include <vector>
 
-using namespace rmw_robotops;
+using rmw_robotops::clear_pending_contexts;
+using rmw_robotops::collect_pending_contexts;
+using rmw_robotops::get_or_mint_trace_context;
+using rmw_robotops::get_trace_context;
+using rmw_robotops::save_pending_context;
+using rmw_robotops::set_trace_context;
+using rmw_robotops::TraceContext;
 
 TEST(TraceContextTest, EmptyContext) {
   TraceContext ctx = TraceContext::empty();

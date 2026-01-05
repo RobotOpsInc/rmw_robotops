@@ -42,7 +42,8 @@ extern rmw_ret_t (* underlying_rmw_destroy_publisher)(
 namespace
 {
 
-using namespace rmw_robotops;
+using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
+using rmw_robotops::MAX_NODE_NAME_LENGTH;
 
 /// Metadata about a publisher (stored at creation time)
 struct PublisherMetadata
@@ -189,7 +190,20 @@ rmw_publish(
   const void * ros_message,
   rmw_publisher_allocation_t * allocation)
 {
-  using namespace rmw_robotops;
+  using rmw_robotops::get_or_mint_trace_context;
+  using rmw_robotops::get_trace_event_queue;
+  using rmw_robotops::inject_trace_context_to_dds;
+  using rmw_robotops::is_tracing_enabled;
+  using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
+  using rmw_robotops::MAX_NODE_NAME_LENGTH;
+  using rmw_robotops::MAX_TOPIC_NAME_LENGTH;
+  using rmw_robotops::OP_PUBLISH;
+  using rmw_robotops::record_trace_failure;
+  using rmw_robotops::record_trace_success;
+  using rmw_robotops::SPAN_ID_LENGTH;
+  using rmw_robotops::TRACE_ID_LENGTH;
+  using rmw_robotops::TraceContext;
+  using rmw_robotops::TraceEvent;
 
   // Safety guarantee: Real message delivery NEVER blocked by tracing
   // Call underlying RMW first, emit trace event after

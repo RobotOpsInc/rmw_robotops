@@ -21,7 +21,9 @@
 #include <thread>
 #include <vector>
 
-using namespace rmw_robotops;
+using rmw_robotops::generate_span_id;
+using rmw_robotops::generate_trace_id;
+using rmw_robotops::init_span_id_generator;
 
 TEST(SpanIdGeneratorTest, GenerateSpanIdFormat) {
   char span_id[17];

@@ -91,9 +91,7 @@ static bool load_function(
 /// Exported for use by rmw_stubs.cpp
 extern "C" bool load_underlying_rmw() noexcept
 {
-  using namespace rmw_robotops;
-
-  const char * underlying_rmw_name = get_underlying_rmw();
+  const char * underlying_rmw_name = rmw_robotops::get_underlying_rmw();
   if (underlying_rmw_name == nullptr) {
     fprintf(stderr, "rmw_robotops: ROBOTOPS_UNDERLYING_RMW not set\n");
     return false;
@@ -158,8 +156,6 @@ extern "C"
 rmw_ret_t
 rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
 {
-  using namespace rmw_robotops;
-
   // Load underlying RMW on first initialization
   if (underlying_rmw_lib == nullptr) {
     if (!load_underlying_rmw()) {
@@ -180,7 +176,7 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
   }
 
   // Start background trace publisher (only if tracing enabled)
-  ret = start_trace_publisher(context);
+  ret = rmw_robotops::start_trace_publisher(context);
   if (ret != RMW_RET_OK) {
     // Non-fatal: tracing failed but RMW is initialized
     // Log error but don't fail initialization
@@ -193,10 +189,8 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
 rmw_ret_t
 rmw_shutdown(rmw_context_t * context)
 {
-  using namespace rmw_robotops;
-
   // Stop background trace publisher first (drains remaining events)
-  rmw_ret_t ret = stop_trace_publisher();
+  rmw_ret_t ret = rmw_robotops::stop_trace_publisher();
   if (ret != RMW_RET_OK) {
     fprintf(stderr, "rmw_robotops: Warning: Error stopping trace publisher\n");
   }

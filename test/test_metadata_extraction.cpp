@@ -20,7 +20,16 @@
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
 
-using namespace rmw_robotops;
+using rmw_robotops::generate_span_id;
+using rmw_robotops::generate_trace_id;
+using rmw_robotops::get_trace_event_queue;
+using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
+using rmw_robotops::MAX_NODE_NAME_LENGTH;
+using rmw_robotops::MAX_TOPIC_NAME_LENGTH;
+using rmw_robotops::OP_PUBLISH;
+using rmw_robotops::OP_SUBSCRIBE;
+using rmw_robotops::SPAN_ID_LENGTH;
+using rmw_robotops::TraceEvent;
 
 TEST(MetadataExtractionTest, TraceEventFieldsInitialization) {
   // Verify that TraceEvent struct has all required metadata fields

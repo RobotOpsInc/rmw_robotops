@@ -44,7 +44,8 @@ extern rmw_ret_t (* underlying_rmw_take_with_info)(
 namespace
 {
 
-using namespace rmw_robotops;
+using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
+using rmw_robotops::MAX_NODE_NAME_LENGTH;
 
 /// Metadata about a subscription (stored at creation time)
 struct SubscriptionMetadata
@@ -187,7 +188,23 @@ rmw_take(
   bool * taken,
   rmw_subscription_allocation_t * allocation)
 {
-  using namespace rmw_robotops;
+  using rmw_robotops::extract_trace_context_from_dds;
+  using rmw_robotops::generate_span_id;
+  using rmw_robotops::generate_trace_id;
+  using rmw_robotops::get_trace_context;
+  using rmw_robotops::get_trace_event_queue;
+  using rmw_robotops::is_tracing_enabled;
+  using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
+  using rmw_robotops::MAX_NODE_NAME_LENGTH;
+  using rmw_robotops::MAX_TOPIC_NAME_LENGTH;
+  using rmw_robotops::OP_SUBSCRIBE;
+  using rmw_robotops::record_trace_failure;
+  using rmw_robotops::record_trace_success;
+  using rmw_robotops::set_trace_context;
+  using rmw_robotops::SPAN_ID_LENGTH;
+  using rmw_robotops::TRACE_ID_LENGTH;
+  using rmw_robotops::TraceContext;
+  using rmw_robotops::TraceEvent;
 
   // Safety guarantee: Real message delivery NEVER blocked by tracing
   // Take the message first, then handle tracing
@@ -316,7 +333,23 @@ rmw_take_with_info(
   rmw_message_info_t * message_info,
   rmw_subscription_allocation_t * allocation)
 {
-  using namespace rmw_robotops;
+  using rmw_robotops::extract_trace_context_from_dds;
+  using rmw_robotops::generate_span_id;
+  using rmw_robotops::generate_trace_id;
+  using rmw_robotops::get_trace_context;
+  using rmw_robotops::get_trace_event_queue;
+  using rmw_robotops::is_tracing_enabled;
+  using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
+  using rmw_robotops::MAX_NODE_NAME_LENGTH;
+  using rmw_robotops::MAX_TOPIC_NAME_LENGTH;
+  using rmw_robotops::OP_SUBSCRIBE;
+  using rmw_robotops::record_trace_failure;
+  using rmw_robotops::record_trace_success;
+  using rmw_robotops::set_trace_context;
+  using rmw_robotops::SPAN_ID_LENGTH;
+  using rmw_robotops::TRACE_ID_LENGTH;
+  using rmw_robotops::TraceContext;
+  using rmw_robotops::TraceEvent;
 
   if (underlying_rmw_take_with_info == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW not initialized");

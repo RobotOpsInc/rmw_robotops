@@ -22,7 +22,17 @@
 #include <chrono>
 #include <thread>
 
-using namespace rmw_robotops;
+using rmw_robotops::Config;
+using rmw_robotops::DEFAULT_TRACE_QUEUE_SIZE;
+using rmw_robotops::generate_span_id;
+using rmw_robotops::generate_trace_id;
+using rmw_robotops::get_config;
+using rmw_robotops::get_trace_event_queue;
+using rmw_robotops::init_span_id_generator;
+using rmw_robotops::LockFreeQueue;
+using rmw_robotops::OP_PUBLISH;
+using rmw_robotops::TraceContext;
+using rmw_robotops::TraceEvent;
 
 // Safety Guarantee #3: No allocations in hot path
 TEST(SafetyTest, NoAllocationsInHotPath) {

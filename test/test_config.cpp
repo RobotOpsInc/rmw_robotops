@@ -18,7 +18,14 @@
 
 #include "rmw_robotops/config.hpp"
 
-using namespace rmw_robotops;
+using rmw_robotops::Config;
+using rmw_robotops::disable_tracing;
+using rmw_robotops::enable_tracing;
+using rmw_robotops::get_config;
+using rmw_robotops::get_underlying_rmw;
+using rmw_robotops::is_tracing_enabled;
+using rmw_robotops::record_trace_failure;
+using rmw_robotops::record_trace_success;
 
 class ConfigTest : public ::testing::Test
 {
