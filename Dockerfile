@@ -32,7 +32,7 @@ RUN --mount=type=secret,id=cloudsmith_key \
 
 # Install robotops_msgs from Cloudsmith
 RUN apt-get update && apt-get install -y \
-    ros-jazzy-robotops-msgs=0.1.0-0noble \
+    ros-jazzy-robotops-msgs=0.1.6-0noble \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
