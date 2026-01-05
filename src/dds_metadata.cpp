@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstring>
+
 #include "rmw_robotops/dds_metadata.hpp"
 #include "rmw_robotops/trace_context.hpp"
-
-#include <cstring>
 
 namespace rmw_robotops
 {

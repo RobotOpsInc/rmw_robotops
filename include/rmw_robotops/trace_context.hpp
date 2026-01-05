@@ -32,7 +32,7 @@ struct TraceContext
 {
   char trace_id[TRACE_ID_LENGTH + 1];      // +1 for null terminator
   char span_id[SPAN_ID_LENGTH + 1];        // Current span ID
-  char parent_span_id[SPAN_ID_LENGTH + 1]; // Parent span ID (empty if root)
+  char parent_span_id[SPAN_ID_LENGTH + 1];  // Parent span ID (empty if root)
 
   /// Check if context is empty (no active trace)
   bool is_empty() const noexcept

@@ -46,7 +46,7 @@ rmw_allocate(size_t size)
     fprintf(stderr, "rmw_robotops: rmw_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(size);
 }
 
@@ -66,7 +66,7 @@ rmw_free(void * pointer)
     fprintf(stderr, "rmw_robotops: rmw_free not available\n");
     return;
   }
-  
+
   underlying_func(pointer);
 }
 
@@ -86,7 +86,7 @@ rmw_node_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_node_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -106,7 +106,7 @@ rmw_node_free(rmw_node_t * node)
     fprintf(stderr, "rmw_robotops: rmw_node_free not available\n");
     return;
   }
-  
+
   underlying_func(node);
 }
 
@@ -126,7 +126,7 @@ rmw_publisher_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_publisher_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -146,7 +146,7 @@ rmw_publisher_free(rmw_publisher_t * publisher)
     fprintf(stderr, "rmw_robotops: rmw_publisher_free not available\n");
     return;
   }
-  
+
   underlying_func(publisher);
 }
 
@@ -166,7 +166,7 @@ rmw_subscription_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_subscription_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -186,7 +186,7 @@ rmw_subscription_free(rmw_subscription_t * subscription)
     fprintf(stderr, "rmw_robotops: rmw_subscription_free not available\n");
     return;
   }
-  
+
   underlying_func(subscription);
 }
 
@@ -206,7 +206,7 @@ rmw_guard_condition_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_guard_condition_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -226,7 +226,7 @@ rmw_guard_condition_free(rmw_guard_condition_t * guard_condition)
     fprintf(stderr, "rmw_robotops: rmw_guard_condition_free not available\n");
     return;
   }
-  
+
   underlying_func(guard_condition);
 }
 
@@ -246,7 +246,7 @@ rmw_client_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_client_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -266,7 +266,7 @@ rmw_client_free(rmw_client_t * client)
     fprintf(stderr, "rmw_robotops: rmw_client_free not available\n");
     return;
   }
-  
+
   underlying_func(client);
 }
 
@@ -286,7 +286,7 @@ rmw_service_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_service_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -306,7 +306,7 @@ rmw_service_free(rmw_service_t * service)
     fprintf(stderr, "rmw_robotops: rmw_service_free not available\n");
     return;
   }
-  
+
   underlying_func(service);
 }
 
@@ -326,7 +326,7 @@ rmw_wait_set_allocate(void)
     fprintf(stderr, "rmw_robotops: rmw_wait_set_allocate not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -346,7 +346,7 @@ rmw_wait_set_free(rmw_wait_set_t * wait_set)
     fprintf(stderr, "rmw_robotops: rmw_wait_set_free not available\n");
     return;
   }
-  
+
   underlying_func(wait_set);
 }
 
@@ -366,7 +366,7 @@ rmw_convert_rcutils_ret_to_rmw_ret(rcutils_ret_t rcutils_ret)
     fprintf(stderr, "rmw_robotops: rmw_convert_rcutils_ret_to_rmw_ret not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(rcutils_ret);
 }
 
@@ -386,7 +386,7 @@ rmw_get_zero_initialized_discovery_options(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_discovery_options not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -406,7 +406,7 @@ rmw_discovery_options_init(rmw_discovery_options_t * discovery_options, size_t s
     fprintf(stderr, "rmw_robotops: rmw_discovery_options_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(discovery_options, size, allocator);
 }
 
@@ -426,7 +426,7 @@ rmw_discovery_options_equal(const rmw_discovery_options_t * const left, const rm
     fprintf(stderr, "rmw_robotops: rmw_discovery_options_equal not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(left, right, result);
 }
 
@@ -446,7 +446,7 @@ rmw_discovery_options_copy(const rmw_discovery_options_t * src, rcutils_allocato
     fprintf(stderr, "rmw_robotops: rmw_discovery_options_copy not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(src, allocator, dst);
 }
 
@@ -466,7 +466,7 @@ rmw_discovery_options_fini(rmw_discovery_options_t * discovery_options)
     fprintf(stderr, "rmw_robotops: rmw_discovery_options_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(discovery_options);
 }
 
@@ -486,7 +486,7 @@ rmw_take_dynamic_message(const rmw_subscription_t * subscription, rosidl_dynamic
     fprintf(stderr, "rmw_robotops: rmw_take_dynamic_message not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, dynamic_message, taken, allocation);
 }
 
@@ -506,7 +506,7 @@ rmw_take_dynamic_message_with_info(const rmw_subscription_t * subscription, rosi
     fprintf(stderr, "rmw_robotops: rmw_take_dynamic_message_with_info not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, dynamic_message, taken, message_info, allocation);
 }
 
@@ -526,7 +526,7 @@ rmw_serialization_support_init(const char * serialization_lib_name, rcutils_allo
     fprintf(stderr, "rmw_robotops: rmw_serialization_support_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(serialization_lib_name, allocator, serialization_support);
 }
 
@@ -546,7 +546,7 @@ rmw_get_zero_initialized_event(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_event not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -566,7 +566,7 @@ rmw_publisher_event_init(rmw_event_t * rmw_event, const rmw_publisher_t * publis
     fprintf(stderr, "rmw_robotops: rmw_publisher_event_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(rmw_event, publisher, event_type);
 }
 
@@ -586,7 +586,7 @@ rmw_subscription_event_init(rmw_event_t * rmw_event, const rmw_subscription_t * 
     fprintf(stderr, "rmw_robotops: rmw_subscription_event_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(rmw_event, subscription, event_type);
 }
 
@@ -606,7 +606,7 @@ rmw_take_event(const rmw_event_t * event_handle, void * event_info, bool * taken
     fprintf(stderr, "rmw_robotops: rmw_take_event not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(event_handle, event_info, taken);
 }
 
@@ -626,7 +626,7 @@ rmw_event_fini(rmw_event_t * event)
     fprintf(stderr, "rmw_robotops: rmw_event_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(event);
 }
 
@@ -646,7 +646,7 @@ rmw_event_type_is_supported(rmw_event_type_t rmw_event_type)
     fprintf(stderr, "rmw_robotops: rmw_event_type_is_supported not available\n");
     return false;
   }
-  
+
   return underlying_func(rmw_event_type);
 }
 
@@ -666,7 +666,7 @@ rmw_feature_supported(rmw_feature_t feature)
     fprintf(stderr, "rmw_robotops: rmw_feature_supported not available\n");
     return false;
   }
-  
+
   return underlying_func(feature);
 }
 
@@ -686,7 +686,7 @@ rmw_publisher_get_network_flow_endpoints(const rmw_publisher_t * publisher, rcut
     fprintf(stderr, "rmw_robotops: rmw_publisher_get_network_flow_endpoints not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, allocator, network_flow_endpoint_array);
 }
 
@@ -706,7 +706,7 @@ rmw_subscription_get_network_flow_endpoints(const rmw_subscription_t * subscript
     fprintf(stderr, "rmw_robotops: rmw_subscription_get_network_flow_endpoints not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, allocator, network_flow_endpoint_array);
 }
 
@@ -726,7 +726,7 @@ rmw_get_subscriber_names_and_types_by_node(const rmw_node_t * node, rcutils_allo
     fprintf(stderr, "rmw_robotops: rmw_get_subscriber_names_and_types_by_node not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, node_name, node_namespace, no_demangle, topic_names_and_types);
 }
 
@@ -746,7 +746,7 @@ rmw_get_publisher_names_and_types_by_node(const rmw_node_t * node, rcutils_alloc
     fprintf(stderr, "rmw_robotops: rmw_get_publisher_names_and_types_by_node not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, node_name, node_namespace, no_demangle, topic_names_and_types);
 }
 
@@ -766,7 +766,7 @@ rmw_get_service_names_and_types_by_node(const rmw_node_t * node, rcutils_allocat
     fprintf(stderr, "rmw_robotops: rmw_get_service_names_and_types_by_node not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, node_name, node_namespace, service_names_and_types);
 }
 
@@ -786,7 +786,7 @@ rmw_get_client_names_and_types_by_node(const rmw_node_t * node, rcutils_allocato
     fprintf(stderr, "rmw_robotops: rmw_get_client_names_and_types_by_node not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, node_name, node_namespace, service_names_and_types);
 }
 
@@ -806,7 +806,7 @@ rmw_get_service_names_and_types(const rmw_node_t * node, rcutils_allocator_t * a
     fprintf(stderr, "rmw_robotops: rmw_get_service_names_and_types not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, service_names_and_types);
 }
 
@@ -826,7 +826,7 @@ rmw_get_publishers_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * 
     fprintf(stderr, "rmw_robotops: rmw_get_publishers_info_by_topic not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, topic_name, no_mangle, publishers_info);
 }
 
@@ -846,7 +846,7 @@ rmw_get_subscriptions_info_by_topic(const rmw_node_t * node, rcutils_allocator_t
     fprintf(stderr, "rmw_robotops: rmw_get_subscriptions_info_by_topic not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, topic_name, no_mangle, subscriptions_info);
 }
 
@@ -866,7 +866,7 @@ rmw_get_topic_names_and_types(const rmw_node_t * node, rcutils_allocator_t * all
     fprintf(stderr, "rmw_robotops: rmw_get_topic_names_and_types not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, allocator, no_demangle, topic_names_and_types);
 }
 
@@ -886,7 +886,7 @@ rmw_get_zero_initialized_context(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_context not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -906,7 +906,7 @@ rmw_context_fini(rmw_context_t * context)
     fprintf(stderr, "rmw_robotops: rmw_context_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(context);
 }
 
@@ -926,7 +926,7 @@ rmw_get_zero_initialized_message_sequence(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_message_sequence not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -946,7 +946,7 @@ rmw_message_sequence_init(rmw_message_sequence_t * sequence, size_t size, rcutil
     fprintf(stderr, "rmw_robotops: rmw_message_sequence_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(sequence, size, allocator);
 }
 
@@ -966,7 +966,7 @@ rmw_message_sequence_fini(rmw_message_sequence_t * sequence)
     fprintf(stderr, "rmw_robotops: rmw_message_sequence_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(sequence);
 }
 
@@ -986,7 +986,7 @@ rmw_get_zero_initialized_message_info_sequence(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_message_info_sequence not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -1006,7 +1006,7 @@ rmw_message_info_sequence_init(rmw_message_info_sequence_t * sequence, size_t si
     fprintf(stderr, "rmw_robotops: rmw_message_info_sequence_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(sequence, size, allocator);
 }
 
@@ -1026,7 +1026,7 @@ rmw_message_info_sequence_fini(rmw_message_info_sequence_t * sequence)
     fprintf(stderr, "rmw_robotops: rmw_message_info_sequence_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(sequence);
 }
 
@@ -1046,7 +1046,7 @@ rmw_get_zero_initialized_names_and_types(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_names_and_types not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -1066,7 +1066,7 @@ rmw_names_and_types_check_zero(rmw_names_and_types_t * names_and_types)
     fprintf(stderr, "rmw_robotops: rmw_names_and_types_check_zero not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(names_and_types);
 }
 
@@ -1086,7 +1086,7 @@ rmw_names_and_types_init(rmw_names_and_types_t * names_and_types, size_t size, r
     fprintf(stderr, "rmw_robotops: rmw_names_and_types_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(names_and_types, size, allocator);
 }
 
@@ -1106,7 +1106,7 @@ rmw_names_and_types_fini(rmw_names_and_types_t * names_and_types)
     fprintf(stderr, "rmw_robotops: rmw_names_and_types_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(names_and_types);
 }
 
@@ -1126,7 +1126,7 @@ rmw_get_zero_initialized_network_flow_endpoint(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_network_flow_endpoint not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -1146,7 +1146,7 @@ rmw_network_flow_endpoint_get_transport_protocol_string(const rmw_transport_prot
     fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_get_transport_protocol_string not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(transport_protocol);
 }
 
@@ -1166,7 +1166,7 @@ rmw_network_flow_endpoint_get_internet_protocol_string(const rmw_internet_protoc
     fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_get_internet_protocol_string not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(internet_protocol);
 }
 
@@ -1186,7 +1186,7 @@ rmw_network_flow_endpoint_set_internet_address(rmw_network_flow_endpoint_t * net
     fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_set_internet_address not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(network_flow_endpoint, internet_address, size);
 }
 
@@ -1206,7 +1206,7 @@ rmw_get_zero_initialized_network_flow_endpoint_array(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_network_flow_endpoint_array not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -1226,7 +1226,7 @@ rmw_network_flow_endpoint_array_check_zero(const rmw_network_flow_endpoint_array
     fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_array_check_zero not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(network_flow_endpoint_array);
 }
 
@@ -1246,7 +1246,7 @@ rmw_network_flow_endpoint_array_init(rmw_network_flow_endpoint_array_t * network
     fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_array_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(network_flow_endpoint_array, size, allocator);
 }
 
@@ -1266,7 +1266,7 @@ rmw_network_flow_endpoint_array_fini(rmw_network_flow_endpoint_array_t * network
     fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_array_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(network_flow_endpoint_array);
 }
 
@@ -1286,7 +1286,7 @@ rmw_get_default_publisher_options(void)
     fprintf(stderr, "rmw_robotops: rmw_get_default_publisher_options not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -1306,7 +1306,7 @@ rmw_qos_profile_check_compatible(const rmw_qos_profile_t publisher_profile, cons
     fprintf(stderr, "rmw_robotops: rmw_qos_profile_check_compatible not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher_profile, subscription_profile, compatibility, reason, reason_size);
 }
 
@@ -1326,7 +1326,7 @@ rmw_qos_policy_kind_to_str(rmw_qos_policy_kind_t kind)
     fprintf(stderr, "rmw_robotops: rmw_qos_policy_kind_to_str not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(kind);
 }
 
@@ -1346,7 +1346,7 @@ rmw_qos_durability_policy_to_str(rmw_qos_durability_policy_t value)
     fprintf(stderr, "rmw_robotops: rmw_qos_durability_policy_to_str not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(value);
 }
 
@@ -1366,7 +1366,7 @@ rmw_qos_history_policy_to_str(rmw_qos_history_policy_t value)
     fprintf(stderr, "rmw_robotops: rmw_qos_history_policy_to_str not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(value);
 }
 
@@ -1386,7 +1386,7 @@ rmw_qos_liveliness_policy_to_str(rmw_qos_liveliness_policy_t value)
     fprintf(stderr, "rmw_robotops: rmw_qos_liveliness_policy_to_str not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(value);
 }
 
@@ -1406,7 +1406,7 @@ rmw_qos_reliability_policy_to_str(rmw_qos_reliability_policy_t value)
     fprintf(stderr, "rmw_robotops: rmw_qos_reliability_policy_to_str not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(value);
 }
 
@@ -1426,7 +1426,7 @@ rmw_qos_policy_kind_from_str(const char * str)
     fprintf(stderr, "rmw_robotops: rmw_qos_policy_kind_from_str not available\n");
     return {};
   }
-  
+
   return underlying_func(str);
 }
 
@@ -1446,7 +1446,7 @@ rmw_qos_durability_policy_from_str(const char * str)
     fprintf(stderr, "rmw_robotops: rmw_qos_durability_policy_from_str not available\n");
     return {};
   }
-  
+
   return underlying_func(str);
 }
 
@@ -1466,7 +1466,7 @@ rmw_qos_history_policy_from_str(const char * str)
     fprintf(stderr, "rmw_robotops: rmw_qos_history_policy_from_str not available\n");
     return {};
   }
-  
+
   return underlying_func(str);
 }
 
@@ -1486,7 +1486,7 @@ rmw_qos_liveliness_policy_from_str(const char * str)
     fprintf(stderr, "rmw_robotops: rmw_qos_liveliness_policy_from_str not available\n");
     return {};
   }
-  
+
   return underlying_func(str);
 }
 
@@ -1506,7 +1506,7 @@ rmw_qos_reliability_policy_from_str(const char * str)
     fprintf(stderr, "rmw_robotops: rmw_qos_reliability_policy_from_str not available\n");
     return {};
   }
-  
+
   return underlying_func(str);
 }
 
@@ -1526,7 +1526,7 @@ rmw_get_serialization_format(void)
     fprintf(stderr, "rmw_robotops: rmw_get_serialization_format not available\n");
     return nullptr;
   }
-  
+
   return underlying_func();
 }
 
@@ -1546,7 +1546,7 @@ rmw_node_assert_liveliness(const rmw_node_t * node)
     fprintf(stderr, "rmw_robotops: rmw_node_assert_liveliness not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node);
 }
 
@@ -1566,7 +1566,7 @@ rmw_node_get_graph_guard_condition(const rmw_node_t * node)
     fprintf(stderr, "rmw_robotops: rmw_node_get_graph_guard_condition not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(node);
 }
 
@@ -1586,7 +1586,7 @@ rmw_init_publisher_allocation(const rosidl_message_type_support_t * type_support
     fprintf(stderr, "rmw_robotops: rmw_init_publisher_allocation not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(type_support, message_bounds, allocation);
 }
 
@@ -1606,7 +1606,7 @@ rmw_fini_publisher_allocation(rmw_publisher_allocation_t * allocation)
     fprintf(stderr, "rmw_robotops: rmw_fini_publisher_allocation not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(allocation);
 }
 
@@ -1626,7 +1626,7 @@ rmw_borrow_loaned_message(const rmw_publisher_t * publisher, const rosidl_messag
     fprintf(stderr, "rmw_robotops: rmw_borrow_loaned_message not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, type_support, ros_message);
 }
 
@@ -1646,7 +1646,7 @@ rmw_return_loaned_message_from_publisher(const rmw_publisher_t * publisher, void
     fprintf(stderr, "rmw_robotops: rmw_return_loaned_message_from_publisher not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, loaned_message);
 }
 
@@ -1666,7 +1666,7 @@ rmw_publish_loaned_message(const rmw_publisher_t * publisher, void * ros_message
     fprintf(stderr, "rmw_robotops: rmw_publish_loaned_message not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, ros_message, allocation);
 }
 
@@ -1686,7 +1686,7 @@ rmw_publisher_count_matched_subscriptions(const rmw_publisher_t * publisher, siz
     fprintf(stderr, "rmw_robotops: rmw_publisher_count_matched_subscriptions not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, subscription_count);
 }
 
@@ -1706,7 +1706,7 @@ rmw_publisher_get_actual_qos(const rmw_publisher_t * publisher, rmw_qos_profile_
     fprintf(stderr, "rmw_robotops: rmw_publisher_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, qos);
 }
 
@@ -1726,7 +1726,7 @@ rmw_get_serialized_message_size(const rosidl_message_type_support_t * type_suppo
     fprintf(stderr, "rmw_robotops: rmw_get_serialized_message_size not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(type_support, message_bounds, size);
 }
 
@@ -1746,7 +1746,7 @@ rmw_publisher_assert_liveliness(const rmw_publisher_t * publisher)
     fprintf(stderr, "rmw_robotops: rmw_publisher_assert_liveliness not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher);
 }
 
@@ -1766,7 +1766,7 @@ rmw_publisher_wait_for_all_acked(const rmw_publisher_t * publisher, rmw_time_t w
     fprintf(stderr, "rmw_robotops: rmw_publisher_wait_for_all_acked not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, wait_timeout);
 }
 
@@ -1786,7 +1786,7 @@ rmw_serialize(const void * ros_message, const rosidl_message_type_support_t * ty
     fprintf(stderr, "rmw_robotops: rmw_serialize not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(ros_message, type_support, serialized_message);
 }
 
@@ -1806,7 +1806,7 @@ rmw_deserialize(const rmw_serialized_message_t * serialized_message, const rosid
     fprintf(stderr, "rmw_robotops: rmw_deserialize not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(serialized_message, type_support, ros_message);
 }
 
@@ -1826,7 +1826,7 @@ rmw_init_subscription_allocation(const rosidl_message_type_support_t * type_supp
     fprintf(stderr, "rmw_robotops: rmw_init_subscription_allocation not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(type_support, message_bounds, allocation);
 }
 
@@ -1846,7 +1846,7 @@ rmw_fini_subscription_allocation(rmw_subscription_allocation_t * allocation)
     fprintf(stderr, "rmw_robotops: rmw_fini_subscription_allocation not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(allocation);
 }
 
@@ -1866,7 +1866,7 @@ rmw_subscription_count_matched_publishers(const rmw_subscription_t * subscriptio
     fprintf(stderr, "rmw_robotops: rmw_subscription_count_matched_publishers not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, publisher_count);
 }
 
@@ -1886,7 +1886,7 @@ rmw_subscription_get_actual_qos(const rmw_subscription_t * subscription, rmw_qos
     fprintf(stderr, "rmw_robotops: rmw_subscription_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, qos);
 }
 
@@ -1906,7 +1906,7 @@ rmw_subscription_set_content_filter(rmw_subscription_t * subscription, const rmw
     fprintf(stderr, "rmw_robotops: rmw_subscription_set_content_filter not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, options);
 }
 
@@ -1926,7 +1926,7 @@ rmw_subscription_get_content_filter(const rmw_subscription_t * subscription, rcu
     fprintf(stderr, "rmw_robotops: rmw_subscription_get_content_filter not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, allocator, options);
 }
 
@@ -1946,7 +1946,7 @@ rmw_take_sequence(const rmw_subscription_t * subscription, size_t count, rmw_mes
     fprintf(stderr, "rmw_robotops: rmw_take_sequence not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, count, message_sequence, message_info_sequence, taken, allocation);
 }
 
@@ -1966,7 +1966,7 @@ rmw_take_serialized_message(const rmw_subscription_t * subscription, rmw_seriali
     fprintf(stderr, "rmw_robotops: rmw_take_serialized_message not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, serialized_message, taken, allocation);
 }
 
@@ -1986,7 +1986,7 @@ rmw_take_serialized_message_with_info(const rmw_subscription_t * subscription, r
     fprintf(stderr, "rmw_robotops: rmw_take_serialized_message_with_info not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, serialized_message, taken, message_info, allocation);
 }
 
@@ -2006,7 +2006,7 @@ rmw_take_loaned_message(const rmw_subscription_t * subscription, void ** loaned_
     fprintf(stderr, "rmw_robotops: rmw_take_loaned_message not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, loaned_message, taken, allocation);
 }
 
@@ -2026,7 +2026,7 @@ rmw_take_loaned_message_with_info(const rmw_subscription_t * subscription, void 
     fprintf(stderr, "rmw_robotops: rmw_take_loaned_message_with_info not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, loaned_message, taken, message_info, allocation);
 }
 
@@ -2046,7 +2046,7 @@ rmw_return_loaned_message_from_subscription(const rmw_subscription_t * subscript
     fprintf(stderr, "rmw_robotops: rmw_return_loaned_message_from_subscription not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, loaned_message);
 }
 
@@ -2066,7 +2066,7 @@ rmw_create_client(const rmw_node_t * node, const rosidl_service_type_support_t *
     fprintf(stderr, "rmw_robotops: rmw_create_client not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(node, type_support, service_name, qos_policies);
 }
 
@@ -2086,7 +2086,7 @@ rmw_destroy_client(rmw_node_t * node, rmw_client_t * client)
     fprintf(stderr, "rmw_robotops: rmw_destroy_client not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, client);
 }
 
@@ -2106,7 +2106,7 @@ rmw_send_request(const rmw_client_t * client, const void * ros_request, int64_t 
     fprintf(stderr, "rmw_robotops: rmw_send_request not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(client, ros_request, sequence_id);
 }
 
@@ -2126,7 +2126,7 @@ rmw_take_response(const rmw_client_t * client, rmw_service_info_t * request_head
     fprintf(stderr, "rmw_robotops: rmw_take_response not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(client, request_header, ros_response, taken);
 }
 
@@ -2146,7 +2146,7 @@ rmw_client_request_publisher_get_actual_qos(const rmw_client_t * client, rmw_qos
     fprintf(stderr, "rmw_robotops: rmw_client_request_publisher_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(client, qos);
 }
 
@@ -2166,7 +2166,7 @@ rmw_client_response_subscription_get_actual_qos(const rmw_client_t * client, rmw
     fprintf(stderr, "rmw_robotops: rmw_client_response_subscription_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(client, qos);
 }
 
@@ -2186,7 +2186,7 @@ rmw_create_service(const rmw_node_t * node, const rosidl_service_type_support_t 
     fprintf(stderr, "rmw_robotops: rmw_create_service not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(node, type_support, service_name, qos_profile);
 }
 
@@ -2206,7 +2206,7 @@ rmw_destroy_service(rmw_node_t * node, rmw_service_t * service)
     fprintf(stderr, "rmw_robotops: rmw_destroy_service not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, service);
 }
 
@@ -2226,7 +2226,7 @@ rmw_take_request(const rmw_service_t * service, rmw_service_info_t * request_hea
     fprintf(stderr, "rmw_robotops: rmw_take_request not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(service, request_header, ros_request, taken);
 }
 
@@ -2246,7 +2246,7 @@ rmw_send_response(const rmw_service_t * service, rmw_request_id_t * request_head
     fprintf(stderr, "rmw_robotops: rmw_send_response not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(service, request_header, ros_response);
 }
 
@@ -2266,7 +2266,7 @@ rmw_service_request_subscription_get_actual_qos(const rmw_service_t * service, r
     fprintf(stderr, "rmw_robotops: rmw_service_request_subscription_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(service, qos);
 }
 
@@ -2286,7 +2286,7 @@ rmw_service_response_publisher_get_actual_qos(const rmw_service_t * service, rmw
     fprintf(stderr, "rmw_robotops: rmw_service_response_publisher_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(service, qos);
 }
 
@@ -2306,7 +2306,7 @@ rmw_create_guard_condition(rmw_context_t * context)
     fprintf(stderr, "rmw_robotops: rmw_create_guard_condition not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(context);
 }
 
@@ -2326,7 +2326,7 @@ rmw_destroy_guard_condition(rmw_guard_condition_t * guard_condition)
     fprintf(stderr, "rmw_robotops: rmw_destroy_guard_condition not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(guard_condition);
 }
 
@@ -2346,7 +2346,7 @@ rmw_trigger_guard_condition(const rmw_guard_condition_t * guard_condition)
     fprintf(stderr, "rmw_robotops: rmw_trigger_guard_condition not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(guard_condition);
 }
 
@@ -2366,7 +2366,7 @@ rmw_create_wait_set(rmw_context_t * context, size_t max_conditions)
     fprintf(stderr, "rmw_robotops: rmw_create_wait_set not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(context, max_conditions);
 }
 
@@ -2386,7 +2386,7 @@ rmw_destroy_wait_set(rmw_wait_set_t * wait_set)
     fprintf(stderr, "rmw_robotops: rmw_destroy_wait_set not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(wait_set);
 }
 
@@ -2406,7 +2406,7 @@ rmw_wait(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_con
     fprintf(stderr, "rmw_robotops: rmw_wait not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscriptions, guard_conditions, services, clients, events, wait_set, wait_timeout);
 }
 
@@ -2426,7 +2426,7 @@ rmw_get_node_names(const rmw_node_t * node, rcutils_string_array_t * node_names,
     fprintf(stderr, "rmw_robotops: rmw_get_node_names not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, node_names, node_namespaces);
 }
 
@@ -2446,7 +2446,7 @@ rmw_get_node_names_with_enclaves(const rmw_node_t * node, rcutils_string_array_t
     fprintf(stderr, "rmw_robotops: rmw_get_node_names_with_enclaves not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, node_names, node_namespaces, enclaves);
 }
 
@@ -2466,7 +2466,7 @@ rmw_count_publishers(const rmw_node_t * node, const char * topic_name, size_t * 
     fprintf(stderr, "rmw_robotops: rmw_count_publishers not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, topic_name, count);
 }
 
@@ -2486,7 +2486,7 @@ rmw_count_subscribers(const rmw_node_t * node, const char * topic_name, size_t *
     fprintf(stderr, "rmw_robotops: rmw_count_subscribers not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, topic_name, count);
 }
 
@@ -2506,7 +2506,7 @@ rmw_count_clients(const rmw_node_t * node, const char * service_name, size_t * c
     fprintf(stderr, "rmw_robotops: rmw_count_clients not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, service_name, count);
 }
 
@@ -2526,7 +2526,7 @@ rmw_count_services(const rmw_node_t * node, const char * service_name, size_t * 
     fprintf(stderr, "rmw_robotops: rmw_count_services not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, service_name, count);
 }
 
@@ -2546,7 +2546,7 @@ rmw_get_gid_for_publisher(const rmw_publisher_t * publisher, rmw_gid_t * gid)
     fprintf(stderr, "rmw_robotops: rmw_get_gid_for_publisher not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(publisher, gid);
 }
 
@@ -2566,7 +2566,7 @@ rmw_get_gid_for_client(const rmw_client_t * client, rmw_gid_t * gid)
     fprintf(stderr, "rmw_robotops: rmw_get_gid_for_client not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(client, gid);
 }
 
@@ -2586,7 +2586,7 @@ rmw_compare_gids_equal(const rmw_gid_t * gid1, const rmw_gid_t * gid2, bool * re
     fprintf(stderr, "rmw_robotops: rmw_compare_gids_equal not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(gid1, gid2, result);
 }
 
@@ -2606,7 +2606,7 @@ rmw_service_server_is_available(const rmw_node_t * node, const rmw_client_t * cl
     fprintf(stderr, "rmw_robotops: rmw_service_server_is_available not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node, client, is_available);
 }
 
@@ -2626,7 +2626,7 @@ rmw_set_log_severity(rmw_log_severity_t severity)
     fprintf(stderr, "rmw_robotops: rmw_set_log_severity not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(severity);
 }
 
@@ -2646,7 +2646,7 @@ rmw_subscription_set_on_new_message_callback(rmw_subscription_t * subscription, 
     fprintf(stderr, "rmw_robotops: rmw_subscription_set_on_new_message_callback not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(subscription, callback, user_data);
 }
 
@@ -2666,7 +2666,7 @@ rmw_service_set_on_new_request_callback(rmw_service_t * service, rmw_event_callb
     fprintf(stderr, "rmw_robotops: rmw_service_set_on_new_request_callback not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(service, callback, user_data);
 }
 
@@ -2686,7 +2686,7 @@ rmw_client_set_on_new_response_callback(rmw_client_t * client, rmw_event_callbac
     fprintf(stderr, "rmw_robotops: rmw_client_set_on_new_response_callback not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(client, callback, user_data);
 }
 
@@ -2706,7 +2706,7 @@ rmw_event_set_callback(rmw_event_t * event, rmw_event_callback_t callback, const
     fprintf(stderr, "rmw_robotops: rmw_event_set_callback not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(event, callback, user_data);
 }
 
@@ -2726,7 +2726,7 @@ rmw_check_zero_rmw_string_array(rcutils_string_array_t * array)
     fprintf(stderr, "rmw_robotops: rmw_check_zero_rmw_string_array not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(array);
 }
 
@@ -2746,7 +2746,7 @@ rmw_get_zero_initialized_security_options(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_security_options not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -2766,7 +2766,7 @@ rmw_get_default_security_options(void)
     fprintf(stderr, "rmw_robotops: rmw_get_default_security_options not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -2786,7 +2786,7 @@ rmw_security_options_copy(const rmw_security_options_t * src, const rcutils_allo
     fprintf(stderr, "rmw_robotops: rmw_security_options_copy not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(src, allocator, dst);
 }
 
@@ -2806,7 +2806,7 @@ rmw_security_options_set_root_path(const char * security_root_path, const rcutil
     fprintf(stderr, "rmw_robotops: rmw_security_options_set_root_path not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(security_root_path, allocator, security_options);
 }
 
@@ -2826,7 +2826,7 @@ rmw_security_options_fini(rmw_security_options_t * security_options, const rcuti
     fprintf(stderr, "rmw_robotops: rmw_security_options_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(security_options, allocator);
 }
 
@@ -2846,7 +2846,7 @@ rmw_get_zero_initialized_content_filter_options(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_content_filter_options not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -2866,7 +2866,7 @@ rmw_subscription_content_filter_options_init(const char * filter_expression, siz
     fprintf(stderr, "rmw_robotops: rmw_subscription_content_filter_options_init not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(filter_expression, expression_parameters_argc, expression_parameter_argv, allocator, options);
 }
 
@@ -2886,7 +2886,7 @@ rmw_subscription_content_filter_options_set(const char * filter_expression, size
     fprintf(stderr, "rmw_robotops: rmw_subscription_content_filter_options_set not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(filter_expression, expression_parameters_argc, expression_parameter_argv, allocator, options);
 }
 
@@ -2906,7 +2906,7 @@ rmw_subscription_content_filter_options_copy(const rmw_subscription_content_filt
     fprintf(stderr, "rmw_robotops: rmw_subscription_content_filter_options_copy not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(src, allocator, dst);
 }
 
@@ -2926,7 +2926,7 @@ rmw_subscription_content_filter_options_fini(rmw_subscription_content_filter_opt
     fprintf(stderr, "rmw_robotops: rmw_subscription_content_filter_options_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(options, allocator);
 }
 
@@ -2946,7 +2946,7 @@ rmw_get_default_subscription_options(void)
     fprintf(stderr, "rmw_robotops: rmw_get_default_subscription_options not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -2966,7 +2966,7 @@ rmw_time_equal(const rmw_time_t left, const rmw_time_t right)
     fprintf(stderr, "rmw_robotops: rmw_time_equal not available\n");
     return false;
   }
-  
+
   return underlying_func(left, right);
 }
 
@@ -2986,7 +2986,7 @@ rmw_time_total_nsec(const rmw_time_t time)
     fprintf(stderr, "rmw_robotops: rmw_time_total_nsec not available\n");
     return {};
   }
-  
+
   return underlying_func(time);
 }
 
@@ -3006,7 +3006,7 @@ rmw_time_from_nsec(const rmw_duration_t nanoseconds)
     fprintf(stderr, "rmw_robotops: rmw_time_from_nsec not available\n");
     return {};
   }
-  
+
   return underlying_func(nanoseconds);
 }
 
@@ -3026,7 +3026,7 @@ rmw_time_normalize(const rmw_time_t time)
     fprintf(stderr, "rmw_robotops: rmw_time_normalize not available\n");
     return {};
   }
-  
+
   return underlying_func(time);
 }
 
@@ -3046,7 +3046,7 @@ rmw_get_zero_initialized_topic_endpoint_info(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_topic_endpoint_info not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -3066,7 +3066,7 @@ rmw_topic_endpoint_info_fini(rmw_topic_endpoint_info_t * topic_endpoint_info, rc
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, allocator);
 }
 
@@ -3086,7 +3086,7 @@ rmw_topic_endpoint_info_set_topic_type(rmw_topic_endpoint_info_t * topic_endpoin
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_topic_type not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, topic_type, allocator);
 }
 
@@ -3106,7 +3106,7 @@ rmw_topic_endpoint_info_set_topic_type_hash(rmw_topic_endpoint_info_t * topic_en
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_topic_type_hash not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, type_hash);
 }
 
@@ -3126,7 +3126,7 @@ rmw_topic_endpoint_info_set_node_name(rmw_topic_endpoint_info_t * topic_endpoint
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_node_name not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, node_name, allocator);
 }
 
@@ -3146,7 +3146,7 @@ rmw_topic_endpoint_info_set_node_namespace(rmw_topic_endpoint_info_t * topic_end
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_node_namespace not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, node_namespace, allocator);
 }
 
@@ -3166,7 +3166,7 @@ rmw_topic_endpoint_info_set_endpoint_type(rmw_topic_endpoint_info_t * topic_endp
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_endpoint_type not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, type);
 }
 
@@ -3186,7 +3186,7 @@ rmw_topic_endpoint_info_set_gid(rmw_topic_endpoint_info_t * topic_endpoint_info,
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_gid not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, gid, size);
 }
 
@@ -3206,7 +3206,7 @@ rmw_topic_endpoint_info_set_qos_profile(rmw_topic_endpoint_info_t * topic_endpoi
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_set_qos_profile not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info, qos_profile);
 }
 
@@ -3226,7 +3226,7 @@ rmw_get_zero_initialized_topic_endpoint_info_array(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_topic_endpoint_info_array not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -3246,7 +3246,7 @@ rmw_topic_endpoint_info_array_check_zero(rmw_topic_endpoint_info_array_t * topic
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_array_check_zero not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info_array);
 }
 
@@ -3266,7 +3266,7 @@ rmw_topic_endpoint_info_array_init_with_size(rmw_topic_endpoint_info_array_t * t
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_array_init_with_size not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info_array, size, allocator);
 }
 
@@ -3286,7 +3286,7 @@ rmw_topic_endpoint_info_array_fini(rmw_topic_endpoint_info_array_t * topic_endpo
     fprintf(stderr, "rmw_robotops: rmw_topic_endpoint_info_array_fini not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_endpoint_info_array, allocator);
 }
 
@@ -3306,7 +3306,7 @@ rmw_get_zero_initialized_message_info(void)
     fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_message_info not available\n");
     return {};
   }
-  
+
   return underlying_func();
 }
 
@@ -3326,7 +3326,7 @@ rmw_validate_full_topic_name(const char * topic_name, int * validation_result, s
     fprintf(stderr, "rmw_robotops: rmw_validate_full_topic_name not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_name, validation_result, invalid_index);
 }
 
@@ -3346,7 +3346,7 @@ rmw_validate_full_topic_name_with_size(const char * topic_name, size_t topic_nam
     fprintf(stderr, "rmw_robotops: rmw_validate_full_topic_name_with_size not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(topic_name, topic_name_length, validation_result, invalid_index);
 }
 
@@ -3366,7 +3366,7 @@ rmw_full_topic_name_validation_result_string(int validation_result)
     fprintf(stderr, "rmw_robotops: rmw_full_topic_name_validation_result_string not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(validation_result);
 }
 
@@ -3386,7 +3386,7 @@ rmw_validate_namespace(const char * namespace_, int * validation_result, size_t 
     fprintf(stderr, "rmw_robotops: rmw_validate_namespace not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(namespace_, validation_result, invalid_index);
 }
 
@@ -3406,7 +3406,7 @@ rmw_validate_namespace_with_size(const char * namespace_, size_t namespace_lengt
     fprintf(stderr, "rmw_robotops: rmw_validate_namespace_with_size not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(namespace_, namespace_length, validation_result, invalid_index);
 }
 
@@ -3426,7 +3426,7 @@ rmw_namespace_validation_result_string(int validation_result)
     fprintf(stderr, "rmw_robotops: rmw_namespace_validation_result_string not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(validation_result);
 }
 
@@ -3446,7 +3446,7 @@ rmw_validate_node_name(const char * node_name, int * validation_result, size_t *
     fprintf(stderr, "rmw_robotops: rmw_validate_node_name not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node_name, validation_result, invalid_index);
 }
 
@@ -3466,7 +3466,7 @@ rmw_validate_node_name_with_size(const char * node_name, size_t node_name_length
     fprintf(stderr, "rmw_robotops: rmw_validate_node_name_with_size not available\n");
     return RMW_RET_ERROR;
   }
-  
+
   return underlying_func(node_name, node_name_length, validation_result, invalid_index);
 }
 
@@ -3486,7 +3486,7 @@ rmw_node_name_validation_result_string(int validation_result)
     fprintf(stderr, "rmw_robotops: rmw_node_name_validation_result_string not available\n");
     return nullptr;
   }
-  
+
   return underlying_func(validation_result);
 }
 

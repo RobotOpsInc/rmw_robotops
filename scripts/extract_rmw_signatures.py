@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
-"""
-Extract RMW function signatures from rmw.h and generate stub implementations.
-"""
+# Copyright 2025 RobotOps
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Extract RMW function signatures from rmw.h and generate stub implementations."""
 
 import re
 import sys
@@ -230,7 +242,8 @@ extern "C" {
         for func_name, _ in functions:
             f.write(f"{func_name}\n")
 
-    print("Generated rmw_functions_list.txt")
+    print('Generated rmw_functions_list.txt')
+
 
 if __name__ == '__main__':
     main()

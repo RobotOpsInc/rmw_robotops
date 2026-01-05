@@ -77,7 +77,7 @@ static uint32_t get_env_uint32(const char * name, uint32_t default_value) noexce
   }
 
   char * endptr = nullptr;
-  unsigned long parsed = std::strtoul(value, &endptr, 10);
+  uint64_t parsed = std::strtoull(value, &endptr, 10);
 
   if (endptr == value || *endptr != '\0' || parsed > UINT32_MAX) {
     RCUTILS_LOG_WARN_NAMED(
