@@ -1,3 +1,8 @@
+<!--
+Copyright 2025 Robot Ops Inc.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Contributing to rmw_robotops
 
 Thank you for your interest in contributing to rmw_robotops! This document provides guidelines for contributing to the project.
