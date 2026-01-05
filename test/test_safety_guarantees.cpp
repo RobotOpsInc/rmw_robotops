@@ -24,13 +24,20 @@
 
 using rmw_robotops::Config;
 using rmw_robotops::DEFAULT_TRACE_QUEUE_SIZE;
+using rmw_robotops::disable_tracing;
+using rmw_robotops::enable_tracing;
 using rmw_robotops::generate_span_id;
 using rmw_robotops::generate_trace_id;
 using rmw_robotops::get_config;
+using rmw_robotops::get_or_mint_trace_context;
+using rmw_robotops::get_trace_context;
 using rmw_robotops::get_trace_event_queue;
 using rmw_robotops::init_span_id_generator;
+using rmw_robotops::is_tracing_enabled;
 using rmw_robotops::LockFreeQueue;
 using rmw_robotops::OP_PUBLISH;
+using rmw_robotops::record_trace_failure;
+using rmw_robotops::set_trace_context;
 using rmw_robotops::TraceContext;
 using rmw_robotops::TraceEvent;
 
