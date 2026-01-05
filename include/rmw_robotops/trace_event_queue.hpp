@@ -20,6 +20,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <thread>
 
 namespace rmw_robotops
 {
@@ -119,23 +120,40 @@ public:
 
   /// Try to push an event to the queue (non-blocking)
   /// Returns false if queue is full (graceful degradation)
+  /// Thread-safe for multiple producers via CAS operation
   bool try_push(const TraceEvent & event) noexcept
   {
-    const size_t current_tail = tail_.load(std::memory_order_relaxed);
-    const size_t next_tail = (current_tail + 1) % Capacity;
-    const size_t current_head = head_.load(std::memory_order_acquire);
+    size_t current_tail = tail_.load(std::memory_order_relaxed);
 
-    // Check if queue is full
-    if (next_tail == current_head) {
-      return false;  // Queue full, drop event (safety guarantee)
+    // Retry loop with CAS to handle multiple producers
+    for (int attempts = 0; attempts < 100; ++attempts) {
+      const size_t next_tail = (current_tail + 1) % Capacity;
+      const size_t current_head = head_.load(std::memory_order_acquire);
+
+      // Check if queue is full
+      if (next_tail == current_head) {
+        return false;  // Queue full, drop event (safety guarantee)
+      }
+
+      // Try to atomically claim this slot via compare-and-swap
+      if (tail_.compare_exchange_weak(
+          current_tail,
+          next_tail,
+          std::memory_order_release,
+          std::memory_order_relaxed))
+      {
+        // Successfully claimed slot at current_tail, write event
+        buffer_[current_tail] = event;
+        return true;
+      }
+
+      // CAS failed - another producer claimed this slot
+      // current_tail now contains the updated value, retry
+      std::this_thread::yield();
     }
 
-    // Write event to buffer
-    buffer_[current_tail] = event;
-
-    // Publish the write
-    tail_.store(next_tail, std::memory_order_release);
-    return true;
+    // Too much contention, give up
+    return false;
   }
 
   /// Try to pop an event from the queue (non-blocking)
