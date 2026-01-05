@@ -16,7 +16,7 @@
 """Extract RMW function signatures from rmw.h and generate stub implementations."""
 
 import re
-import sys
+
 
 # Functions we've already implemented
 IMPLEMENTED = {
@@ -62,6 +62,7 @@ def extract_function_signature(lines, start_idx):
 
     return ' '.join(sig_lines), i + 1
 
+
 def parse_rmw_header(header_path):
     """Parse rmw.h and extract function signatures."""
     with open(header_path, 'r') as f:
@@ -94,6 +95,7 @@ def parse_rmw_header(header_path):
             i += 1
 
     return functions
+
 
 def generate_stub(func_name, signature):
     """Generate a stub implementation that forwards to underlying RMW."""
@@ -175,6 +177,7 @@ def generate_stub(func_name, signature):
     code += "}\n"
 
     return code
+
 
 def main():
     import glob
