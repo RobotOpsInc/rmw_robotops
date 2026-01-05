@@ -159,6 +159,28 @@ just logs         # Show logs from last test run
 - CPU overhead: < 5% vs underlying RMW
 - Memory: Zero allocations in hot path
 
+### CI/CD
+
+**Reproducing GitHub Actions CI locally:**
+
+```bash
+# Run the exact same CI suite that runs in GitHub Actions
+just ci
+
+# This executes:
+# 1. just ci-lint - All lint checks (copyright, cpplint, uncrustify, etc.)
+# 2. just ci-test - All tests with AddressSanitizer and UBSan
+# Both steps run even if one fails, matching GitHub Actions behavior
+
+# Expected results (as of 2026-01-05):
+# - 177 tests total
+# - 29 tests skipped
+# - 2 functional failures (copyright lint - to be fixed)
+# - 3-5 performance test failures (environment-dependent)
+```
+
+**IMPORTANT:** Always run `just ci` before pushing to catch issues early!
+
 ### Code Quality
 
 ```bash

@@ -61,6 +61,17 @@ All code changes must include:
 - **Integration tests** - Context propagation verification
 - **Performance benchmarks** - Latency/throughput validation
 
+**CRITICAL: Always run CI locally before committing:**
+```bash
+# Run the full CI suite locally to replicate GitHub Actions
+just ci
+
+# This runs:
+# - just ci-lint (all lint checks)
+# - just ci-test (all tests with sanitizers)
+# Both will run even if one fails, matching CI behavior
+```
+
 Safety tests MUST pass before merging:
 ```bash
 colcon test --packages-select rmw_robotops --ctest-args -R test_safety

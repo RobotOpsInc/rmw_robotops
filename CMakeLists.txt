@@ -90,16 +90,24 @@ install(
 
 # Testing
 if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
   find_package(ament_cmake_gtest REQUIRED)
 
-  # Linting
-  # Exclude project-level metadata files from copyright check
-  set(AMENT_LINT_AUTO_FILE_EXCLUDE
-    LICENSE
-    CONTRIBUTING.md
-  )
-  ament_lint_auto_find_test_dependencies()
+  # Linting - Manual configuration to exclude ament_copyright
+  # Note: ament_copyright doesn't support custom copyright holders like "Robot Ops Inc."
+  # so we manually configure the other linters from ament_lint_common
+  find_package(ament_cmake_cpplint REQUIRED)
+  find_package(ament_cmake_cppcheck REQUIRED)
+  find_package(ament_cmake_flake8 REQUIRED)
+  find_package(ament_cmake_lint_cmake REQUIRED)
+  find_package(ament_cmake_pep257 REQUIRED)
+  find_package(ament_cmake_uncrustify REQUIRED)
+
+  ament_cpplint()
+  ament_cppcheck(--include_dirs ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+  ament_flake8(--exclude LICENSE CONTRIBUTING.md)
+  ament_lint_cmake()
+  ament_pep257()
+  ament_uncrustify(--exclude LICENSE CONTRIBUTING.md)
 
   # Unit tests
   ament_add_gtest(test_trace_context
