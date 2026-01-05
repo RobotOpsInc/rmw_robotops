@@ -23,7 +23,7 @@ compile:
 
 # Run all tests with sanitizers
 test:
-    docker-compose run --rm test
+    DOCKER_BUILDKIT=1 docker-compose run --rm test
 
 # Run safety tests only (MUST pass before deployment)
 test-safety:
