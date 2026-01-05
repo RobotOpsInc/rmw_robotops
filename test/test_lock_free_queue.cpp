@@ -130,28 +130,28 @@ TEST(LockFreeQueueTest, MultiThreadedProducerConsumer) {
 
   // Consumer thread
   std::thread consumer([&]() {
-    while (consumed < NUM_ITEMS) {
-      TraceEvent event;
-      if (queue.try_pop(event)) {
-        consumed++;
-      } else {
-        std::this_thread::yield();
+      while (consumed < NUM_ITEMS) {
+        TraceEvent event;
+        if (queue.try_pop(event)) {
+          consumed++;
+        } else {
+          std::this_thread::yield();
+        }
       }
-    }
-    consumer_done = true;
-  });
+      consumer_done = true;
+    });
 
   // Producer thread
   std::thread producer([&]() {
-    for (size_t i = 0; i < NUM_ITEMS; ++i) {
-      TraceEvent event;
-      std::snprintf(event.trace_id, sizeof(event.trace_id), "trace%zu", i);
+      for (size_t i = 0; i < NUM_ITEMS; ++i) {
+        TraceEvent event;
+        std::snprintf(event.trace_id, sizeof(event.trace_id), "trace%zu", i);
 
-      while (!queue.try_push(event)) {
-        std::this_thread::yield();  // Queue full, retry
+        while (!queue.try_push(event)) {
+          std::this_thread::yield();  // Queue full, retry
+        }
       }
-    }
-  });
+    });
 
   producer.join();
   consumer.join();
@@ -172,27 +172,27 @@ TEST(LockFreeQueueTest, MultipleProducersSingleConsumer) {
 
   // Consumer thread
   std::thread consumer([&]() {
-    while (consumed < TOTAL_ITEMS) {
-      TraceEvent event;
-      if (queue.try_pop(event)) {
-        consumed++;
-      } else {
-        std::this_thread::yield();
+      while (consumed < TOTAL_ITEMS) {
+        TraceEvent event;
+        if (queue.try_pop(event)) {
+          consumed++;
+        } else {
+          std::this_thread::yield();
+        }
       }
-    }
-  });
+    });
 
   // Multiple producer threads
   for (size_t p = 0; p < NUM_PRODUCERS; ++p) {
     producers.emplace_back([&, p]() {
-      for (size_t i = 0; i < ITEMS_PER_PRODUCER; ++i) {
-        TraceEvent event;
-        std::snprintf(event.trace_id, sizeof(event.trace_id), "p%zu_i%zu", p, i);
+        for (size_t i = 0; i < ITEMS_PER_PRODUCER; ++i) {
+          TraceEvent event;
+          std::snprintf(event.trace_id, sizeof(event.trace_id), "p%zu_i%zu", p, i);
 
-        while (!queue.try_push(event)) {
-          std::this_thread::yield();
+          while (!queue.try_push(event)) {
+            std::this_thread::yield();
+          }
         }
-      }
     });
   }
 

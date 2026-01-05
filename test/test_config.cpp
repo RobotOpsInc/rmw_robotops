@@ -30,14 +30,16 @@ using rmw_robotops::record_trace_success;
 class ConfigTest : public ::testing::Test
 {
 protected:
-  void SetUp() override {
+  void SetUp() override
+  {
     // Save original environment
     saved_enabled_ = std::getenv("ROBOTOPS_TRACING_ENABLED");
     saved_rmw_ = std::getenv("ROBOTOPS_UNDERLYING_RMW");
     saved_threshold_ = std::getenv("ROBOTOPS_FAILURE_THRESHOLD");
   }
 
-  void TearDown() override {
+  void TearDown() override
+  {
     // Restore original environment
     if (saved_enabled_) {
       setenv("ROBOTOPS_TRACING_ENABLED", saved_enabled_, 1);
@@ -156,17 +158,17 @@ TEST_F(ConfigTest, ThreadSafety) {
 
   for (size_t t = 0; t < NUM_THREADS; ++t) {
     threads.emplace_back([&]() {
-      for (size_t i = 0; i < OPS_PER_THREAD; ++i) {
+        for (size_t i = 0; i < OPS_PER_THREAD; ++i) {
         // Toggle tracing
-        if (i % 2 == 0) {
-          enable_tracing();
-        } else {
-          disable_tracing();
-        }
+          if (i % 2 == 0) {
+            enable_tracing();
+          } else {
+            disable_tracing();
+          }
 
         // Check state (should never crash)
-        (void)is_tracing_enabled();
-      }
+          (void)is_tracing_enabled();
+        }
     });
   }
 

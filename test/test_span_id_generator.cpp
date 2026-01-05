@@ -93,11 +93,11 @@ TEST(SpanIdGeneratorTest, ThreadSafety) {
   // Each thread generates IDs
   for (size_t t = 0; t < NUM_THREADS; ++t) {
     threads.emplace_back([&, t]() {
-      for (size_t i = 0; i < IDS_PER_THREAD; ++i) {
-        char span_id[17];
-        generate_span_id(span_id);
-        thread_ids[t].insert(span_id);
-      }
+        for (size_t i = 0; i < IDS_PER_THREAD; ++i) {
+          char span_id[17];
+          generate_span_id(span_id);
+          thread_ids[t].insert(span_id);
+        }
     });
   }
 

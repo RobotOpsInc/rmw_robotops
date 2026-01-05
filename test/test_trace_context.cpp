@@ -144,22 +144,22 @@ TEST(TraceContextTest, ThreadLocalIsolation) {
   // Spawn thread with different context
   std::thread t([&]() {
     // Thread should start with empty context (TLS isolation)
-    TraceContext thread_ctx = get_trace_context();
-    EXPECT_TRUE(thread_ctx.is_empty());
+      TraceContext thread_ctx = get_trace_context();
+      EXPECT_TRUE(thread_ctx.is_empty());
 
     // Set different context in thread
-    TraceContext new_ctx;
-    std::strncpy(new_ctx.trace_id, "threadcontext000000000000000000", TRACE_ID_LENGTH);
-    new_ctx.trace_id[TRACE_ID_LENGTH] = '\0';
-    std::strncpy(new_ctx.span_id, "threadspan000000", SPAN_ID_LENGTH);
-    new_ctx.span_id[SPAN_ID_LENGTH] = '\0';
-    new_ctx.parent_span_id[0] = '\0';
-    set_trace_context(new_ctx);
+      TraceContext new_ctx;
+      std::strncpy(new_ctx.trace_id, "threadcontext000000000000000000", TRACE_ID_LENGTH);
+      new_ctx.trace_id[TRACE_ID_LENGTH] = '\0';
+      std::strncpy(new_ctx.span_id, "threadspan000000", SPAN_ID_LENGTH);
+      new_ctx.span_id[SPAN_ID_LENGTH] = '\0';
+      new_ctx.parent_span_id[0] = '\0';
+      set_trace_context(new_ctx);
 
     // Verify thread context
-    TraceContext thread_retrieved = get_trace_context();
-    EXPECT_STREQ("threadcontext000000000000000000", thread_retrieved.trace_id);
-  });
+      TraceContext thread_retrieved = get_trace_context();
+      EXPECT_STREQ("threadcontext000000000000000000", thread_retrieved.trace_id);
+    });
 
   t.join();
 

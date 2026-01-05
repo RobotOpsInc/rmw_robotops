@@ -13,7 +13,8 @@
 // limitations under the License.
 #include <iostream>
 // TODO(robotops): Latency benchmarks to verify <1μs overhead requirement
-int main(int argc, char ** argv) {
+int main(int argc, char ** argv)
+{
   (void)argc; (void)argv;
   std::cout << "Latency benchmark - placeholder\n";
   return 0;
