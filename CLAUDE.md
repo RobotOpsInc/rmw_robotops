@@ -98,6 +98,23 @@ Docker buildx secrets automatically mount this file (never committed to repo).
 
 Each developer uses their own Cloudsmith username and API key.
 
+### Viewing robotops_msgs Schemas
+
+To view the actual .msg definitions from the installed package:
+
+```bash
+# Find message files
+docker-compose run --rm dev bash -c "find /opt/ros/jazzy -name '*.msg' -path '*robotops_msgs*'"
+
+# View TraceEvent.msg
+docker-compose run --rm dev bash -c "cat /opt/ros/jazzy/share/robotops_msgs/msg/TraceEvent.msg"
+
+# View TraceContextChange.msg
+docker-compose run --rm dev bash -c "cat /opt/ros/jazzy/share/robotops_msgs/msg/TraceContextChange.msg"
+```
+
+This is helpful when implementing code that needs to match the exact message schema.
+
 ## Architecture Decisions
 
 ### DDS Metadata Propagation

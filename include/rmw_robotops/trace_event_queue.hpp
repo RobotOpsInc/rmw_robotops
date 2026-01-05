@@ -25,56 +25,77 @@ namespace rmw_robotops
 {
 
 /// Operation types for trace events
+/// Must match robotops_msgs/msg/TraceEvent.msg constants
 enum OperationType : uint8_t
 {
-  OP_PUBLISH = 0,
-  OP_SUBSCRIBE = 1,
-  OP_SERVICE_REQUEST = 2,
-  OP_SERVICE_RESPONSE = 3,
-  OP_CLIENT_REQUEST = 4,
-  OP_CLIENT_RESPONSE = 5,
-  OP_ACTION_GOAL_SENT = 6,
-  OP_ACTION_CANCEL = 7,
+  OP_PUBLISH = 1,
+  OP_SUBSCRIBE = 2,
+  OP_SERVICE_REQUEST = 3,
+  OP_SERVICE_RESPONSE = 4,
+  OP_ACTION_GOAL_SENT = 5,
+  OP_ACTION_GOAL_RECEIVED = 6,
+  OP_ACTION_FEEDBACK = 7,
   OP_ACTION_RESULT = 8,
-  OP_ACTION_FEEDBACK = 9,
-  OP_ACTION_STATUS = 10,
+  OP_ACTION_CANCEL = 9,
+  OP_ACTION_GOAL_REJECTED = 10,
 };
 
-/// Maximum topic name length (pre-allocated, no dynamic allocation)
+/// Maximum string lengths (pre-allocated, no dynamic allocation)
 constexpr size_t MAX_TOPIC_NAME_LENGTH = 256;
+constexpr size_t MAX_NODE_NAME_LENGTH = 256;
+constexpr size_t MAX_MESSAGE_TYPE_LENGTH = 128;
+constexpr size_t MAX_PUBLISHER_GID_LENGTH = 64;  // DDS GUID as hex string
 
-/// Maximum number of span links per event (fan-in)
+/// Maximum number of span links per event (fan-in scenarios)
 constexpr size_t MAX_SPAN_LINKS = 8;
 
 /// Trace event emitted by RMW interception
 /// Sent to background thread for publishing to /robotops/trace_events
+/// Matches robotops_msgs/msg/TraceEvent.msg schema
 struct TraceEvent
 {
-  // Trace context
-  char trace_id[TRACE_ID_LENGTH + 1];
-  char span_id[SPAN_ID_LENGTH + 1];
-  char parent_span_id[SPAN_ID_LENGTH + 1];
-
-  // Event metadata
-  char topic_name[MAX_TOPIC_NAME_LENGTH];
-  OperationType operation;
+  // Timestamp (nanoseconds since epoch, converted to builtin_interfaces/Time)
   uint64_t timestamp_ns;
-  size_t message_size;
 
-  // Span links (for fan-in)
+  // Trace identification
+  char trace_id[TRACE_ID_LENGTH + 1];        // UUID, shared across related spans
+  char span_id[SPAN_ID_LENGTH + 1];          // UUID, unique to this span
+  char parent_span_id[SPAN_ID_LENGTH + 1];   // UUID of parent span (empty if root)
+
+  // Span links for fan-in scenarios (multiple inputs → one output)
+  // Each link formatted as "trace_id:span_id"
   size_t span_link_count;
-  TraceContext span_links[MAX_SPAN_LINKS];
+  char span_links[MAX_SPAN_LINKS][TRACE_ID_LENGTH + SPAN_ID_LENGTH + 2];  // +2 for ':' and '\0'
+
+  // Event details
+  OperationType operation;
+  char topic_or_service[MAX_TOPIC_NAME_LENGTH];
+  char node_name[MAX_NODE_NAME_LENGTH];           // Fully qualified (/namespace/node)
+  char node_namespace[MAX_NODE_NAME_LENGTH];
+
+  // For correlation (matching publish to subscribe)
+  char publisher_gid[MAX_PUBLISHER_GID_LENGTH];   // DDS publisher GUID (hex string)
+  uint64_t sequence_number;                       // Message sequence number
+
+  // Metadata
+  char message_type[MAX_MESSAGE_TYPE_LENGTH];     // e.g., "sensor_msgs/msg/Image"
+  uint32_t message_size_bytes;                    // Serialized message size
 
   TraceEvent() noexcept
-  : operation(OP_PUBLISH),
-    timestamp_ns(0),
-    message_size(0),
-    span_link_count(0)
+  : timestamp_ns(0),
+    span_link_count(0),
+    operation(OP_PUBLISH),
+    sequence_number(0),
+    message_size_bytes(0)
   {
     trace_id[0] = '\0';
     span_id[0] = '\0';
     parent_span_id[0] = '\0';
-    topic_name[0] = '\0';
+    topic_or_service[0] = '\0';
+    node_name[0] = '\0';
+    node_namespace[0] = '\0';
+    publisher_gid[0] = '\0';
+    message_type[0] = '\0';
   }
 };
 
