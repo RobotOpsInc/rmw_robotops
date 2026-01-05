@@ -39,9 +39,9 @@ TEST(TraceContextTest, EmptyContext) {
 
 TEST(TraceContextTest, ClearContext) {
   TraceContext ctx;
-  std::strcpy(ctx.trace_id, "abc123");
-  std::strcpy(ctx.span_id, "def456");
-  std::strcpy(ctx.parent_span_id, "ghi789");
+  std::snprintf(ctx.trace_id, sizeof(ctx.trace_id), "%s", "abc123");
+  std::snprintf(ctx.span_id, sizeof(ctx.span_id), "%s", "def456");
+  std::snprintf(ctx.parent_span_id, sizeof(ctx.parent_span_id), "%s", "ghi789");
 
   EXPECT_FALSE(ctx.is_empty());
 
@@ -60,9 +60,9 @@ TEST(TraceContextTest, GetSetContext) {
 
   // Set a context
   TraceContext new_ctx;
-  std::strcpy(new_ctx.trace_id, "0123456789abcdef0123456789abcdef");
-  std::strcpy(new_ctx.span_id, "fedcba9876543210");
-  std::strcpy(new_ctx.parent_span_id, "0011223344556677");
+  std::snprintf(new_ctx.trace_id, sizeof(new_ctx.trace_id), "%s", "0123456789abcdef0123456789abcdef");
+  std::snprintf(new_ctx.span_id, sizeof(new_ctx.span_id), "%s", "fedcba9876543210");
+  std::snprintf(new_ctx.parent_span_id, sizeof(new_ctx.parent_span_id), "%s", "0011223344556677");
 
   set_trace_context(new_ctx);
 
@@ -99,9 +99,9 @@ TEST(TraceContextTest, GetOrMintCreatesNewContext) {
 TEST(TraceContextTest, GetOrMintReturnsExistingContext) {
   // Set a context
   TraceContext existing;
-  std::strcpy(existing.trace_id, "aaaabbbbccccddddeeeeffffgggghhhh");
-  std::strcpy(existing.span_id, "1111222233334444");
-  std::strcpy(existing.parent_span_id, "5555666677778888");
+  std::snprintf(existing.trace_id, sizeof(existing.trace_id), "%s", "aaaabbbbccccddddeeeeffffgggghhhh");
+  std::snprintf(existing.span_id, sizeof(existing.span_id), "%s", "1111222233334444");
+  std::snprintf(existing.parent_span_id, sizeof(existing.parent_span_id), "%s", "5555666677778888");
   set_trace_context(existing);
 
   // Should return the existing context, not mint a new one
@@ -166,12 +166,12 @@ TEST(TraceContextTest, PendingContexts) {
 
   // Add some pending contexts
   TraceContext ctx1;
-  std::strcpy(ctx1.trace_id, "pending1000000000000000000000000");
-  std::strcpy(ctx1.span_id, "span100000000000");
+  std::snprintf(ctx1.trace_id, sizeof(ctx1.trace_id), "%s", "pending1000000000000000000000000");
+  std::snprintf(ctx1.span_id, sizeof(ctx1.span_id), "%s", "span100000000000");
 
   TraceContext ctx2;
-  std::strcpy(ctx2.trace_id, "pending2000000000000000000000000");
-  std::strcpy(ctx2.span_id, "span200000000000");
+  std::snprintf(ctx2.trace_id, sizeof(ctx2.trace_id), "%s", "pending2000000000000000000000000");
+  std::snprintf(ctx2.span_id, sizeof(ctx2.span_id), "%s", "span200000000000");
 
   EXPECT_TRUE(save_pending_context(ctx1));
   EXPECT_TRUE(save_pending_context(ctx2));
@@ -201,7 +201,7 @@ TEST(TraceContextTest, PendingContextsBufferFull) {
 
   // Next one should fail (buffer full)
   TraceContext overflow;
-  std::strcpy(overflow.trace_id, "overflow");
+  std::snprintf(overflow.trace_id, sizeof(overflow.trace_id), "%s", "overflow");
   EXPECT_FALSE(save_pending_context(overflow));
 
   // Cleanup

@@ -38,8 +38,8 @@ TEST(LockFreeQueueTest, PushPop) {
   LockFreeQueue<10> queue;
 
   TraceEvent event1;
-  std::strcpy(event1.trace_id, "trace1");
-  std::strcpy(event1.topic_or_service, "/topic1");
+  std::snprintf(event1.trace_id, sizeof(event1.trace_id), "%s", "trace1");
+  std::snprintf(event1.topic_or_service, sizeof(event1.topic_or_service), "%s", "/topic1");
   event1.operation = OP_PUBLISH;
 
   // Push
@@ -79,7 +79,7 @@ TEST(LockFreeQueueTest, FillQueue) {
 
   // Next push should fail (full)
   TraceEvent overflow;
-  std::strcpy(overflow.trace_id, "overflow");
+  std::snprintf(overflow.trace_id, sizeof(overflow.trace_id), "%s", "overflow");
   EXPECT_FALSE(queue.try_push(overflow));
 }
 
@@ -215,7 +215,7 @@ TEST(LockFreeQueueTest, GlobalQueueAccessible) {
 
   // Should be usable
   TraceEvent event;
-  std::strcpy(event.trace_id, "global_test");
+  std::snprintf(event.trace_id, sizeof(event.trace_id), "%s", "global_test");
   EXPECT_TRUE(queue.try_push(event));
 
   TraceEvent popped;
@@ -227,14 +227,14 @@ TEST(LockFreeQueueTest, SpanLinksInEvent) {
   LockFreeQueue<10> queue;
 
   TraceEvent event;
-  std::strcpy(event.trace_id, "main_trace");
-  std::strcpy(event.topic_or_service, "/output");
+  std::snprintf(event.trace_id, sizeof(event.trace_id), "%s", "main_trace");
+  std::snprintf(event.topic_or_service, sizeof(event.topic_or_service), "%s", "/output");
   event.operation = OP_PUBLISH;
 
   // Add span links (fan-in) - format: "trace_id:span_id"
   event.span_link_count = 2;
-  std::strcpy(event.span_links[0], "input1_trace:input1_span");
-  std::strcpy(event.span_links[1], "input2_trace:input2_span");
+  std::snprintf(event.span_links[0], sizeof(event.span_links[0]), "%s", "input1_trace:input1_span");
+  std::snprintf(event.span_links[1], sizeof(event.span_links[1]), "%s", "input2_trace:input2_span");
 
   EXPECT_TRUE(queue.try_push(event));
 
