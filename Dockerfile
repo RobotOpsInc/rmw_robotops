@@ -9,13 +9,17 @@ FROM ros:jazzy-ros-base AS base
 ARG CLOUDSMITH_REPO=robotops-development
 ARG ROBOTOPS_MSGS_VERSION=0.1.6-0noble
 
-# Install core build dependencies
+# Install core build dependencies and packaging tools
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
     python3-colcon-common-extensions \
     python3-rosdep \
+    python3-bloom \
+    fakeroot \
+    dpkg-dev \
+    debhelper \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*

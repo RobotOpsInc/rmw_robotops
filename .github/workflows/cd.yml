@@ -1,0 +1,114 @@
+name: CD
+
+on:
+  push:
+    branches: [development, main]
+
+jobs:
+  deploy:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: custom-ubuntu-24.04-arm-4-core
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from package.xml
+        id: pkg_version
+        run: |
+          VERSION=$(grep -oP '(?<=<version>)[^<]+' package.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Package version: $VERSION"
+
+      - name: Determine Cloudsmith repository
+        id: repo
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "repo=robotops" >> $GITHUB_OUTPUT
+            echo "Deploying to: production (robotops)"
+          else
+            echo "repo=robotops-development" >> $GITHUB_OUTPUT
+            echo "Deploying to: development (robotops-development)"
+          fi
+
+      - name: Install Docker (if not available)
+        run: |
+          if ! command -v docker &> /dev/null; then
+            echo "Docker not found, installing..."
+            sudo apt-get update
+            sudo apt-get install -y ca-certificates curl
+            sudo install -m 0755 -d /etc/apt/keyrings
+            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            sudo chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+            sudo systemctl start docker
+            sudo usermod -aG docker $USER
+          else
+            echo "Docker already installed"
+          fi
+          docker --version
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: dev
+          push: false
+          load: true
+          tags: rmw_robotops:build-${{ matrix.arch }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+          secrets: |
+            "cloudsmith_key=${{ secrets.CLOUDSMITH_API_KEY }}"
+
+      - name: Build Debian package
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/output \
+            rmw_robotops:build-${{ matrix.arch }} bash -c "
+              cd /workspace/src/rmw_robotops && \
+              bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy && \
+              dpkg-buildpackage -us -uc -b && \
+              cp /workspace/src/*.deb /output/
+            "
+
+      - name: Find built package
+        id: deb
+        run: |
+          DEB_FILE=$(ls *.deb | head -n1)
+          echo "file=$DEB_FILE" >> $GITHUB_OUTPUT
+          echo "Built package: $DEB_FILE"
+
+      - name: Upload to Cloudsmith
+        uses: cloudsmith-io/action@v0.6.10
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "deb"
+          owner: "robotops"
+          repo: ${{ steps.repo.outputs.repo }}
+          distro: "ubuntu"
+          release: "noble"
+          republish: "true"
+          file: ${{ steps.deb.outputs.file }}
+
+      - name: Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${{ steps.pkg_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Architecture:** ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** ${{ steps.repo.outputs.repo }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: ['feature/**']
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: dev
+          push: false
+          load: true
+          tags: rmw_robotops:lint
+          cache-from: type=gha,scope=lint
+          cache-to: type=gha,mode=max,scope=lint
+          secrets: |
+            "cloudsmith_key=${{ secrets.CLOUDSMITH_API_KEY }}"
+
+      - name: Run lint checks
+        run: |
+          docker run --rm rmw_robotops:lint bash -c \
+            "source /opt/ros/jazzy/setup.bash && \
+             cd /workspace && \
+             colcon test --packages-select rmw_robotops --ctest-args -R lint && \
+             colcon test-result --verbose"
+
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image with sanitizers
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: test
+          push: false
+          load: true
+          tags: rmw_robotops:test
+          cache-from: type=gha,scope=test
+          cache-to: type=gha,mode=max,scope=test
+          secrets: |
+            "cloudsmith_key=${{ secrets.CLOUDSMITH_API_KEY }}"
+
+      - name: Run all tests
+        run: |
+          docker run --rm \
+            -e ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1 \
+            -e UBSAN_OPTIONS=print_stacktrace=1 \
+            rmw_robotops:test bash -c \
+            "source /opt/ros/jazzy/setup.bash && \
+             cd /workspace && \
+             colcon test --packages-select rmw_robotops --event-handlers console_direct+ && \
+             colcon test-result --verbose"
+
+      - name: Run benchmarks
+        run: |
+          docker run --rm rmw_robotops:test bash -c \
+            "source /workspace/install/setup.bash && \
+             /workspace/install/rmw_robotops/lib/rmw_robotops/benchmark_latency" \
+            > benchmark_results.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: benchmark_results.txt
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            build/rmw_robotops/test_results/**/*.xml
+            build/rmw_robotops/Testing/**/*
