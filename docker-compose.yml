@@ -21,7 +21,7 @@ services:
       - RMW_IMPLEMENTATION=rmw_robotops
       - ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
       - ROBOTOPS_TRACING_ENABLED=true
-    working_dir: /workspace
+    working_dir: /workspace/src/rmw_robotops
     stdin_open: true
     tty: true
     command: /bin/bash
@@ -56,7 +56,7 @@ services:
     environment:
       - ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1
       - UBSAN_OPTIONS=print_stacktrace=1
-    working_dir: /workspace
+    working_dir: /workspace/src/rmw_robotops
     command: >
       bash -c "source /opt/ros/jazzy/setup.bash &&
       colcon build
