@@ -24,15 +24,28 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 
 ## Prerequisites
 
-- ROS2 Jazzy
-- Docker with buildx support
-- Cloudsmith API key (for robotops_msgs)
+**Batteries included!** Only 2 things needed on your host machine:
 
-## Setup
+1. **Docker** with buildx support (for secrets)
+   - macOS: Docker Desktop (buildx included by default)
+   - Linux: `docker buildx install`
+2. **Cloudsmith API key** (for private `robotops_msgs` dependency)
 
-### 1. Configure Cloudsmith API Key
+Everything else runs in containers - no ROS2, no Ubuntu required on host!
 
-Create a file with your Cloudsmith API key:
+## Quick Start
+
+### 1. Install just (task runner)
+
+```bash
+# macOS
+brew install just
+
+# Linux
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
+```
+
+### 2. Configure Cloudsmith API Key
 
 ```bash
 mkdir -p ~/.cloudsmith
@@ -40,31 +53,21 @@ echo "YOUR_API_KEY_HERE" > ~/.cloudsmith/key
 chmod 600 ~/.cloudsmith/key
 ```
 
-### 2. Build with Docker Compose
+### 3. Build and develop
 
 ```bash
-# Build the development image
-DOCKER_BUILDKIT=1 docker-compose build dev
+# See all available commands
+just
 
-# Or build all services
-DOCKER_BUILDKIT=1 docker-compose build
-```
+# Build development image
+just build
 
-### 3. Run Development Container
+# Start interactive shell
+just dev
 
-```bash
-docker-compose run --rm dev
-```
-
-Inside the container:
-
-```bash
-# Build the package
+# Inside container, build the package:
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install
-
-# Source the workspace
-source install/setup.bash
 ```
 
 ## Usage
@@ -97,48 +100,46 @@ ros2 run my_package my_node
 ros2 topic echo /robotops/trace_events
 ```
 
-## Testing
+## Common Tasks
 
-### Run All Tests
+All tasks use `just` commands for simplicity. Run `just` to see all available commands.
 
-```bash
-docker-compose run --rm test
-```
-
-### Run Specific Tests
+### Development
 
 ```bash
-# Inside dev container
-colcon test --packages-select rmw_robotops
-colcon test-result --verbose
+just dev          # Interactive development shell
+just compile      # Build the package
+just clean        # Remove build artifacts
+just rebuild      # Clean + rebuild from scratch
 ```
 
-### Safety Tests (Critical)
+### Testing
 
 ```bash
-# These MUST pass before deploying to robots
-colcon test --packages-select rmw_robotops --ctest-args -R test_safety
+just test         # Run all tests with sanitizers
+just test-safety  # Run safety tests (MUST pass before deployment)
+just benchmark    # Performance benchmarks
+just stress       # Stress test (10,000 msg/sec)
+just logs         # Show logs from last test run
 ```
 
-### Performance Benchmarks
-
-```bash
-# Inside dev container
-./install/rmw_robotops/lib/rmw_robotops/benchmark_latency
-```
-
-**Requirements:**
+**Performance Requirements:**
 - Median latency: < 1µs added overhead
 - CPU overhead: < 5% vs underlying RMW
 - Memory: Zero allocations in hot path
 
-### Stress Test
+### Code Quality
 
 ```bash
-docker-compose run --rm stress
+just lint         # Run linters
+just fmt          # Format code
 ```
 
-Tests 10,000 msg/sec with bounded memory usage.
+### Setup Verification
+
+```bash
+just check-setup  # Verify Docker, Cloudsmith, and build setup
+```
 
 ## Architecture
 
@@ -170,9 +171,8 @@ Tests 10,000 msg/sec with bounded memory usage.
 rmw_robotops/
 ├── CMakeLists.txt           # ament_cmake build config
 ├── package.xml              # ROS2 package manifest
-├── Dockerfile               # Development image
-├── Dockerfile.test          # Testing image with sanitizers
-├── docker-compose.yml       # Multi-service orchestration
+├── Dockerfile               # Multi-stage build (base → dev/test)
+├── docker-compose.yml       # Service orchestration
 ├── src/
 │   ├── rmw_robotops.cpp         # Main RMW interface
 │   ├── rmw_init.cpp             # Initialization/shutdown
@@ -206,26 +206,32 @@ All development happens in Docker containers since ROS2 Jazzy doesn't run native
 
 ```bash
 # Start dev container
-docker-compose run --rm dev
+just dev
 
 # Inside container: make changes, rebuild
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Debug
 
 # Run tests
 colcon test --event-handlers console_direct+
+
+# Or from outside container
+just compile  # Build
+just test     # Test with sanitizers
 ```
 
 ### Adding New Tests
 
 1. Create test file in `test/`
 2. Add to `CMakeLists.txt` using `ament_add_gtest()`
-3. Rebuild and run:
-   ```bash
-   colcon build --packages-select rmw_robotops
-   colcon test --packages-select rmw_robotops
-   ```
+3. Run: `just test`
 
 ## Troubleshooting
+
+### Quick Diagnosis
+
+```bash
+just check-setup  # Checks Docker, API key, and build
+```
 
 ### Cloudsmith Authentication Failed
 
@@ -234,23 +240,22 @@ colcon test --event-handlers console_direct+
 cat ~/.cloudsmith/key
 
 # Rebuild without cache
-docker-compose build --no-cache dev
+just rebuild
 ```
 
 ### Build Fails with Missing robotops_msgs
 
-The package depends on `robotops_msgs` from Cloudsmith. Ensure:
-1. API key is configured correctly
-2. You're using `DOCKER_BUILDKIT=1` for secret support
-3. The setup script ran successfully (check Docker build logs)
+The package depends on `robotops_msgs` from Cloudsmith. Run `just check-setup` to diagnose:
+1. API key configured correctly
+2. Docker buildx available
+3. Build succeeds
 
 ### Tests Fail with AddressSanitizer
 
 This is expected during development. Safety tests with ASan are designed to catch memory issues early.
 
 ```bash
-# Run with detailed sanitizer output
-docker-compose run --rm test
+just test  # Runs with detailed sanitizer output
 ```
 
 ## Related Issues

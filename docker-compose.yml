@@ -6,10 +6,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
       secrets:
         - cloudsmith_key
     image: rmw_robotops:dev
-    container_name: rmw_robotops_dev
     volumes:
       - .:/workspace/src/rmw_robotops
       - build_cache:/workspace/build
@@ -25,18 +25,7 @@ services:
 
   # Build service - builds the package
   build:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      secrets:
-        - cloudsmith_key
-      target: builder
-    image: rmw_robotops:build
-    volumes:
-      - .:/workspace/src/rmw_robotops
-      - build_cache:/workspace/build
-      - install_cache:/workspace/install
-    working_dir: /workspace
+    extends: dev
     command: >
       bash -c "
         source /opt/ros/jazzy/setup.bash &&
@@ -49,7 +38,8 @@ services:
   test:
     build:
       context: .
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test
       secrets:
         - cloudsmith_key
     image: rmw_robotops:test
@@ -72,27 +62,6 @@ services:
         source install/setup.bash &&
         colcon test --event-handlers console_direct+ &&
         colcon test-result --verbose
-      "
-
-  # Stress test service - high-throughput performance testing
-  stress:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      secrets:
-        - cloudsmith_key
-    image: rmw_robotops:stress
-    volumes:
-      - .:/workspace/src/rmw_robotops
-    environment:
-      - RMW_IMPLEMENTATION=rmw_robotops
-      - ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
-    working_dir: /workspace
-    command: >
-      bash -c "
-        source /opt/ros/jazzy/setup.bash &&
-        source install/setup.bash &&
-        ros2 run rmw_robotops stress_test
       "
 
 volumes:

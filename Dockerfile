@@ -1,7 +1,11 @@
 # syntax=docker/dockerfile:1.4
-FROM ros:jazzy-ros-base
 
-# Install development dependencies
+# ============================================================================
+# Base stage - Common dependencies for all targets
+# ============================================================================
+FROM ros:jazzy-ros-base AS base
+
+# Install core build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
@@ -19,7 +23,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure Cloudsmith repository using buildx secret
-# The secret should contain the API key
 RUN --mount=type=secret,id=cloudsmith_key \
     CLOUDSMITH_API_KEY=$(cat /run/secrets/cloudsmith_key) && \
     curl -u "kristoph-matthews:${CLOUDSMITH_API_KEY}" -1sLf \
@@ -31,25 +34,29 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-robotops-msgs=0.1.0-0noble \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up workspace
 WORKDIR /workspace
 
-# Copy package files
-COPY package.xml /workspace/src/rmw_robotops/
-COPY CMakeLists.txt /workspace/src/rmw_robotops/
-COPY src/ /workspace/src/rmw_robotops/src/
-COPY include/ /workspace/src/rmw_robotops/include/
-COPY test/ /workspace/src/rmw_robotops/test/
+# ============================================================================
+# Development stage - For interactive development
+# ============================================================================
+FROM base AS dev
 
-# Source ROS and build
-RUN . /opt/ros/jazzy/setup.sh && \
-    colcon build \
-    --cmake-args \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+# Source ROS in bashrc for interactive use
+RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
 
-# Source the workspace
-RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc && \
-    echo "source /workspace/install/setup.bash" >> ~/.bashrc
+CMD ["/bin/bash"]
+
+# ============================================================================
+# Test stage - Adds sanitizers for safety testing
+# ============================================================================
+FROM base AS test
+
+# Install sanitizer libraries
+RUN apt-get update && apt-get install -y \
+    clang \
+    llvm \
+    libasan8 \
+    libubsan1 \
+    && rm -rf /var/lib/apt/lists/*
 
 CMD ["/bin/bash"]
