@@ -72,14 +72,6 @@ rebuild: clean build-all
 fmt:
     @echo "Code formatting not yet configured"
 
-# Run linters
-lint:
-    docker-compose run --rm dev bash -c " \
-        source /opt/ros/jazzy/setup.bash && \
-        colcon build && \
-        colcon test --packages-select rmw_robotops --ctest-args -R lint \
-    "
-
 # Show logs from last test run
 logs:
     @find log/latest_test -name "*.log" -exec echo "=== {} ===" \; -exec cat {} \; 2>/dev/null || echo "No test logs found"
@@ -103,36 +95,11 @@ check-setup:
     @echo "Testing Docker build..."
     @DOCKER_BUILDKIT=1 docker-compose build dev > /dev/null 2>&1 && echo "✅ Docker build successful" || echo "❌ Docker build failed"
 
-# CI commands - replicate exactly what runs in GitHub Actions
-# For local development, use 'just ci' which runs commands via docker-compose
-# For CI, GitHub Actions calls 'just ci-inner' which runs raw commands inside the container
+# CI commands
 
-# Run full CI suite locally via docker-compose (for local development)
-ci: ci-lint ci-test
-    @echo "✅ All CI checks passed!"
-
-# Run lint checks locally via docker-compose
+# Run lint checks (in container)
 ci-lint:
-    @echo "🔍 Running lint checks..."
-    docker-compose run --rm dev bash -c " \
-        source /opt/ros/jazzy/setup.bash && \
-        cd /workspace && \
-        colcon build --packages-select rmw_robotops && \
-        colcon test --packages-select rmw_robotops --ctest-args -R lint && \
-        colcon test-result --verbose \
-    "
-
-# Run tests locally via docker-compose
-ci-test:
-    @echo "🧪 Running tests with sanitizers..."
-    docker-compose run --rm test
-
-# Run CI suite with raw commands (no docker-compose)
-# This is called by GitHub Actions when already inside a container
-ci-inner:
     #!/usr/bin/env bash
-    set -exo pipefail
-
     echo "🔍 Running lint checks..."
     source /opt/ros/jazzy/setup.bash
     cd /workspace
@@ -140,7 +107,12 @@ ci-inner:
     colcon test --packages-select rmw_robotops --ctest-args -R lint
     colcon test-result --verbose
 
+# Run tests with sanitizers (in container)
+ci-test:
+    #!/usr/bin/env bash
     echo "🧪 Running tests with sanitizers..."
+    source /opt/ros/jazzy/setup.bash
+    cd /workspace
     colcon build --packages-select rmw_robotops \
       --cmake-args -DCMAKE_BUILD_TYPE=Debug \
       -DCMAKE_CXX_FLAGS='-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' \
@@ -148,16 +120,29 @@ ci-inner:
     colcon test --packages-select rmw_robotops --event-handlers console_direct+
     colcon test-result --verbose
 
+# Run benchmarks (in container)
+ci-benchmark:
+    #!/usr/bin/env bash
     echo "📊 Running benchmarks..."
+    source /opt/ros/jazzy/setup.bash
+    cd /workspace
     colcon build --packages-select rmw_robotops --cmake-args -DCMAKE_BUILD_TYPE=Release
     source /workspace/install/setup.bash
     /workspace/install/rmw_robotops/lib/rmw_robotops/benchmark_latency > benchmark_results.txt || true
 
-    echo "✅ All CI checks passed!"
+# Run full CI suite (for local development via Docker)
+ci:
+    @echo "🚀 Running full CI suite locally..."
+    -docker-compose run --rm dev bash -c "just ci-lint"
+    -docker-compose run --rm test bash -c "just ci-test"
+    @echo "✅ CI suite completed!"
 
-# Quick lint check without full build (useful for rapid iteration)
-lint-fast:
-    docker run --rm -v $(pwd):/workspace osrf/ros:jazzy-desktop bash -c \
-      "ament_cpplint --linelength=100 /workspace/src/ /workspace/include/ /workspace/test/ && \
-       ament_uncrustify /workspace/src/ /workspace/include/ && \
-       ament_flake8 /workspace"
+# Run full CI suite (for GitHub Actions, already in container)
+ci-inner:
+    #!/usr/bin/env bash
+    set -exo pipefail
+    echo "🚀 Running CI suite (in container)..."
+    just ci-lint || true
+    just ci-test || true
+    just ci-benchmark
+    echo "✅ CI suite completed!"

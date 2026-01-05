@@ -24,6 +24,9 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Install just command runner
+RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
 # Install FastDDS (our primary DDS implementation)
 RUN apt-get update && apt-get install -y \
     ros-jazzy-rmw-fastrtps-cpp \
