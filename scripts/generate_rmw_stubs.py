@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''
+"""
 Generate RMW pass-through wrapper functions for rmw_robotops.
 
 This script creates wrapper implementations for all RMW API functions
 by examining the underlying RMW library and generating pass-through code.
-'''
+"""
 
 import re
 import subprocess
@@ -46,7 +46,7 @@ IMPLEMENTED_FUNCTIONS = {
 
 
 def get_rmw_functions():
-    '''Get list of RMW functions from FastDDS library.'''
+    """Get list of RMW functions from FastDDS library."""
     result = subprocess.run(
         ['nm', '-D', '/opt/ros/jazzy/lib/librmw_fastrtps_cpp.so'],
         capture_output=True,
@@ -54,8 +54,7 @@ def get_rmw_functions():
     )
 
     functions = []
-    for line in result.stdout.split('
-'):
+    for line in result.stdout.split('\n'):
         match = re.search(r'T (rmw_\w+)', line)
         if match:
             func_name = match.group(1)
@@ -66,16 +65,16 @@ def get_rmw_functions():
 
 
 def generate_function_pointer_decl(func_name):
-    '''Generate extern function pointer declaration.'''
+    """Generate extern function pointer declaration."""
     return (f'// Auto-generated pass-through for {func_name}\n'
             f'void * (* underlying_{func_name})() = nullptr;')
 
 
 def generate_function_wrapper(func_name):
-    '''Generate wrapper function implementation.'''
+    """Generate wrapper function implementation."""
     return f'''
 // Auto-generated wrapper for {func_name}
-extern 'C' __attribute__((weak))
+extern "C" __attribute__((weak))
 void * {func_name}()
 {{
   if (underlying_{func_name} == nullptr) {{
@@ -102,19 +101,18 @@ def main():
     # Generate function pointer declarations
     with open('rmw_stubs_declarations.txt', 'w') as f:
         f.write('// Auto-generated function pointer declarations\n')
-        f.write('// Add these to rmw_init.cpp in the extern 'C' block\n\n')
+        f.write('// Add these to rmw_init.cpp in the extern "C" block\n\n')
         for func in functions:
-            f.write(generate_function_pointer_decl(func) + '
-')
+            f.write(generate_function_pointer_decl(func) + '\n')
 
     # Generate wrapper implementations
     with open('rmw_stubs_implementations.txt', 'w') as f:
         f.write('// Auto-generated wrapper function implementations\n')
         f.write('// Add these to a new file: src/rmw_stubs.cpp\n\n')
-        f.write('#include 'rmw/rmw.h'\n')
+        f.write('#include "rmw/rmw.h"\n')
         f.write('#include <dlfcn.h>\n')
         f.write('#include <cstdio>\n\n')
-        f.write('extern 'C' {\n')
+        f.write('extern "C" {\n')
         f.write('extern void * underlying_rmw_lib;\n')
         for func in functions:
             f.write(generate_function_wrapper(func))
