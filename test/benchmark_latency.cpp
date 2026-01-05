@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <iostream>
-// TODO: Latency benchmarks to verify <1μs overhead requirement
+// TODO(robotops): Latency benchmarks to verify <1μs overhead requirement
 int main(int argc, char ** argv) {
   (void)argc; (void)argv;
   std::cout << "Latency benchmark - placeholder\n";

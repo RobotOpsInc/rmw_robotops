@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <gtest/gtest.h>
-// TODO: Integration tests for trace context propagation through pub/sub
+// TODO(robotops): Integration tests for trace context propagation through pub/sub
 TEST(ContextPropagationTest, Placeholder) {
   SUCCEED();
 }
