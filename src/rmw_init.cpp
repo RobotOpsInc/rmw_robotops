@@ -12,19 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rmw/rmw.h"
-#include "rmw/error_handling.h"
-#include "rmw/init_options.h"
-#include "rmw/security_options.h"
-
-#include "rmw_robotops/config.hpp"
-#include "rmw_robotops/trace_publisher.hpp"
-
-#include "rcutils/allocator.h"
-
 #include <dlfcn.h>
 #include <cstdio>
 #include <cstring>
+
+#include "rcutils/allocator.h"
+#include "rmw/error_handling.h"
+#include "rmw/init_options.h"
+#include "rmw/rmw.h"
+#include "rmw/security_options.h"
+#include "rmw_robotops/config.hpp"
+#include "rmw_robotops/trace_publisher.hpp"
 
 // Function pointers to underlying RMW implementation
 extern "C" {

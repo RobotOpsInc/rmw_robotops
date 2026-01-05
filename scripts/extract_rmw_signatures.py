@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 # Copyright 2025 RobotOps
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Extract RMW function signatures from rmw.h and generate stub implementations."""
+'''Extract RMW function signatures from rmw.h and generate stub implementations.'''
 
 import re
 
@@ -40,7 +40,7 @@ IMPLEMENTED = {
 
 
 def extract_function_signature(lines, start_idx):
-    """Extract a complete function signature starting from RMW_PUBLIC."""
+    '''Extract a complete function signature starting from RMW_PUBLIC.'''
     sig_lines = []
     i = start_idx
 
@@ -60,11 +60,11 @@ def extract_function_signature(lines, start_idx):
             break
         i += 1
 
-    return " ".join(sig_lines), i + 1
+    return ' '.join(sig_lines), i + 1
 
 
 def parse_rmw_header(header_path):
-    """Parse rmw.h and extract function signatures."""
+    '''Parse rmw.h and extract function signatures.'''
     with open(header_path, 'r') as f:
         lines = f.readlines()
 
@@ -98,7 +98,7 @@ def parse_rmw_header(header_path):
 
 
 def generate_stub(func_name, signature):
-    """Generate a stub implementation that forwards to underlying RMW."""
+    '''Generate a stub implementation that forwards to underlying RMW.'''
     # Clean up the signature - remove various macros and attributes
     sig = signature.replace('RMW_PUBLIC', '').strip()
     sig = re.sub(r'RMW_WARN_UNUSED\s+', '', sig)
@@ -107,16 +107,16 @@ def generate_stub(func_name, signature):
     sig = re.sub(r'__attribute__\(\([^)]*\)\)\s+', '', sig)
 
     # Extract return type and parameters
-    match = re.match(r"(.*?)(rmw_[a-z_]+)\s*\((.*?)\);", sig, re.DOTALL)
+    match = re.match(r'(.*?)(rmw_[a-z_]+)\s*\((.*?)\);', sig, re.DOTALL)
     if not match:
-        return f"// Could not parse: {func_name}\n"
+        return f'// Could not parse: {func_name}\n'
 
     return_type = match.group(1).strip()
     params = match.group(3).strip()
 
     # Generate parameter names for the call
     param_list = []
-    if params and params != "void":
+    if params and params != 'void':
         for param in params.split(','):
             # Extract parameter name (last word before optional array brackets)
             param = param.strip()
@@ -126,31 +126,31 @@ def generate_stub(func_name, signature):
                 tokens = param_clean.split()
                 if tokens:
                     # Get the last token (parameter name)
-                    param_name = tokens[-1].strip("*")
+                    param_name = tokens[-1].strip('*')
                     param_list.append(param_name)
 
-    param_call = ", ".join(param_list)
+    param_call = ', '.join(param_list)
 
     # Check if lines will be too long (>100 chars) and format accordingly
-    cast_line = f"  static auto underlying_func = reinterpret_cast<{return_type}(*)({params})>("
-    error_msg_line = f'    fprintf(stderr, "rmw_robotops: {func_name} not available\\n");'
+    cast_line = f'  static auto underlying_func = reinterpret_cast<{return_type}(*)({params})>('
+    error_msg_line = f'    fprintf(stderr, 'rmw_robotops: {func_name} not available\\n');'
 
     # Format reinterpret_cast to avoid line length issues
     if len(cast_line) > 80:
-        cast_statement = f"""  static auto underlying_func =
-      reinterpret_cast<{return_type}(*)({params})>("""
+        cast_statement = f'''  static auto underlying_func =
+      reinterpret_cast<{return_type}(*)({params})>('''
     else:
-        cast_statement = f"""  static auto underlying_func = reinterpret_cast<{return_type}(*)({params})>("""
+        cast_statement = f'''  static auto underlying_func = reinterpret_cast<{return_type}(*)({params})>('''
 
     # Format fprintf to avoid line length issues
     if len(error_msg_line) > 100:
-        error_statement = f"""    fprintf(
-        stderr, "rmw_robotops: {func_name} not available\\n");"""
+        error_statement = f'''    fprintf(
+        stderr, 'rmw_robotops: {func_name} not available\\n');'''
     else:
-        error_statement = f"""    fprintf(stderr, "rmw_robotops: {func_name} not available\\n");"""
+        error_statement = f'''    fprintf(stderr, 'rmw_robotops: {func_name} not available\\n');'''
 
     # Generate the stub
-    code = f"""
+    code = f'''
 {return_type}
 {func_name}({params})
 {{
@@ -161,38 +161,38 @@ def generate_stub(func_name, signature):
 
   // Load function pointer if needed
 {cast_statement}
-    dlsym(underlying_rmw_lib, "{func_name}"));
+    dlsym(underlying_rmw_lib, '{func_name}'));
 
   if (underlying_func == nullptr) {{
 {error_statement}
-"""
+'''
 
     # Return appropriate default based on return type
     return_type_clean = return_type.strip()
-    if return_type_clean == "void" or return_type_clean == "":
+    if return_type_clean == 'void' or return_type_clean == '':
         # For void functions, just return without a value
-        code += "    return;\n"
-    elif "rmw_ret_t" in return_type:
-        code += "    return RMW_RET_ERROR;\n"
-    elif "*" in return_type:
-        code += "    return nullptr;\n"
-    elif "bool" in return_type:
-        code += "    return false;\n"
+        code += '    return;\n'
+    elif 'rmw_ret_t' in return_type:
+        code += '    return RMW_RET_ERROR;\n'
+    elif '*' in return_type:
+        code += '    return nullptr;\n'
+    elif 'bool' in return_type:
+        code += '    return false;\n'
     else:
-        code += "    return {};\n"
+        code += '    return {};\n'
 
-    code += "  }\n  \n"
+    code += '  }\n  \n'
 
     # Add return statement if needed
     return_type_clean = return_type.strip()
-    if return_type_clean == "void" or return_type_clean == "":
+    if return_type_clean == 'void' or return_type_clean == '':
         # For void functions, just call without return
-        code += f"  underlying_func({param_call});\n"
+        code += f'  underlying_func({param_call});\n'
     else:
         # For non-void functions, return the result
-        code += f"  return underlying_func({param_call});\n"
+        code += f'  return underlying_func({param_call});\n'
 
-    code += "}\n"
+    code += '}\n'
 
     return code
 
@@ -201,9 +201,9 @@ def main():
     import glob
 
     # Get all RMW header files
-    header_paths = glob.glob("/opt/ros/jazzy/include/rmw/rmw/*.h")
+    header_paths = glob.glob('/opt/ros/jazzy/include/rmw/rmw/*.h')
 
-    print(f"Parsing {len(header_paths)} header files...")
+    print(f'Parsing {len(header_paths)} header files...')
 
     all_functions = {}
     for header_path in sorted(header_paths):
@@ -213,58 +213,58 @@ def main():
                 all_functions[func_name] = sig
 
     functions = list(all_functions.items())
-    print(f"Found {len(functions)} unique functions to implement")
+    print(f'Found {len(functions)} unique functions to implement')
 
     # Generate stub file
-    with open("rmw_stubs_generated.cpp", "w") as f:
-        f.write("""// Auto-generated RMW stub implementations
+    with open('rmw_stubs_generated.cpp', 'w') as f:
+        f.write('''// Auto-generated RMW stub implementations
 // Generated by extract_rmw_signatures.py
 
-#include "rmw/rmw.h"
-#include "rmw/error_handling.h"
-#include "rmw/types.h"
-#include "rmw/init.h"
-#include "rmw/init_options.h"
-#include "rmw/security_options.h"
-#include "rmw/event.h"
-#include "rmw/get_topic_names_and_types.h"
-#include "rmw/get_topic_endpoint_info.h"
-#include "rmw/get_service_names_and_types.h"
-#include "rmw/get_node_info_and_types.h"
-#include "rmw/names_and_types.h"
-#include "rmw/topic_endpoint_info_array.h"
-#include "rmw/network_flow_endpoint_array.h"
-#include "rmw/features.h"
-#include "rmw/dynamic_message_type_support.h"
+#include 'rmw/rmw.h'
+#include 'rmw/error_handling.h'
+#include 'rmw/types.h'
+#include 'rmw/init.h'
+#include 'rmw/init_options.h'
+#include 'rmw/security_options.h'
+#include 'rmw/event.h'
+#include 'rmw/get_topic_names_and_types.h'
+#include 'rmw/get_topic_endpoint_info.h'
+#include 'rmw/get_service_names_and_types.h'
+#include 'rmw/get_node_info_and_types.h'
+#include 'rmw/names_and_types.h'
+#include 'rmw/topic_endpoint_info_array.h'
+#include 'rmw/network_flow_endpoint_array.h'
+#include 'rmw/features.h'
+#include 'rmw/dynamic_message_type_support.h'
 
 #include <dlfcn.h>
 #include <cstdio>
 
 // External declarations
-extern "C" {
+extern 'C' {
 extern void * underlying_rmw_lib;
 extern bool load_underlying_rmw();
 }
 
-extern "C" {
+extern 'C' {
 
-""")
+''')
 
         for func_name, sig in functions:
             stub = generate_stub(func_name, sig)
             f.write(stub)
 
-        f.write("\n}  // extern \"C\"\n")
+        f.write('\n}  // extern \'C\'\n')
 
-    print(f"Generated rmw_stubs_generated.cpp with {len(functions)} functions")
+    print(f'Generated rmw_stubs_generated.cpp with {len(functions)} functions')
 
     # Also generate a list of function names
-    with open("rmw_functions_list.txt", "w") as f:
+    with open('rmw_functions_list.txt', 'w') as f:
         for func_name, _ in functions:
-            f.write(f"{func_name}\n")
+            f.write(f'{func_name}\n')
 
-    print("Generated rmw_functions_list.txt")
+    print('Generated rmw_functions_list.txt')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
