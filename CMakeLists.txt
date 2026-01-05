@@ -94,6 +94,11 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
   # Linting
+  # Exclude project-level metadata files from copyright check
+  set(AMENT_LINT_AUTO_FILE_EXCLUDE
+    LICENSE
+    CONTRIBUTING.md
+  )
   ament_lint_auto_find_test_dependencies()
 
   # Unit tests
