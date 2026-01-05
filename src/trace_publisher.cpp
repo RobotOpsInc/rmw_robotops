@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rmw_robotops/trace_publisher.hpp"
-#include "rmw_robotops/trace_event_queue.hpp"
-#include "rmw_robotops/config.hpp"
-
-#include "rmw/rmw.h"
-#include "rmw/error_handling.h"
-#include "robotops_msgs/msg/trace_event.h"
-#include "rosidl_runtime_c/string_functions.h"
-#include "rosidl_runtime_c/primitives_sequence_functions.h"
-
 #include <atomic>
-#include <thread>
 #include <chrono>
 #include <cstring>
+#include <thread>
+
+#include "rmw/error_handling.h"
+#include "rmw/rmw.h"
+#include "rmw_robotops/config.hpp"
+#include "rmw_robotops/trace_event_queue.hpp"
+#include "rmw_robotops/trace_publisher.hpp"
+#include "robotops_msgs/msg/trace_event.h"
+#include "rosidl_runtime_c/primitives_sequence_functions.h"
+#include "rosidl_runtime_c/string_functions.h"
 
 // Forward declarations of underlying RMW functions
 extern "C" {

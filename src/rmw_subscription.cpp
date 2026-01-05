@@ -12,22 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rmw/rmw.h"
-#include "rmw/error_handling.h"
-
-#include "rmw_robotops/config.hpp"
-#include "rmw_robotops/trace_context.hpp"
-#include "rmw_robotops/trace_event_queue.hpp"
-#include "rmw_robotops/span_id_generator.hpp"
-#include "rmw_robotops/dds_metadata.hpp"
-
-#include "rosidl_typesupport_introspection_c/message_introspection.h"
-#include "rosidl_typesupport_introspection_c/identifier.h"
-
 #include <chrono>
 #include <cstring>
-#include <unordered_map>
 #include <mutex>
+#include <unordered_map>
+
+#include "rmw/error_handling.h"
+#include "rmw/rmw.h"
+#include "rmw_robotops/config.hpp"
+#include "rmw_robotops/dds_metadata.hpp"
+#include "rmw_robotops/span_id_generator.hpp"
+#include "rmw_robotops/trace_context.hpp"
+#include "rmw_robotops/trace_event_queue.hpp"
+#include "rosidl_typesupport_introspection_c/identifier.h"
+#include "rosidl_typesupport_introspection_c/message_introspection.h"
 
 // Forward declaration of underlying RMW functions
 extern "C" {

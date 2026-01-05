@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdlib>
+
 #include <gtest/gtest.h>
 
 #include "rmw_robotops/config.hpp"
-
-#include <cstdlib>
 
 using namespace rmw_robotops;
 

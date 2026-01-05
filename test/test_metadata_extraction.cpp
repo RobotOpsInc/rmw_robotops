@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstring>
+
 #include <gtest/gtest.h>
 
-#include "rmw_robotops/trace_event_queue.hpp"
-#include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
-
-#include <cstring>
+#include "rmw_robotops/trace_context.hpp"
+#include "rmw_robotops/trace_event_queue.hpp"
 
 using namespace rmw_robotops;
 

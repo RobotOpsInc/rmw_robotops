@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "rmw_robotops/trace_context.hpp"
-#include "rmw_robotops/span_id_generator.hpp"
-
 #include <cstring>
+
+#include "rmw_robotops/span_id_generator.hpp"
+#include "rmw_robotops/trace_context.hpp"
 
 namespace rmw_robotops
 {
