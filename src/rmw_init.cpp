@@ -16,6 +16,7 @@
 #include "rmw/error_handling.h"
 
 #include "rmw_robotops/config.hpp"
+#include "rmw_robotops/trace_publisher.hpp"
 
 #include <dlfcn.h>
 #include <cstdio>
@@ -135,6 +136,8 @@ extern "C"
 rmw_ret_t
 rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
 {
+  using namespace rmw_robotops;
+
   // Load underlying RMW on first initialization
   if (underlying_rmw_lib == nullptr) {
     if (!load_underlying_rmw()) {
@@ -149,12 +152,34 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
   }
 
   // Delegate to underlying RMW
-  return underlying_rmw_init(options, context);
+  rmw_ret_t ret = underlying_rmw_init(options, context);
+  if (ret != RMW_RET_OK) {
+    return ret;
+  }
+
+  // Start background trace publisher (only if tracing enabled)
+  ret = start_trace_publisher(context);
+  if (ret != RMW_RET_OK) {
+    // Non-fatal: tracing failed but RMW is initialized
+    // Log error but don't fail initialization
+    fprintf(stderr, "rmw_robotops: Warning: Failed to start trace publisher\n");
+  }
+
+  return RMW_RET_OK;
 }
 
 rmw_ret_t
 rmw_shutdown(rmw_context_t * context)
 {
+  using namespace rmw_robotops;
+
+  // Stop background trace publisher first (drains remaining events)
+  rmw_ret_t ret = stop_trace_publisher();
+  if (ret != RMW_RET_OK) {
+    fprintf(stderr, "rmw_robotops: Warning: Error stopping trace publisher\n");
+  }
+
+  // Then shutdown underlying RMW
   if (underlying_rmw_shutdown == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW shutdown function not loaded");
     return RMW_RET_ERROR;
