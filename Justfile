@@ -102,3 +102,62 @@ check-setup:
     @echo ""
     @echo "Testing Docker build..."
     @DOCKER_BUILDKIT=1 docker-compose build dev > /dev/null 2>&1 && echo "✅ Docker build successful" || echo "❌ Docker build failed"
+
+# CI commands - replicate exactly what runs in GitHub Actions
+# For local development, use 'just ci' which runs commands via docker-compose
+# For CI, GitHub Actions calls 'just ci-inner' which runs raw commands inside the container
+
+# Run full CI suite locally via docker-compose (for local development)
+ci: ci-lint ci-test
+    @echo "✅ All CI checks passed!"
+
+# Run lint checks locally via docker-compose
+ci-lint:
+    @echo "🔍 Running lint checks..."
+    docker-compose run --rm dev bash -c " \
+        source /opt/ros/jazzy/setup.bash && \
+        cd /workspace && \
+        colcon build --packages-select rmw_robotops && \
+        colcon test --packages-select rmw_robotops --ctest-args -R lint && \
+        colcon test-result --verbose \
+    "
+
+# Run tests locally via docker-compose
+ci-test:
+    @echo "🧪 Running tests with sanitizers..."
+    docker-compose run --rm test
+
+# Run CI suite with raw commands (no docker-compose)
+# This is called by GitHub Actions when already inside a container
+ci-inner:
+    #!/usr/bin/env bash
+    set -exo pipefail
+
+    echo "🔍 Running lint checks..."
+    source /opt/ros/jazzy/setup.bash
+    cd /workspace
+    colcon build --packages-select rmw_robotops
+    colcon test --packages-select rmw_robotops --ctest-args -R lint
+    colcon test-result --verbose
+
+    echo "🧪 Running tests with sanitizers..."
+    colcon build --packages-select rmw_robotops \
+      --cmake-args -DCMAKE_BUILD_TYPE=Debug \
+      -DCMAKE_CXX_FLAGS='-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' \
+      -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address -fsanitize=undefined'
+    colcon test --packages-select rmw_robotops --event-handlers console_direct+
+    colcon test-result --verbose
+
+    echo "📊 Running benchmarks..."
+    colcon build --packages-select rmw_robotops --cmake-args -DCMAKE_BUILD_TYPE=Release
+    source /workspace/install/setup.bash
+    /workspace/install/rmw_robotops/lib/rmw_robotops/benchmark_latency > benchmark_results.txt || true
+
+    echo "✅ All CI checks passed!"
+
+# Quick lint check without full build (useful for rapid iteration)
+lint-fast:
+    docker run --rm -v $(pwd):/workspace osrf/ros:jazzy-desktop bash -c \
+      "ament_cpplint --linelength=100 /workspace/src/ /workspace/include/ /workspace/test/ && \
+       ament_uncrustify /workspace/src/ /workspace/include/ && \
+       ament_flake8 /workspace"
