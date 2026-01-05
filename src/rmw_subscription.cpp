@@ -21,8 +21,13 @@
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/dds_metadata.hpp"
 
+#include "rosidl_typesupport_introspection_c/message_introspection.h"
+#include "rosidl_typesupport_introspection_c/identifier.h"
+
 #include <chrono>
 #include <cstring>
+#include <unordered_map>
+#include <mutex>
 
 // Forward declaration of underlying RMW functions
 extern "C" {
@@ -38,6 +43,101 @@ extern rmw_ret_t (* underlying_rmw_take_with_info)(
   rmw_message_info_t *, rmw_subscription_allocation_t *);
 }
 
+namespace
+{
+
+using namespace rmw_robotops;
+
+/// Metadata about a subscription (stored at creation time)
+struct SubscriptionMetadata
+{
+  char node_name[MAX_NODE_NAME_LENGTH];
+  char node_namespace[MAX_NODE_NAME_LENGTH];
+  char message_type[MAX_MESSAGE_TYPE_LENGTH];
+};
+
+/// Cache of subscription metadata (keyed by subscription pointer)
+std::unordered_map<const rmw_subscription_t *, SubscriptionMetadata> subscription_metadata_cache;
+std::mutex subscription_metadata_mutex;
+
+/// Store metadata for a subscription
+void store_subscription_metadata(
+  const rmw_subscription_t * subscription,
+  const rmw_node_t * node,
+  const rosidl_message_type_support_t * type_support) noexcept
+{
+  try {
+    SubscriptionMetadata metadata;
+
+    // Store node name and namespace
+    std::strncpy(metadata.node_name, node->name, MAX_NODE_NAME_LENGTH - 1);
+    metadata.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+    std::strncpy(metadata.node_namespace, node->namespace_, MAX_NODE_NAME_LENGTH - 1);
+    metadata.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+    // Store message type name from type support
+    if (type_support != nullptr && type_support->data != nullptr) {
+      const rosidl_message_type_support_t * ts =
+        get_message_typesupport_handle(
+          type_support,
+          rosidl_typesupport_introspection_c__identifier);
+
+      if (ts != nullptr) {
+        const auto * members =
+          static_cast<const rosidl_typesupport_introspection_c__MessageMembers *>(ts->data);
+        if (members != nullptr) {
+          snprintf(
+            metadata.message_type,
+            MAX_MESSAGE_TYPE_LENGTH,
+            "%s/%s",
+            members->message_namespace_,
+            members->message_name_);
+        }
+      }
+    }
+
+    // Store in cache
+    {
+      std::lock_guard<std::mutex> lock(subscription_metadata_mutex);
+      subscription_metadata_cache[subscription] = metadata;
+    }
+  } catch (...) {
+    // Safety guarantee: Never propagate exceptions
+  }
+}
+
+/// Retrieve metadata for a subscription
+bool get_subscription_metadata(
+  const rmw_subscription_t * subscription,
+  SubscriptionMetadata & metadata) noexcept
+{
+  try {
+    std::lock_guard<std::mutex> lock(subscription_metadata_mutex);
+    auto it = subscription_metadata_cache.find(subscription);
+    if (it != subscription_metadata_cache.end()) {
+      metadata = it->second;
+      return true;
+    }
+  } catch (...) {
+    // Safety guarantee: Never propagate exceptions
+  }
+  return false;
+}
+
+/// Remove metadata for a subscription
+void remove_subscription_metadata(const rmw_subscription_t * subscription) noexcept
+{
+  try {
+    std::lock_guard<std::mutex> lock(subscription_metadata_mutex);
+    subscription_metadata_cache.erase(subscription);
+  } catch (...) {
+    // Safety guarantee: Never propagate exceptions
+  }
+}
+
+}  // anonymous namespace
+
 extern "C"
 {
 
@@ -49,24 +149,33 @@ rmw_create_subscription(
   const rmw_qos_profile_t * qos_profile,
   const rmw_subscription_options_t * subscription_options)
 {
-  // Delegate to underlying RMW - no interception needed for creation
   if (underlying_rmw_create_subscription == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW not initialized");
     return nullptr;
   }
 
-  return underlying_rmw_create_subscription(
+  // Create subscription using underlying RMW
+  rmw_subscription_t * subscription = underlying_rmw_create_subscription(
     node, type_support, topic_name, qos_profile, subscription_options);
+
+  // Store metadata for later use in rmw_take
+  if (subscription != nullptr) {
+    store_subscription_metadata(subscription, node, type_support);
+  }
+
+  return subscription;
 }
 
 rmw_ret_t
 rmw_destroy_subscription(rmw_node_t * node, rmw_subscription_t * subscription)
 {
-  // Delegate to underlying RMW - no interception needed for destruction
   if (underlying_rmw_destroy_subscription == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW not initialized");
     return RMW_RET_ERROR;
   }
+
+  // Remove metadata from cache before destroying
+  remove_subscription_metadata(subscription);
 
   return underlying_rmw_destroy_subscription(node, subscription);
 }
@@ -143,6 +252,9 @@ rmw_take(
       std::strncpy(event.parent_span_id, current.parent_span_id, SPAN_ID_LENGTH);
       event.parent_span_id[SPAN_ID_LENGTH] = '\0';
 
+      // No span links for subscribe operations
+      event.span_link_count = 0;
+
       event.operation = OP_SUBSCRIBE;
       std::strncpy(
         event.topic_or_service,
@@ -150,11 +262,33 @@ rmw_take(
         MAX_TOPIC_NAME_LENGTH - 1);
       event.topic_or_service[MAX_TOPIC_NAME_LENGTH - 1] = '\0';
 
-      // TODO(ROB-55): Fill in additional metadata
-      // - node_name, node_namespace
-      // - publisher_gid (from message_info)
-      // - sequence_number (from message_info)
-      // - message_type, message_size_bytes
+      // Retrieve subscription metadata (node name, namespace, message type)
+      SubscriptionMetadata metadata;
+      if (get_subscription_metadata(subscription, metadata)) {
+        std::strncpy(event.node_name, metadata.node_name, MAX_NODE_NAME_LENGTH - 1);
+        event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+        std::strncpy(event.node_namespace, metadata.node_namespace, MAX_NODE_NAME_LENGTH - 1);
+        event.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+        std::strncpy(event.message_type, metadata.message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
+        event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
+      } else {
+        // Metadata not found - leave fields empty
+        event.node_name[0] = '\0';
+        event.node_namespace[0] = '\0';
+        event.message_type[0] = '\0';
+      }
+
+      // Initialize remaining metadata fields
+      // TODO(ROB-55): Extract from DDS message_info (requires FastDDS integration)
+      // - publisher_gid: GID of publishing node
+      // - sequence_number: Message sequence number
+      event.publisher_gid[0] = '\0';
+      event.sequence_number = 0;
+
+      // TODO(ROB-55): Measure serialized message size
+      event.message_size_bytes = 0;
 
       // Try to push to trace event queue (non-blocking)
       if (!get_trace_event_queue().try_push(event)) {
@@ -231,12 +365,43 @@ rmw_take_with_info(
       std::strncpy(event.parent_span_id, current.parent_span_id, SPAN_ID_LENGTH);
       event.parent_span_id[SPAN_ID_LENGTH] = '\0';
 
+      // No span links for subscribe operations
+      event.span_link_count = 0;
+
       event.operation = OP_SUBSCRIBE;
       std::strncpy(
         event.topic_or_service,
         subscription->topic_name,
         MAX_TOPIC_NAME_LENGTH - 1);
       event.topic_or_service[MAX_TOPIC_NAME_LENGTH - 1] = '\0';
+
+      // Retrieve subscription metadata (node name, namespace, message type)
+      SubscriptionMetadata metadata;
+      if (get_subscription_metadata(subscription, metadata)) {
+        std::strncpy(event.node_name, metadata.node_name, MAX_NODE_NAME_LENGTH - 1);
+        event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+        std::strncpy(event.node_namespace, metadata.node_namespace, MAX_NODE_NAME_LENGTH - 1);
+        event.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+        std::strncpy(event.message_type, metadata.message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
+        event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
+      } else {
+        // Metadata not found - leave fields empty
+        event.node_name[0] = '\0';
+        event.node_namespace[0] = '\0';
+        event.message_type[0] = '\0';
+      }
+
+      // Initialize remaining metadata fields
+      // TODO(ROB-55): Extract from message_info (requires FastDDS integration)
+      // - publisher_gid: From message_info->publisher_gid
+      // - sequence_number: From message_info or DDS
+      event.publisher_gid[0] = '\0';
+      event.sequence_number = 0;
+
+      // TODO(ROB-55): Measure serialized message size
+      event.message_size_bytes = 0;
 
       if (!get_trace_event_queue().try_push(event)) {
         record_trace_failure();

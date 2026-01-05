@@ -21,8 +21,13 @@
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/dds_metadata.hpp"
 
+#include "rosidl_typesupport_introspection_c/message_introspection.h"
+#include "rosidl_typesupport_introspection_c/identifier.h"
+
 #include <chrono>
 #include <cstring>
+#include <unordered_map>
+#include <mutex>
 
 // Forward declaration of underlying RMW functions
 // These will be dynamically loaded from the underlying RMW implementation
@@ -36,6 +41,106 @@ extern rmw_ret_t (* underlying_rmw_destroy_publisher)(
   rmw_node_t *, rmw_publisher_t *);
 }
 
+namespace
+{
+
+using namespace rmw_robotops;
+
+/// Metadata about a publisher (stored at creation time)
+struct PublisherMetadata
+{
+  char node_name[MAX_NODE_NAME_LENGTH];
+  char node_namespace[MAX_NODE_NAME_LENGTH];
+  char message_type[MAX_MESSAGE_TYPE_LENGTH];
+};
+
+/// Cache of publisher metadata (keyed by publisher pointer)
+/// Note: This is NOT in the hot path - lookups happen during publish,
+///       but insertions/deletions only happen during create/destroy
+std::unordered_map<const rmw_publisher_t *, PublisherMetadata> publisher_metadata_cache;
+std::mutex publisher_metadata_mutex;
+
+/// Store metadata for a publisher
+void store_publisher_metadata(
+  const rmw_publisher_t * publisher,
+  const rmw_node_t * node,
+  const rosidl_message_type_support_t * type_support) noexcept
+{
+  try {
+    PublisherMetadata metadata;
+
+    // Store node name and namespace
+    std::strncpy(metadata.node_name, node->name, MAX_NODE_NAME_LENGTH - 1);
+    metadata.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+    std::strncpy(metadata.node_namespace, node->namespace_, MAX_NODE_NAME_LENGTH - 1);
+    metadata.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+    // Store message type name from type support
+    if (type_support != nullptr && type_support->data != nullptr) {
+      // Extract type name from type support (e.g., "std_msgs/msg/String")
+      const rosidl_message_type_support_t * ts =
+        get_message_typesupport_handle(
+          type_support,
+          rosidl_typesupport_introspection_c__identifier);
+
+      if (ts != nullptr) {
+        const auto * members =
+          static_cast<const rosidl_typesupport_introspection_c__MessageMembers *>(ts->data);
+        if (members != nullptr) {
+          // Format: "package_name/msg/MessageName"
+          snprintf(
+            metadata.message_type,
+            MAX_MESSAGE_TYPE_LENGTH,
+            "%s/%s",
+            members->message_namespace_,
+            members->message_name_);
+        }
+      }
+    }
+
+    // Store in cache (with mutex protection)
+    {
+      std::lock_guard<std::mutex> lock(publisher_metadata_mutex);
+      publisher_metadata_cache[publisher] = metadata;
+    }
+  } catch (...) {
+    // Safety guarantee: Never propagate exceptions
+  }
+}
+
+/// Retrieve metadata for a publisher
+bool get_publisher_metadata(
+  const rmw_publisher_t * publisher,
+  PublisherMetadata & metadata) noexcept
+{
+  try {
+    std::lock_guard<std::mutex> lock(publisher_metadata_mutex);
+    auto it = publisher_metadata_cache.find(publisher);
+    if (it != publisher_metadata_cache.end()) {
+      metadata = it->second;
+      return true;
+    }
+  } catch (...) {
+    // Safety guarantee: Never propagate exceptions
+  }
+  return false;
+}
+
+/// Remove metadata for a publisher
+void remove_publisher_metadata(const rmw_publisher_t * publisher) noexcept
+{
+  try {
+    std::lock_guard<std::mutex> lock(publisher_metadata_mutex);
+    publisher_metadata_cache.erase(publisher);
+  } catch (...) {
+    // Safety guarantee: Never propagate exceptions
+  }
+}
+
+}  // anonymous namespace
+
+
 extern "C"
 {
 
@@ -47,24 +152,33 @@ rmw_create_publisher(
   const rmw_qos_profile_t * qos_profile,
   const rmw_publisher_options_t * publisher_options)
 {
-  // Delegate to underlying RMW - no interception needed for creation
   if (underlying_rmw_create_publisher == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW not initialized");
     return nullptr;
   }
 
-  return underlying_rmw_create_publisher(
+  // Create publisher using underlying RMW
+  rmw_publisher_t * publisher = underlying_rmw_create_publisher(
     node, type_support, topic_name, qos_profile, publisher_options);
+
+  // Store metadata for later use in rmw_publish
+  if (publisher != nullptr) {
+    store_publisher_metadata(publisher, node, type_support);
+  }
+
+  return publisher;
 }
 
 rmw_ret_t
 rmw_destroy_publisher(rmw_node_t * node, rmw_publisher_t * publisher)
 {
-  // Delegate to underlying RMW - no interception needed for destruction
   if (underlying_rmw_destroy_publisher == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW not initialized");
     return RMW_RET_ERROR;
   }
+
+  // Remove metadata from cache before destroying
+  remove_publisher_metadata(publisher);
 
   return underlying_rmw_destroy_publisher(node, publisher);
 }
@@ -107,6 +221,9 @@ rmw_publish(
       std::strncpy(event.parent_span_id, context.parent_span_id, SPAN_ID_LENGTH);
       event.parent_span_id[SPAN_ID_LENGTH] = '\0';
 
+      // No span links for publish operations (used for fan-in scenarios)
+      event.span_link_count = 0;
+
       // Event details
       event.operation = OP_PUBLISH;
       std::strncpy(
@@ -115,12 +232,35 @@ rmw_publish(
         MAX_TOPIC_NAME_LENGTH - 1);
       event.topic_or_service[MAX_TOPIC_NAME_LENGTH - 1] = '\0';
 
-      // TODO(ROB-55): Fill in additional metadata
-      // - node_name, node_namespace (from publisher->implementation_identifier)
-      // - publisher_gid (from DDS)
-      // - sequence_number (from DDS)
-      // - message_type (from type_support)
-      // - message_size_bytes (measure serialized size)
+      // Retrieve publisher metadata (node name, namespace, message type)
+      PublisherMetadata metadata;
+      if (get_publisher_metadata(publisher, metadata)) {
+        std::strncpy(event.node_name, metadata.node_name, MAX_NODE_NAME_LENGTH - 1);
+        event.node_name[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+        std::strncpy(event.node_namespace, metadata.node_namespace, MAX_NODE_NAME_LENGTH - 1);
+        event.node_namespace[MAX_NODE_NAME_LENGTH - 1] = '\0';
+
+        std::strncpy(event.message_type, metadata.message_type, MAX_MESSAGE_TYPE_LENGTH - 1);
+        event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
+      } else {
+        // Metadata not found - leave fields empty
+        event.node_name[0] = '\0';
+        event.node_namespace[0] = '\0';
+        event.message_type[0] = '\0';
+      }
+
+      // Initialize remaining metadata fields
+      // TODO(ROB-55): Extract from DDS (requires FastDDS integration)
+      // - publisher_gid: Unique identifier for publisher instance
+      // - sequence_number: Message sequence number from DDS
+      event.publisher_gid[0] = '\0';
+      event.sequence_number = 0;
+
+      // TODO(ROB-55): Measure serialized message size
+      // - message_size_bytes: Actual bytes on the wire
+      // Requires serialization, which has overhead - consider if needed
+      event.message_size_bytes = 0;
 
       // Try to inject context into DDS metadata (currently no-op placeholder)
       inject_trace_context_to_dds(nullptr, context);
