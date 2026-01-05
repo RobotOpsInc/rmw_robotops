@@ -45,13 +45,15 @@ brew install just
 curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
 ```
 
-### 2. Configure Cloudsmith API Key
+### 2. Configure Cloudsmith Credentials
 
 ```bash
 mkdir -p ~/.cloudsmith
-echo "YOUR_API_KEY_HERE" > ~/.cloudsmith/key
+echo "your-username:YOUR_API_KEY_HERE" > ~/.cloudsmith/key
 chmod 600 ~/.cloudsmith/key
 ```
+
+**Format:** `username:api_key` (replace with your Cloudsmith username and API key)
 
 ### 3. Build and develop
 
@@ -104,7 +106,7 @@ ros2 topic echo /robotops/trace_events
 
 All tasks use `just` commands for simplicity. Run `just` to see all available commands.
 
-### Development
+### Development 
 
 ```bash
 just dev          # Interactive development shell
@@ -236,8 +238,11 @@ just check-setup  # Checks Docker, API key, and build
 ### Cloudsmith Authentication Failed
 
 ```bash
-# Verify your API key is correct
+# Verify your credentials are in the correct format (username:api_key)
 cat ~/.cloudsmith/key
+
+# Should output: your-username:your-api-key
+# NOT just the API key alone
 
 # Rebuild without cache
 just rebuild

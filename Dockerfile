@@ -23,9 +23,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Configure Cloudsmith repository using buildx secret
+# Secret file format: username:api_key
 RUN --mount=type=secret,id=cloudsmith_key \
-    CLOUDSMITH_API_KEY=$(cat /run/secrets/cloudsmith_key) && \
-    curl -u "kristoph-matthews:${CLOUDSMITH_API_KEY}" -1sLf \
+    CLOUDSMITH_CREDS=$(cat /run/secrets/cloudsmith_key) && \
+    curl -u "${CLOUDSMITH_CREDS}" -1sLf \
     'https://dl.cloudsmith.io/basic/robotops/robotops-development/setup.deb.sh' \
     | bash
 

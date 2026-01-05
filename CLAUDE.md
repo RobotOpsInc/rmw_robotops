@@ -83,16 +83,20 @@ This keeps the setup DRY and maintainable.
 
 ### Cloudsmith Authentication
 
-Private `robotops_msgs` dependency requires API key:
+Private `robotops_msgs` dependency requires credentials file:
 
 ```bash
 # One-time setup
 mkdir -p ~/.cloudsmith
-echo "YOUR_API_KEY" > ~/.cloudsmith/key
+echo "your-username:YOUR_API_KEY_HERE" > ~/.cloudsmith/key
 chmod 600 ~/.cloudsmith/key
 ```
 
+**Format:** `username:api_key` (colon-separated, no spaces)
+
 Docker buildx secrets automatically mount this file (never committed to repo).
+
+Each developer uses their own Cloudsmith username and API key.
 
 ## Architecture Decisions
 

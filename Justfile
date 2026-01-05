@@ -82,8 +82,16 @@ check-setup:
     @echo "Checking Docker buildx..."
     @docker buildx version || echo "❌ Docker buildx not available"
     @echo ""
-    @echo "Checking Cloudsmith API key..."
-    @test -f ~/.cloudsmith/key && echo "✅ API key found" || echo "❌ API key missing (see README.md)"
+    @echo "Checking Cloudsmith credentials..."
+    @if [ -f ~/.cloudsmith/key ]; then \
+        if grep -q ':' ~/.cloudsmith/key; then \
+            echo "✅ Credentials file found with correct format"; \
+        else \
+            echo "❌ Credentials file missing ':' separator (format: username:api_key)"; \
+        fi; \
+    else \
+        echo "❌ Credentials file missing (see README.md)"; \
+    fi
     @echo ""
     @echo "Testing Docker build..."
     @DOCKER_BUILDKIT=1 docker-compose build dev > /dev/null 2>&1 && echo "✅ Docker build successful" || echo "❌ Docker build failed"
