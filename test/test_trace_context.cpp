@@ -113,8 +113,11 @@ TEST(TraceContextTest, GetOrMintReturnsExistingContext) {
 TEST(TraceContextTest, ThreadLocalIsolation) {
   // Main thread context
   TraceContext main_ctx;
-  std::strcpy(main_ctx.trace_id, "mainthread000000000000000000000000");
-  std::strcpy(main_ctx.span_id, "mainspan00000000");
+  std::strncpy(main_ctx.trace_id, "mainthread000000000000000000000000", TRACE_ID_LENGTH);
+  main_ctx.trace_id[TRACE_ID_LENGTH] = '\0';
+  std::strncpy(main_ctx.span_id, "mainspan00000000", SPAN_ID_LENGTH);
+  main_ctx.span_id[SPAN_ID_LENGTH] = '\0';
+  main_ctx.parent_span_id[0] = '\0';
   set_trace_context(main_ctx);
 
   // Verify main thread
@@ -129,8 +132,11 @@ TEST(TraceContextTest, ThreadLocalIsolation) {
 
     // Set different context in thread
     TraceContext new_ctx;
-    std::strcpy(new_ctx.trace_id, "threadcontext0000000000000000000");
-    std::strcpy(new_ctx.span_id, "threadspan000000");
+    std::strncpy(new_ctx.trace_id, "threadcontext0000000000000000000", TRACE_ID_LENGTH);
+    new_ctx.trace_id[TRACE_ID_LENGTH] = '\0';
+    std::strncpy(new_ctx.span_id, "threadspan000000", SPAN_ID_LENGTH);
+    new_ctx.span_id[SPAN_ID_LENGTH] = '\0';
+    new_ctx.parent_span_id[0] = '\0';
     set_trace_context(new_ctx);
 
     // Verify thread context
