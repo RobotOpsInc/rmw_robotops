@@ -72,7 +72,7 @@ def generate_function_pointer_decl(func_name):
 
 def generate_function_wrapper(func_name):
     """Generate wrapper function implementation."""
-    return f'''
+    return f"""
 // Auto-generated wrapper for {func_name}
 extern "C" __attribute__((weak))
 void * {func_name}()
@@ -89,7 +89,7 @@ void * {func_name}()
   }}
   return underlying_{func_name}();
 }}
-'''
+"""
 
 
 def main():

@@ -237,14 +237,14 @@ extern "C" {
             stub = generate_stub(func_name, sig)
             f.write(stub)
 
-        f.write("\n}  // extern \"C\"\n")
+        f.write('\n}  // extern "C"\n')
 
     print(f'Generated rmw_stubs_generated.cpp with {len(functions)} functions')
 
     # Also generate a list of function names
     with open('rmw_functions_list.txt', 'w') as f:
         for func_name, _ in functions:
-            f.write(f"{func_name}\n")
+            f.write(f'{func_name}\n')
 
     print('Generated rmw_functions_list.txt')
 
