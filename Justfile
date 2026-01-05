@@ -135,6 +135,7 @@ ci:
     @echo "🚀 Running full CI suite locally..."
     -docker-compose run --rm dev bash -c "just ci-lint"
     -docker-compose run --rm test bash -c "just ci-test"
+    -docker-compose run --rm test bash -c "just ci-benchmark"
     @echo "✅ CI suite completed!"
 
 # Run full CI suite (for GitHub Actions, already in container)
