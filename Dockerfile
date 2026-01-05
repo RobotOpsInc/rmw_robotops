@@ -5,6 +5,10 @@
 # ============================================================================
 FROM ros:jazzy-ros-base AS base
 
+# Build arguments for configurable Cloudsmith repository and package version
+ARG CLOUDSMITH_REPO=robotops-development
+ARG ROBOTOPS_MSGS_VERSION=0.1.6-0noble
+
 # Install core build dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -27,12 +31,12 @@ RUN apt-get update && apt-get install -y \
 RUN --mount=type=secret,id=cloudsmith_key \
     CLOUDSMITH_CREDS=$(cat /run/secrets/cloudsmith_key) && \
     curl -u "${CLOUDSMITH_CREDS}" -1sLf \
-    'https://dl.cloudsmith.io/basic/robotops/robotops-development/setup.deb.sh' \
+    "https://dl.cloudsmith.io/basic/robotops/${CLOUDSMITH_REPO}/setup.deb.sh" \
     | bash
 
 # Install robotops_msgs from Cloudsmith
 RUN apt-get update && apt-get install -y \
-    ros-jazzy-robotops-msgs=0.1.6-0noble \
+    ros-jazzy-robotops-msgs=${ROBOTOPS_MSGS_VERSION} \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

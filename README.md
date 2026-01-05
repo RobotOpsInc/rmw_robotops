@@ -61,7 +61,15 @@ chmod 600 ~/.cloudsmith/key
 # See all available commands
 just
 
-# Build development image
+# Build development image (uses defaults: robotops-development repo, v0.1.6)
+just build
+
+# Build with different Cloudsmith repo or version
+just build robotops-production 0.2.0-0noble
+
+# Or set via environment variables
+export CLOUDSMITH_REPO=robotops-production
+export ROBOTOPS_MSGS_VERSION=0.2.0-0noble
 just build
 
 # Start interactive shell
@@ -71,6 +79,27 @@ just dev
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install
 ```
+
+### Advanced: Cloudsmith Configuration
+
+The Docker build can pull `robotops_msgs` from different Cloudsmith repositories and versions:
+
+**Via Justfile parameters:**
+```bash
+just build <repo> <version>
+just build robotops-production 0.2.0-0noble
+```
+
+**Via environment variables:**
+```bash
+export CLOUDSMITH_REPO=robotops-staging
+export ROBOTOPS_MSGS_VERSION=0.1.8-0noble
+just build
+```
+
+**Defaults:**
+- Repository: `robotops-development`
+- Version: `0.1.6-0noble`
 
 ## Usage
 
