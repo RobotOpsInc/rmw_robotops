@@ -35,7 +35,7 @@ TEST(LockFreeQueueTest, PushPop) {
 
   TraceEvent event1;
   std::strcpy(event1.trace_id, "trace1");
-  std::strcpy(event1.topic_name, "/topic1");
+  std::strcpy(event1.topic_or_service, "/topic1");
   event1.operation = OP_PUBLISH;
 
   // Push
@@ -47,7 +47,7 @@ TEST(LockFreeQueueTest, PushPop) {
   TraceEvent popped;
   EXPECT_TRUE(queue.try_pop(popped));
   EXPECT_STREQ("trace1", popped.trace_id);
-  EXPECT_STREQ("/topic1", popped.topic_name);
+  EXPECT_STREQ("/topic1", popped.topic_or_service);
   EXPECT_EQ(OP_PUBLISH, popped.operation);
 
   EXPECT_TRUE(queue.empty());
@@ -224,15 +224,13 @@ TEST(LockFreeQueueTest, SpanLinksInEvent) {
 
   TraceEvent event;
   std::strcpy(event.trace_id, "main_trace");
-  std::strcpy(event.topic_name, "/output");
+  std::strcpy(event.topic_or_service, "/output");
   event.operation = OP_PUBLISH;
 
-  // Add span links (fan-in)
+  // Add span links (fan-in) - format: "trace_id:span_id"
   event.span_link_count = 2;
-  std::strcpy(event.span_links[0].trace_id, "input1_trace");
-  std::strcpy(event.span_links[0].span_id, "input1_span");
-  std::strcpy(event.span_links[1].trace_id, "input2_trace");
-  std::strcpy(event.span_links[1].span_id, "input2_span");
+  std::strcpy(event.span_links[0], "input1_trace:input1_span");
+  std::strcpy(event.span_links[1], "input2_trace:input2_span");
 
   EXPECT_TRUE(queue.try_push(event));
 
@@ -240,8 +238,6 @@ TEST(LockFreeQueueTest, SpanLinksInEvent) {
   EXPECT_TRUE(queue.try_pop(popped));
 
   EXPECT_EQ(2, popped.span_link_count);
-  EXPECT_STREQ("input1_trace", popped.span_links[0].trace_id);
-  EXPECT_STREQ("input1_span", popped.span_links[0].span_id);
-  EXPECT_STREQ("input2_trace", popped.span_links[1].trace_id);
-  EXPECT_STREQ("input2_span", popped.span_links[1].span_id);
+  EXPECT_STREQ("input1_trace:input1_span", popped.span_links[0]);
+  EXPECT_STREQ("input2_trace:input2_span", popped.span_links[1]);
 }
