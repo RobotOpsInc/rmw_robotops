@@ -15,6 +15,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare Cloudsmith credentials
+        run: |
+          # Service account format: service_account_username:api_key
+          echo "github-actions-bk1d:${{ secrets.CLOUDSMITH_API_KEY }}" > /tmp/cloudsmith_key
+
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -26,8 +31,8 @@ jobs:
           tags: rmw_robotops:lint
           cache-from: type=gha,scope=lint
           cache-to: type=gha,mode=max,scope=lint
-          secrets: |
-            "cloudsmith_key=${{ secrets.CLOUDSMITH_API_KEY }}"
+          secret-files: |
+            cloudsmith_key=/tmp/cloudsmith_key
 
       - name: Run lint checks
         run: |
@@ -47,6 +52,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Prepare Cloudsmith credentials
+        run: |
+          # Service account format: service_account_username:api_key
+          echo "github-actions-bk1d:${{ secrets.CLOUDSMITH_API_KEY }}" > /tmp/cloudsmith_key
+
       - name: Build Docker image with sanitizers
         uses: docker/build-push-action@v5
         with:
@@ -58,8 +68,8 @@ jobs:
           tags: rmw_robotops:test
           cache-from: type=gha,scope=test
           cache-to: type=gha,mode=max,scope=test
-          secrets: |
-            "cloudsmith_key=${{ secrets.CLOUDSMITH_API_KEY }}"
+          secret-files: |
+            cloudsmith_key=/tmp/cloudsmith_key
 
       - name: Run all tests
         run: |

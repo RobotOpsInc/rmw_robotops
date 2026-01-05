@@ -37,27 +37,13 @@ jobs:
             echo "Deploying to: development (robotops-development)"
           fi
 
-      - name: Install Docker (if not available)
-        run: |
-          if ! command -v docker &> /dev/null; then
-            echo "Docker not found, installing..."
-            sudo apt-get update
-            sudo apt-get install -y ca-certificates curl
-            sudo install -m 0755 -d /etc/apt/keyrings
-            sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-            sudo chmod a+r /etc/apt/keyrings/docker.asc
-            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-            sudo apt-get update
-            sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
-            sudo systemctl start docker
-            sudo usermod -aG docker $USER
-          else
-            echo "Docker already installed"
-          fi
-          docker --version
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Prepare Cloudsmith credentials
+        run: |
+          # Service account format: service_account_username:api_key
+          echo "github-actions-bk1d:${{ secrets.CLOUDSMITH_API_KEY }}" > /tmp/cloudsmith_key
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
@@ -70,8 +56,8 @@ jobs:
           tags: rmw_robotops:build-${{ matrix.arch }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
-          secrets: |
-            "cloudsmith_key=${{ secrets.CLOUDSMITH_API_KEY }}"
+          secret-files: |
+            cloudsmith_key=/tmp/cloudsmith_key
 
       - name: Build Debian package
         run: |
