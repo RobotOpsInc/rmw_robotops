@@ -405,7 +405,7 @@ rmw_get_zero_initialized_discovery_options(void)
 }
 
 rmw_ret_t
-rmw_discovery_options_init(rmw_discovery_options_t * discovery_options, size_t size, rcutils_allocator_t * allocator)
+rmw_discovery_options_init(rmw_discovery_options_t * discovery_options, size_t size, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -413,7 +413,8 @@ rmw_discovery_options_init(rmw_discovery_options_t * discovery_options, size_t s
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_discovery_options_t * discovery_options, size_t size, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_discovery_options_t * discovery_options, size_t size, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_discovery_options_init"));
 
   if (underlying_func == nullptr) {
@@ -425,7 +426,7 @@ rmw_discovery_options_init(rmw_discovery_options_t * discovery_options, size_t s
 }
 
 rmw_ret_t
-rmw_discovery_options_equal(const rmw_discovery_options_t * const left, const rmw_discovery_options_t * const right, bool * result)
+rmw_discovery_options_equal(const rmw_discovery_options_t * const left, const rmw_discovery_options_t * const right, bool * result)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -433,7 +434,8 @@ rmw_discovery_options_equal(const rmw_discovery_options_t * const left, const rm
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_discovery_options_t * const left, const rmw_discovery_options_t * const right, bool * result)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_discovery_options_t * const left, const rmw_discovery_options_t * const right, bool * result)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_discovery_options_equal"));
 
   if (underlying_func == nullptr) {
@@ -445,7 +447,7 @@ rmw_discovery_options_equal(const rmw_discovery_options_t * const left, const rm
 }
 
 rmw_ret_t
-rmw_discovery_options_copy(const rmw_discovery_options_t * src, rcutils_allocator_t * allocator, rmw_discovery_options_t * dst)
+rmw_discovery_options_copy(const rmw_discovery_options_t * src, rcutils_allocator_t * allocator, rmw_discovery_options_t * dst)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -453,7 +455,8 @@ rmw_discovery_options_copy(const rmw_discovery_options_t * src, rcutils_allocato
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_discovery_options_t * src, rcutils_allocator_t * allocator, rmw_discovery_options_t * dst)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_discovery_options_t * src, rcutils_allocator_t * allocator, rmw_discovery_options_t * dst)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_discovery_options_copy"));
 
   if (underlying_func == nullptr) {
@@ -473,7 +476,8 @@ rmw_discovery_options_fini(rmw_discovery_options_t * discovery_options)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_discovery_options_t * discovery_options)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_discovery_options_t * discovery_options)>(
     dlsym(underlying_rmw_lib, "rmw_discovery_options_fini"));
 
   if (underlying_func == nullptr) {
@@ -485,7 +489,7 @@ rmw_discovery_options_fini(rmw_discovery_options_t * discovery_options)
 }
 
 rmw_ret_t
-rmw_take_dynamic_message(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_subscription_allocation_t * allocation)
+rmw_take_dynamic_message(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -493,7 +497,8 @@ rmw_take_dynamic_message(const rmw_subscription_t * subscription, rosidl_dynamic
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_dynamic_message"));
 
   if (underlying_func == nullptr) {
@@ -505,7 +510,7 @@ rmw_take_dynamic_message(const rmw_subscription_t * subscription, rosidl_dynamic
 }
 
 rmw_ret_t
-rmw_take_dynamic_message_with_info(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)
+rmw_take_dynamic_message_with_info(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -513,7 +518,8 @@ rmw_take_dynamic_message_with_info(const rmw_subscription_t * subscription, rosi
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rosidl_dynamic_typesupport_dynamic_data_t * dynamic_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_dynamic_message_with_info"));
 
   if (underlying_func == nullptr) {
@@ -525,7 +531,7 @@ rmw_take_dynamic_message_with_info(const rmw_subscription_t * subscription, rosi
 }
 
 rmw_ret_t
-rmw_serialization_support_init(const char * serialization_lib_name, rcutils_allocator_t * allocator, rosidl_dynamic_typesupport_serialization_support_t * serialization_support)
+rmw_serialization_support_init(const char * serialization_lib_name, rcutils_allocator_t * allocator, rosidl_dynamic_typesupport_serialization_support_t * serialization_support)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -533,7 +539,8 @@ rmw_serialization_support_init(const char * serialization_lib_name, rcutils_allo
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * serialization_lib_name, rcutils_allocator_t * allocator, rosidl_dynamic_typesupport_serialization_support_t * serialization_support)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * serialization_lib_name, rcutils_allocator_t * allocator, rosidl_dynamic_typesupport_serialization_support_t * serialization_support)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_serialization_support_init"));
 
   if (underlying_func == nullptr) {
@@ -565,7 +572,7 @@ rmw_get_zero_initialized_event(void)
 }
 
 rmw_ret_t
-rmw_publisher_event_init(rmw_event_t * rmw_event, const rmw_publisher_t * publisher, rmw_event_type_t event_type)
+rmw_publisher_event_init(rmw_event_t * rmw_event, const rmw_publisher_t * publisher, rmw_event_type_t event_type)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -573,7 +580,8 @@ rmw_publisher_event_init(rmw_event_t * rmw_event, const rmw_publisher_t * publis
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_event_t * rmw_event, const rmw_publisher_t * publisher, rmw_event_type_t event_type)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_event_t * rmw_event, const rmw_publisher_t * publisher, rmw_event_type_t event_type)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_publisher_event_init"));
 
   if (underlying_func == nullptr) {
@@ -585,7 +593,7 @@ rmw_publisher_event_init(rmw_event_t * rmw_event, const rmw_publisher_t * publis
 }
 
 rmw_ret_t
-rmw_subscription_event_init(rmw_event_t * rmw_event, const rmw_subscription_t * subscription, rmw_event_type_t event_type)
+rmw_subscription_event_init(rmw_event_t * rmw_event, const rmw_subscription_t * subscription, rmw_event_type_t event_type)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -593,7 +601,8 @@ rmw_subscription_event_init(rmw_event_t * rmw_event, const rmw_subscription_t * 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_event_t * rmw_event, const rmw_subscription_t * subscription, rmw_event_type_t event_type)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_event_t * rmw_event, const rmw_subscription_t * subscription, rmw_event_type_t event_type)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_event_init"));
 
   if (underlying_func == nullptr) {
@@ -613,7 +622,8 @@ rmw_take_event(const rmw_event_t * event_handle, void * event_info, bool * taken
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_event_t * event_handle, void * event_info, bool * taken)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_event_t * event_handle, void * event_info, bool * taken)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_event"));
 
   if (underlying_func == nullptr) {
@@ -685,7 +695,7 @@ rmw_feature_supported(rmw_feature_t feature)
 }
 
 rmw_ret_t
-rmw_publisher_get_network_flow_endpoints(const rmw_publisher_t * publisher, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)
+rmw_publisher_get_network_flow_endpoints(const rmw_publisher_t * publisher, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -693,7 +703,8 @@ rmw_publisher_get_network_flow_endpoints(const rmw_publisher_t * publisher, rcut
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_publisher_get_network_flow_endpoints"));
 
   if (underlying_func == nullptr) {
@@ -705,7 +716,7 @@ rmw_publisher_get_network_flow_endpoints(const rmw_publisher_t * publisher, rcut
 }
 
 rmw_ret_t
-rmw_subscription_get_network_flow_endpoints(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)
+rmw_subscription_get_network_flow_endpoints(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -713,7 +724,8 @@ rmw_subscription_get_network_flow_endpoints(const rmw_subscription_t * subscript
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_get_network_flow_endpoints"));
 
   if (underlying_func == nullptr) {
@@ -725,7 +737,7 @@ rmw_subscription_get_network_flow_endpoints(const rmw_subscription_t * subscript
 }
 
 rmw_ret_t
-rmw_get_subscriber_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)
+rmw_get_subscriber_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -733,7 +745,8 @@ rmw_get_subscriber_names_and_types_by_node(const rmw_node_t * node, rcutils_allo
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_subscriber_names_and_types_by_node"));
 
   if (underlying_func == nullptr) {
@@ -741,11 +754,11 @@ rmw_get_subscriber_names_and_types_by_node(const rmw_node_t * node, rcutils_allo
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(node, allocator, node_name, node_namespace, no_demangle, topic_names_and_types);
+  return underlying_func(node, allocator, node_name, node_namespace, no_demangle, topic_names_and_types);  // NOLINT(whitespace/line_length)
 }
 
 rmw_ret_t
-rmw_get_publisher_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)
+rmw_get_publisher_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -753,7 +766,8 @@ rmw_get_publisher_names_and_types_by_node(const rmw_node_t * node, rcutils_alloc
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_publisher_names_and_types_by_node"));
 
   if (underlying_func == nullptr) {
@@ -761,11 +775,11 @@ rmw_get_publisher_names_and_types_by_node(const rmw_node_t * node, rcutils_alloc
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(node, allocator, node_name, node_namespace, no_demangle, topic_names_and_types);
+  return underlying_func(node, allocator, node_name, node_namespace, no_demangle, topic_names_and_types);  // NOLINT(whitespace/line_length)
 }
 
 rmw_ret_t
-rmw_get_service_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)
+rmw_get_service_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -773,7 +787,8 @@ rmw_get_service_names_and_types_by_node(const rmw_node_t * node, rcutils_allocat
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_service_names_and_types_by_node"));
 
   if (underlying_func == nullptr) {
@@ -785,7 +800,7 @@ rmw_get_service_names_and_types_by_node(const rmw_node_t * node, rcutils_allocat
 }
 
 rmw_ret_t
-rmw_get_client_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)
+rmw_get_client_names_and_types_by_node(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -793,7 +808,8 @@ rmw_get_client_names_and_types_by_node(const rmw_node_t * node, rcutils_allocato
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * node_name, const char * node_namespace, rmw_names_and_types_t * service_names_and_types)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_client_names_and_types_by_node"));
 
   if (underlying_func == nullptr) {
@@ -805,7 +821,7 @@ rmw_get_client_names_and_types_by_node(const rmw_node_t * node, rcutils_allocato
 }
 
 rmw_ret_t
-rmw_get_service_names_and_types(const rmw_node_t * node, rcutils_allocator_t * allocator, rmw_names_and_types_t * service_names_and_types)
+rmw_get_service_names_and_types(const rmw_node_t * node, rcutils_allocator_t * allocator, rmw_names_and_types_t * service_names_and_types)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -813,7 +829,8 @@ rmw_get_service_names_and_types(const rmw_node_t * node, rcutils_allocator_t * a
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, rmw_names_and_types_t * service_names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, rmw_names_and_types_t * service_names_and_types)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_service_names_and_types"));
 
   if (underlying_func == nullptr) {
@@ -825,7 +842,7 @@ rmw_get_service_names_and_types(const rmw_node_t * node, rcutils_allocator_t * a
 }
 
 rmw_ret_t
-rmw_get_publishers_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * publishers_info)
+rmw_get_publishers_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * publishers_info)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -833,7 +850,8 @@ rmw_get_publishers_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * publishers_info)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * publishers_info)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_publishers_info_by_topic"));
 
   if (underlying_func == nullptr) {
@@ -845,7 +863,7 @@ rmw_get_publishers_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * 
 }
 
 rmw_ret_t
-rmw_get_subscriptions_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * subscriptions_info)
+rmw_get_subscriptions_info_by_topic(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * subscriptions_info)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -853,7 +871,8 @@ rmw_get_subscriptions_info_by_topic(const rmw_node_t * node, rcutils_allocator_t
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * subscriptions_info)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, const char * topic_name, bool no_mangle, rmw_topic_endpoint_info_array_t * subscriptions_info)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_subscriptions_info_by_topic"));
 
   if (underlying_func == nullptr) {
@@ -865,7 +884,7 @@ rmw_get_subscriptions_info_by_topic(const rmw_node_t * node, rcutils_allocator_t
 }
 
 rmw_ret_t
-rmw_get_topic_names_and_types(const rmw_node_t * node, rcutils_allocator_t * allocator, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)
+rmw_get_topic_names_and_types(const rmw_node_t * node, rcutils_allocator_t * allocator, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -873,7 +892,8 @@ rmw_get_topic_names_and_types(const rmw_node_t * node, rcutils_allocator_t * all
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_allocator_t * allocator, bool no_demangle, rmw_names_and_types_t * topic_names_and_types)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_topic_names_and_types"));
 
   if (underlying_func == nullptr) {
@@ -945,7 +965,7 @@ rmw_get_zero_initialized_message_sequence(void)
 }
 
 rmw_ret_t
-rmw_message_sequence_init(rmw_message_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)
+rmw_message_sequence_init(rmw_message_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -953,7 +973,8 @@ rmw_message_sequence_init(rmw_message_sequence_t * sequence, size_t size, rcutil
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_message_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_message_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_message_sequence_init"));
 
   if (underlying_func == nullptr) {
@@ -1005,7 +1026,7 @@ rmw_get_zero_initialized_message_info_sequence(void)
 }
 
 rmw_ret_t
-rmw_message_info_sequence_init(rmw_message_info_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)
+rmw_message_info_sequence_init(rmw_message_info_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1013,7 +1034,8 @@ rmw_message_info_sequence_init(rmw_message_info_sequence_t * sequence, size_t si
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_message_info_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_message_info_sequence_t * sequence, size_t size, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_message_info_sequence_init"));
 
   if (underlying_func == nullptr) {
@@ -1033,7 +1055,8 @@ rmw_message_info_sequence_fini(rmw_message_info_sequence_t * sequence)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_message_info_sequence_t * sequence)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_message_info_sequence_t * sequence)>(
     dlsym(underlying_rmw_lib, "rmw_message_info_sequence_fini"));
 
   if (underlying_func == nullptr) {
@@ -1073,7 +1096,8 @@ rmw_names_and_types_check_zero(rmw_names_and_types_t * names_and_types)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_names_and_types_t * names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_names_and_types_t * names_and_types)>(
     dlsym(underlying_rmw_lib, "rmw_names_and_types_check_zero"));
 
   if (underlying_func == nullptr) {
@@ -1085,7 +1109,7 @@ rmw_names_and_types_check_zero(rmw_names_and_types_t * names_and_types)
 }
 
 rmw_ret_t
-rmw_names_and_types_init(rmw_names_and_types_t * names_and_types, size_t size, rcutils_allocator_t * allocator)
+rmw_names_and_types_init(rmw_names_and_types_t * names_and_types, size_t size, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1093,7 +1117,8 @@ rmw_names_and_types_init(rmw_names_and_types_t * names_and_types, size_t size, r
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_names_and_types_t * names_and_types, size_t size, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_names_and_types_t * names_and_types, size_t size, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_names_and_types_init"));
 
   if (underlying_func == nullptr) {
@@ -1113,7 +1138,8 @@ rmw_names_and_types_fini(rmw_names_and_types_t * names_and_types)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_names_and_types_t * names_and_types)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_names_and_types_t * names_and_types)>(
     dlsym(underlying_rmw_lib, "rmw_names_and_types_fini"));
 
   if (underlying_func == nullptr) {
@@ -1145,7 +1171,7 @@ rmw_get_zero_initialized_network_flow_endpoint(void)
 }
 
 const char *
-rmw_network_flow_endpoint_get_transport_protocol_string(const rmw_transport_protocol_t transport_protocol)
+rmw_network_flow_endpoint_get_transport_protocol_string(const rmw_transport_protocol_t transport_protocol)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1153,11 +1179,13 @@ rmw_network_flow_endpoint_get_transport_protocol_string(const rmw_transport_prot
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<const char *(*)(const rmw_transport_protocol_t transport_protocol)>(
+  static auto underlying_func =
+      reinterpret_cast<const char *(*)(const rmw_transport_protocol_t transport_protocol)>(
     dlsym(underlying_rmw_lib, "rmw_network_flow_endpoint_get_transport_protocol_string"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_get_transport_protocol_string not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_network_flow_endpoint_get_transport_protocol_string not available\n");  // NOLINT(whitespace/line_length)
     return nullptr;
   }
 
@@ -1165,7 +1193,7 @@ rmw_network_flow_endpoint_get_transport_protocol_string(const rmw_transport_prot
 }
 
 const char *
-rmw_network_flow_endpoint_get_internet_protocol_string(const rmw_internet_protocol_t internet_protocol)
+rmw_network_flow_endpoint_get_internet_protocol_string(const rmw_internet_protocol_t internet_protocol)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1173,11 +1201,13 @@ rmw_network_flow_endpoint_get_internet_protocol_string(const rmw_internet_protoc
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<const char *(*)(const rmw_internet_protocol_t internet_protocol)>(
+  static auto underlying_func =
+      reinterpret_cast<const char *(*)(const rmw_internet_protocol_t internet_protocol)>(
     dlsym(underlying_rmw_lib, "rmw_network_flow_endpoint_get_internet_protocol_string"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_network_flow_endpoint_get_internet_protocol_string not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_network_flow_endpoint_get_internet_protocol_string not available\n");  // NOLINT(whitespace/line_length)
     return nullptr;
   }
 
@@ -1185,7 +1215,7 @@ rmw_network_flow_endpoint_get_internet_protocol_string(const rmw_internet_protoc
 }
 
 rmw_ret_t
-rmw_network_flow_endpoint_set_internet_address(rmw_network_flow_endpoint_t * network_flow_endpoint, const char * internet_address, size_t size)
+rmw_network_flow_endpoint_set_internet_address(rmw_network_flow_endpoint_t * network_flow_endpoint, const char * internet_address, size_t size)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1193,7 +1223,8 @@ rmw_network_flow_endpoint_set_internet_address(rmw_network_flow_endpoint_t * net
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_network_flow_endpoint_t * network_flow_endpoint, const char * internet_address, size_t size)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_network_flow_endpoint_t * network_flow_endpoint, const char * internet_address, size_t size)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_network_flow_endpoint_set_internet_address"));
 
   if (underlying_func == nullptr) {
@@ -1217,7 +1248,8 @@ rmw_get_zero_initialized_network_flow_endpoint_array(void)
     dlsym(underlying_rmw_lib, "rmw_get_zero_initialized_network_flow_endpoint_array"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_network_flow_endpoint_array not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_get_zero_initialized_network_flow_endpoint_array not available\n");  // NOLINT(whitespace/line_length)
     return {};
   }
 
@@ -1225,7 +1257,7 @@ rmw_get_zero_initialized_network_flow_endpoint_array(void)
 }
 
 rmw_ret_t
-rmw_network_flow_endpoint_array_check_zero(const rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)
+rmw_network_flow_endpoint_array_check_zero(const rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1233,7 +1265,8 @@ rmw_network_flow_endpoint_array_check_zero(const rmw_network_flow_endpoint_array
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_network_flow_endpoint_array_check_zero"));
 
   if (underlying_func == nullptr) {
@@ -1245,7 +1278,7 @@ rmw_network_flow_endpoint_array_check_zero(const rmw_network_flow_endpoint_array
 }
 
 rmw_ret_t
-rmw_network_flow_endpoint_array_init(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array, size_t size, rcutils_allocator_t * allocator)
+rmw_network_flow_endpoint_array_init(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array, size_t size, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1253,7 +1286,8 @@ rmw_network_flow_endpoint_array_init(rmw_network_flow_endpoint_array_t * network
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array, size_t size, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array, size_t size, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_network_flow_endpoint_array_init"));
 
   if (underlying_func == nullptr) {
@@ -1265,7 +1299,7 @@ rmw_network_flow_endpoint_array_init(rmw_network_flow_endpoint_array_t * network
 }
 
 rmw_ret_t
-rmw_network_flow_endpoint_array_fini(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)
+rmw_network_flow_endpoint_array_fini(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1273,7 +1307,8 @@ rmw_network_flow_endpoint_array_fini(rmw_network_flow_endpoint_array_t * network
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_network_flow_endpoint_array_t * network_flow_endpoint_array)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_network_flow_endpoint_array_fini"));
 
   if (underlying_func == nullptr) {
@@ -1305,7 +1340,7 @@ rmw_get_default_publisher_options(void)
 }
 
 rmw_ret_t
-rmw_qos_profile_check_compatible(const rmw_qos_profile_t publisher_profile, const rmw_qos_profile_t subscription_profile, rmw_qos_compatibility_type_t * compatibility, char * reason, size_t reason_size)
+rmw_qos_profile_check_compatible(const rmw_qos_profile_t publisher_profile, const rmw_qos_profile_t subscription_profile, rmw_qos_compatibility_type_t * compatibility, char * reason, size_t reason_size)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1313,7 +1348,8 @@ rmw_qos_profile_check_compatible(const rmw_qos_profile_t publisher_profile, cons
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_qos_profile_t publisher_profile, const rmw_qos_profile_t subscription_profile, rmw_qos_compatibility_type_t * compatibility, char * reason, size_t reason_size)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_qos_profile_t publisher_profile, const rmw_qos_profile_t subscription_profile, rmw_qos_compatibility_type_t * compatibility, char * reason, size_t reason_size)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_qos_profile_check_compatible"));
 
   if (underlying_func == nullptr) {
@@ -1321,7 +1357,7 @@ rmw_qos_profile_check_compatible(const rmw_qos_profile_t publisher_profile, cons
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(publisher_profile, subscription_profile, compatibility, reason, reason_size);
+  return underlying_func(publisher_profile, subscription_profile, compatibility, reason, reason_size);  // NOLINT(whitespace/line_length)
 }
 
 const char *
@@ -1353,7 +1389,8 @@ rmw_qos_durability_policy_to_str(rmw_qos_durability_policy_t value)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<const char *(*)(rmw_qos_durability_policy_t value)>(
+  static auto underlying_func =
+      reinterpret_cast<const char *(*)(rmw_qos_durability_policy_t value)>(
     dlsym(underlying_rmw_lib, "rmw_qos_durability_policy_to_str"));
 
   if (underlying_func == nullptr) {
@@ -1393,7 +1430,8 @@ rmw_qos_liveliness_policy_to_str(rmw_qos_liveliness_policy_t value)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<const char *(*)(rmw_qos_liveliness_policy_t value)>(
+  static auto underlying_func =
+      reinterpret_cast<const char *(*)(rmw_qos_liveliness_policy_t value)>(
     dlsym(underlying_rmw_lib, "rmw_qos_liveliness_policy_to_str"));
 
   if (underlying_func == nullptr) {
@@ -1413,7 +1451,8 @@ rmw_qos_reliability_policy_to_str(rmw_qos_reliability_policy_t value)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<const char *(*)(rmw_qos_reliability_policy_t value)>(
+  static auto underlying_func =
+      reinterpret_cast<const char *(*)(rmw_qos_reliability_policy_t value)>(
     dlsym(underlying_rmw_lib, "rmw_qos_reliability_policy_to_str"));
 
   if (underlying_func == nullptr) {
@@ -1573,7 +1612,8 @@ rmw_node_get_graph_guard_condition(const rmw_node_t * node)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<const rmw_guard_condition_t *(*)(const rmw_node_t * node)>(
+  static auto underlying_func =
+      reinterpret_cast<const rmw_guard_condition_t *(*)(const rmw_node_t * node)>(
     dlsym(underlying_rmw_lib, "rmw_node_get_graph_guard_condition"));
 
   if (underlying_func == nullptr) {
@@ -1585,7 +1625,7 @@ rmw_node_get_graph_guard_condition(const rmw_node_t * node)
 }
 
 rmw_ret_t
-rmw_init_publisher_allocation(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_publisher_allocation_t * allocation)
+rmw_init_publisher_allocation(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_publisher_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1593,7 +1633,8 @@ rmw_init_publisher_allocation(const rosidl_message_type_support_t * type_support
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_publisher_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_publisher_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_init_publisher_allocation"));
 
   if (underlying_func == nullptr) {
@@ -1613,7 +1654,8 @@ rmw_fini_publisher_allocation(rmw_publisher_allocation_t * allocation)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_publisher_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_publisher_allocation_t * allocation)>(
     dlsym(underlying_rmw_lib, "rmw_fini_publisher_allocation"));
 
   if (underlying_func == nullptr) {
@@ -1625,7 +1667,7 @@ rmw_fini_publisher_allocation(rmw_publisher_allocation_t * allocation)
 }
 
 rmw_ret_t
-rmw_borrow_loaned_message(const rmw_publisher_t * publisher, const rosidl_message_type_support_t * type_support, void ** ros_message)
+rmw_borrow_loaned_message(const rmw_publisher_t * publisher, const rosidl_message_type_support_t * type_support, void ** ros_message)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1633,7 +1675,8 @@ rmw_borrow_loaned_message(const rmw_publisher_t * publisher, const rosidl_messag
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, const rosidl_message_type_support_t * type_support, void ** ros_message)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, const rosidl_message_type_support_t * type_support, void ** ros_message)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_borrow_loaned_message"));
 
   if (underlying_func == nullptr) {
@@ -1653,7 +1696,8 @@ rmw_return_loaned_message_from_publisher(const rmw_publisher_t * publisher, void
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, void * loaned_message)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, void * loaned_message)>(
     dlsym(underlying_rmw_lib, "rmw_return_loaned_message_from_publisher"));
 
   if (underlying_func == nullptr) {
@@ -1665,7 +1709,7 @@ rmw_return_loaned_message_from_publisher(const rmw_publisher_t * publisher, void
 }
 
 rmw_ret_t
-rmw_publish_loaned_message(const rmw_publisher_t * publisher, void * ros_message, rmw_publisher_allocation_t * allocation)
+rmw_publish_loaned_message(const rmw_publisher_t * publisher, void * ros_message, rmw_publisher_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1673,7 +1717,8 @@ rmw_publish_loaned_message(const rmw_publisher_t * publisher, void * ros_message
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, void * ros_message, rmw_publisher_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, void * ros_message, rmw_publisher_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_publish_loaned_message"));
 
   if (underlying_func == nullptr) {
@@ -1685,7 +1730,7 @@ rmw_publish_loaned_message(const rmw_publisher_t * publisher, void * ros_message
 }
 
 rmw_ret_t
-rmw_publisher_count_matched_subscriptions(const rmw_publisher_t * publisher, size_t * subscription_count)
+rmw_publisher_count_matched_subscriptions(const rmw_publisher_t * publisher, size_t * subscription_count)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1693,7 +1738,8 @@ rmw_publisher_count_matched_subscriptions(const rmw_publisher_t * publisher, siz
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, size_t * subscription_count)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, size_t * subscription_count)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_publisher_count_matched_subscriptions"));
 
   if (underlying_func == nullptr) {
@@ -1713,7 +1759,8 @@ rmw_publisher_get_actual_qos(const rmw_publisher_t * publisher, rmw_qos_profile_
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rmw_qos_profile_t * qos)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rmw_qos_profile_t * qos)>(
     dlsym(underlying_rmw_lib, "rmw_publisher_get_actual_qos"));
 
   if (underlying_func == nullptr) {
@@ -1725,7 +1772,7 @@ rmw_publisher_get_actual_qos(const rmw_publisher_t * publisher, rmw_qos_profile_
 }
 
 rmw_ret_t
-rmw_get_serialized_message_size(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, size_t * size)
+rmw_get_serialized_message_size(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, size_t * size)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1733,7 +1780,8 @@ rmw_get_serialized_message_size(const rosidl_message_type_support_t * type_suppo
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, size_t * size)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, size_t * size)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_serialized_message_size"));
 
   if (underlying_func == nullptr) {
@@ -1773,7 +1821,8 @@ rmw_publisher_wait_for_all_acked(const rmw_publisher_t * publisher, rmw_time_t w
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rmw_time_t wait_timeout)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rmw_time_t wait_timeout)>(
     dlsym(underlying_rmw_lib, "rmw_publisher_wait_for_all_acked"));
 
   if (underlying_func == nullptr) {
@@ -1785,7 +1834,7 @@ rmw_publisher_wait_for_all_acked(const rmw_publisher_t * publisher, rmw_time_t w
 }
 
 rmw_ret_t
-rmw_serialize(const void * ros_message, const rosidl_message_type_support_t * type_support, rmw_serialized_message_t * serialized_message)
+rmw_serialize(const void * ros_message, const rosidl_message_type_support_t * type_support, rmw_serialized_message_t * serialized_message)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1793,7 +1842,8 @@ rmw_serialize(const void * ros_message, const rosidl_message_type_support_t * ty
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const void * ros_message, const rosidl_message_type_support_t * type_support, rmw_serialized_message_t * serialized_message)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const void * ros_message, const rosidl_message_type_support_t * type_support, rmw_serialized_message_t * serialized_message)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_serialize"));
 
   if (underlying_func == nullptr) {
@@ -1805,7 +1855,7 @@ rmw_serialize(const void * ros_message, const rosidl_message_type_support_t * ty
 }
 
 rmw_ret_t
-rmw_deserialize(const rmw_serialized_message_t * serialized_message, const rosidl_message_type_support_t * type_support, void * ros_message)
+rmw_deserialize(const rmw_serialized_message_t * serialized_message, const rosidl_message_type_support_t * type_support, void * ros_message)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1813,7 +1863,8 @@ rmw_deserialize(const rmw_serialized_message_t * serialized_message, const rosid
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_serialized_message_t * serialized_message, const rosidl_message_type_support_t * type_support, void * ros_message)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_serialized_message_t * serialized_message, const rosidl_message_type_support_t * type_support, void * ros_message)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_deserialize"));
 
   if (underlying_func == nullptr) {
@@ -1825,7 +1876,7 @@ rmw_deserialize(const rmw_serialized_message_t * serialized_message, const rosid
 }
 
 rmw_ret_t
-rmw_init_subscription_allocation(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_subscription_allocation_t * allocation)
+rmw_init_subscription_allocation(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1833,7 +1884,8 @@ rmw_init_subscription_allocation(const rosidl_message_type_support_t * type_supp
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rosidl_message_type_support_t * type_support, const rosidl_runtime_c__Sequence__bound * message_bounds, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_init_subscription_allocation"));
 
   if (underlying_func == nullptr) {
@@ -1853,7 +1905,8 @@ rmw_fini_subscription_allocation(rmw_subscription_allocation_t * allocation)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_subscription_allocation_t * allocation)>(
     dlsym(underlying_rmw_lib, "rmw_fini_subscription_allocation"));
 
   if (underlying_func == nullptr) {
@@ -1865,7 +1918,7 @@ rmw_fini_subscription_allocation(rmw_subscription_allocation_t * allocation)
 }
 
 rmw_ret_t
-rmw_subscription_count_matched_publishers(const rmw_subscription_t * subscription, size_t * publisher_count)
+rmw_subscription_count_matched_publishers(const rmw_subscription_t * subscription, size_t * publisher_count)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1873,7 +1926,8 @@ rmw_subscription_count_matched_publishers(const rmw_subscription_t * subscriptio
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, size_t * publisher_count)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, size_t * publisher_count)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_count_matched_publishers"));
 
   if (underlying_func == nullptr) {
@@ -1893,7 +1947,8 @@ rmw_subscription_get_actual_qos(const rmw_subscription_t * subscription, rmw_qos
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rmw_qos_profile_t * qos)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rmw_qos_profile_t * qos)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_get_actual_qos"));
 
   if (underlying_func == nullptr) {
@@ -1905,7 +1960,7 @@ rmw_subscription_get_actual_qos(const rmw_subscription_t * subscription, rmw_qos
 }
 
 rmw_ret_t
-rmw_subscription_set_content_filter(rmw_subscription_t * subscription, const rmw_subscription_content_filter_options_t * options)
+rmw_subscription_set_content_filter(rmw_subscription_t * subscription, const rmw_subscription_content_filter_options_t * options)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1913,7 +1968,8 @@ rmw_subscription_set_content_filter(rmw_subscription_t * subscription, const rmw
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_subscription_t * subscription, const rmw_subscription_content_filter_options_t * options)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_subscription_t * subscription, const rmw_subscription_content_filter_options_t * options)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_set_content_filter"));
 
   if (underlying_func == nullptr) {
@@ -1925,7 +1981,7 @@ rmw_subscription_set_content_filter(rmw_subscription_t * subscription, const rmw
 }
 
 rmw_ret_t
-rmw_subscription_get_content_filter(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)
+rmw_subscription_get_content_filter(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1933,7 +1989,8 @@ rmw_subscription_get_content_filter(const rmw_subscription_t * subscription, rcu
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_get_content_filter"));
 
   if (underlying_func == nullptr) {
@@ -1945,7 +2002,7 @@ rmw_subscription_get_content_filter(const rmw_subscription_t * subscription, rcu
 }
 
 rmw_ret_t
-rmw_take_sequence(const rmw_subscription_t * subscription, size_t count, rmw_message_sequence_t * message_sequence, rmw_message_info_sequence_t * message_info_sequence, size_t * taken, rmw_subscription_allocation_t * allocation)
+rmw_take_sequence(const rmw_subscription_t * subscription, size_t count, rmw_message_sequence_t * message_sequence, rmw_message_info_sequence_t * message_info_sequence, size_t * taken, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1953,7 +2010,8 @@ rmw_take_sequence(const rmw_subscription_t * subscription, size_t count, rmw_mes
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, size_t count, rmw_message_sequence_t * message_sequence, rmw_message_info_sequence_t * message_info_sequence, size_t * taken, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, size_t count, rmw_message_sequence_t * message_sequence, rmw_message_info_sequence_t * message_info_sequence, size_t * taken, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_sequence"));
 
   if (underlying_func == nullptr) {
@@ -1961,11 +2019,11 @@ rmw_take_sequence(const rmw_subscription_t * subscription, size_t count, rmw_mes
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(subscription, count, message_sequence, message_info_sequence, taken, allocation);
+  return underlying_func(subscription, count, message_sequence, message_info_sequence, taken, allocation);  // NOLINT(whitespace/line_length)
 }
 
 rmw_ret_t
-rmw_take_serialized_message(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_subscription_allocation_t * allocation)
+rmw_take_serialized_message(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1973,7 +2031,8 @@ rmw_take_serialized_message(const rmw_subscription_t * subscription, rmw_seriali
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_serialized_message"));
 
   if (underlying_func == nullptr) {
@@ -1985,7 +2044,7 @@ rmw_take_serialized_message(const rmw_subscription_t * subscription, rmw_seriali
 }
 
 rmw_ret_t
-rmw_take_serialized_message_with_info(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)
+rmw_take_serialized_message_with_info(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -1993,7 +2052,8 @@ rmw_take_serialized_message_with_info(const rmw_subscription_t * subscription, r
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, rmw_serialized_message_t * serialized_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_serialized_message_with_info"));
 
   if (underlying_func == nullptr) {
@@ -2005,7 +2065,7 @@ rmw_take_serialized_message_with_info(const rmw_subscription_t * subscription, r
 }
 
 rmw_ret_t
-rmw_take_loaned_message(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_subscription_allocation_t * allocation)
+rmw_take_loaned_message(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2013,7 +2073,8 @@ rmw_take_loaned_message(const rmw_subscription_t * subscription, void ** loaned_
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_loaned_message"));
 
   if (underlying_func == nullptr) {
@@ -2025,7 +2086,7 @@ rmw_take_loaned_message(const rmw_subscription_t * subscription, void ** loaned_
 }
 
 rmw_ret_t
-rmw_take_loaned_message_with_info(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)
+rmw_take_loaned_message_with_info(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2033,7 +2094,8 @@ rmw_take_loaned_message_with_info(const rmw_subscription_t * subscription, void 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, void ** loaned_message, bool * taken, rmw_message_info_t * message_info, rmw_subscription_allocation_t * allocation)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_loaned_message_with_info"));
 
   if (underlying_func == nullptr) {
@@ -2045,7 +2107,7 @@ rmw_take_loaned_message_with_info(const rmw_subscription_t * subscription, void 
 }
 
 rmw_ret_t
-rmw_return_loaned_message_from_subscription(const rmw_subscription_t * subscription, void * loaned_message)
+rmw_return_loaned_message_from_subscription(const rmw_subscription_t * subscription, void * loaned_message)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2053,7 +2115,8 @@ rmw_return_loaned_message_from_subscription(const rmw_subscription_t * subscript
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, void * loaned_message)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_t * subscription, void * loaned_message)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_return_loaned_message_from_subscription"));
 
   if (underlying_func == nullptr) {
@@ -2065,7 +2128,7 @@ rmw_return_loaned_message_from_subscription(const rmw_subscription_t * subscript
 }
 
 rmw_client_t *
-rmw_create_client(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_policies)
+rmw_create_client(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_policies)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2073,7 +2136,8 @@ rmw_create_client(const rmw_node_t * node, const rosidl_service_type_support_t *
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_client_t *(*)(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_policies)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_client_t *(*)(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_policies)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_create_client"));
 
   if (underlying_func == nullptr) {
@@ -2093,7 +2157,8 @@ rmw_destroy_client(rmw_node_t * node, rmw_client_t * client)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_node_t * node, rmw_client_t * client)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_node_t * node, rmw_client_t * client)>(
     dlsym(underlying_rmw_lib, "rmw_destroy_client"));
 
   if (underlying_func == nullptr) {
@@ -2113,7 +2178,8 @@ rmw_send_request(const rmw_client_t * client, const void * ros_request, int64_t 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, const void * ros_request, int64_t * sequence_id)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, const void * ros_request, int64_t * sequence_id)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_send_request"));
 
   if (underlying_func == nullptr) {
@@ -2125,7 +2191,7 @@ rmw_send_request(const rmw_client_t * client, const void * ros_request, int64_t 
 }
 
 rmw_ret_t
-rmw_take_response(const rmw_client_t * client, rmw_service_info_t * request_header, void * ros_response, bool * taken)
+rmw_take_response(const rmw_client_t * client, rmw_service_info_t * request_header, void * ros_response, bool * taken)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2133,7 +2199,8 @@ rmw_take_response(const rmw_client_t * client, rmw_service_info_t * request_head
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_service_info_t * request_header, void * ros_response, bool * taken)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_service_info_t * request_header, void * ros_response, bool * taken)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_response"));
 
   if (underlying_func == nullptr) {
@@ -2153,7 +2220,8 @@ rmw_client_request_publisher_get_actual_qos(const rmw_client_t * client, rmw_qos
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_qos_profile_t * qos)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_qos_profile_t * qos)>(
     dlsym(underlying_rmw_lib, "rmw_client_request_publisher_get_actual_qos"));
 
   if (underlying_func == nullptr) {
@@ -2165,7 +2233,7 @@ rmw_client_request_publisher_get_actual_qos(const rmw_client_t * client, rmw_qos
 }
 
 rmw_ret_t
-rmw_client_response_subscription_get_actual_qos(const rmw_client_t * client, rmw_qos_profile_t * qos)
+rmw_client_response_subscription_get_actual_qos(const rmw_client_t * client, rmw_qos_profile_t * qos)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2173,11 +2241,13 @@ rmw_client_response_subscription_get_actual_qos(const rmw_client_t * client, rmw
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_qos_profile_t * qos)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_qos_profile_t * qos)>(
     dlsym(underlying_rmw_lib, "rmw_client_response_subscription_get_actual_qos"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_client_response_subscription_get_actual_qos not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_client_response_subscription_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
 
@@ -2185,7 +2255,7 @@ rmw_client_response_subscription_get_actual_qos(const rmw_client_t * client, rmw
 }
 
 rmw_service_t *
-rmw_create_service(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_profile)
+rmw_create_service(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_profile)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2193,7 +2263,8 @@ rmw_create_service(const rmw_node_t * node, const rosidl_service_type_support_t 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_service_t *(*)(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_profile)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_service_t *(*)(const rmw_node_t * node, const rosidl_service_type_support_t * type_support, const char * service_name, const rmw_qos_profile_t * qos_profile)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_create_service"));
 
   if (underlying_func == nullptr) {
@@ -2213,7 +2284,8 @@ rmw_destroy_service(rmw_node_t * node, rmw_service_t * service)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_node_t * node, rmw_service_t * service)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_node_t * node, rmw_service_t * service)>(
     dlsym(underlying_rmw_lib, "rmw_destroy_service"));
 
   if (underlying_func == nullptr) {
@@ -2225,7 +2297,7 @@ rmw_destroy_service(rmw_node_t * node, rmw_service_t * service)
 }
 
 rmw_ret_t
-rmw_take_request(const rmw_service_t * service, rmw_service_info_t * request_header, void * ros_request, bool * taken)
+rmw_take_request(const rmw_service_t * service, rmw_service_info_t * request_header, void * ros_request, bool * taken)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2233,7 +2305,8 @@ rmw_take_request(const rmw_service_t * service, rmw_service_info_t * request_hea
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_service_info_t * request_header, void * ros_request, bool * taken)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_service_info_t * request_header, void * ros_request, bool * taken)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_take_request"));
 
   if (underlying_func == nullptr) {
@@ -2245,7 +2318,7 @@ rmw_take_request(const rmw_service_t * service, rmw_service_info_t * request_hea
 }
 
 rmw_ret_t
-rmw_send_response(const rmw_service_t * service, rmw_request_id_t * request_header, void * ros_response)
+rmw_send_response(const rmw_service_t * service, rmw_request_id_t * request_header, void * ros_response)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2253,7 +2326,8 @@ rmw_send_response(const rmw_service_t * service, rmw_request_id_t * request_head
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_request_id_t * request_header, void * ros_response)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_request_id_t * request_header, void * ros_response)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_send_response"));
 
   if (underlying_func == nullptr) {
@@ -2265,7 +2339,7 @@ rmw_send_response(const rmw_service_t * service, rmw_request_id_t * request_head
 }
 
 rmw_ret_t
-rmw_service_request_subscription_get_actual_qos(const rmw_service_t * service, rmw_qos_profile_t * qos)
+rmw_service_request_subscription_get_actual_qos(const rmw_service_t * service, rmw_qos_profile_t * qos)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2273,11 +2347,13 @@ rmw_service_request_subscription_get_actual_qos(const rmw_service_t * service, r
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_qos_profile_t * qos)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_qos_profile_t * qos)>(
     dlsym(underlying_rmw_lib, "rmw_service_request_subscription_get_actual_qos"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_service_request_subscription_get_actual_qos not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_service_request_subscription_get_actual_qos not available\n");
     return RMW_RET_ERROR;
   }
 
@@ -2285,7 +2361,7 @@ rmw_service_request_subscription_get_actual_qos(const rmw_service_t * service, r
 }
 
 rmw_ret_t
-rmw_service_response_publisher_get_actual_qos(const rmw_service_t * service, rmw_qos_profile_t * qos)
+rmw_service_response_publisher_get_actual_qos(const rmw_service_t * service, rmw_qos_profile_t * qos)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2293,7 +2369,8 @@ rmw_service_response_publisher_get_actual_qos(const rmw_service_t * service, rmw
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_qos_profile_t * qos)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_service_t * service, rmw_qos_profile_t * qos)>(
     dlsym(underlying_rmw_lib, "rmw_service_response_publisher_get_actual_qos"));
 
   if (underlying_func == nullptr) {
@@ -2313,7 +2390,8 @@ rmw_create_guard_condition(rmw_context_t * context)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_guard_condition_t *(*)(rmw_context_t * context)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_guard_condition_t *(*)(rmw_context_t * context)>(
     dlsym(underlying_rmw_lib, "rmw_create_guard_condition"));
 
   if (underlying_func == nullptr) {
@@ -2333,7 +2411,8 @@ rmw_destroy_guard_condition(rmw_guard_condition_t * guard_condition)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_guard_condition_t * guard_condition)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_guard_condition_t * guard_condition)>(
     dlsym(underlying_rmw_lib, "rmw_destroy_guard_condition"));
 
   if (underlying_func == nullptr) {
@@ -2353,7 +2432,8 @@ rmw_trigger_guard_condition(const rmw_guard_condition_t * guard_condition)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_guard_condition_t * guard_condition)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_guard_condition_t * guard_condition)>(
     dlsym(underlying_rmw_lib, "rmw_trigger_guard_condition"));
 
   if (underlying_func == nullptr) {
@@ -2373,7 +2453,8 @@ rmw_create_wait_set(rmw_context_t * context, size_t max_conditions)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_wait_set_t *(*)(rmw_context_t * context, size_t max_conditions)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_wait_set_t *(*)(rmw_context_t * context, size_t max_conditions)>(
     dlsym(underlying_rmw_lib, "rmw_create_wait_set"));
 
   if (underlying_func == nullptr) {
@@ -2405,7 +2486,7 @@ rmw_destroy_wait_set(rmw_wait_set_t * wait_set)
 }
 
 rmw_ret_t
-rmw_wait(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_conditions, rmw_services_t * services, rmw_clients_t * clients, rmw_events_t * events, rmw_wait_set_t * wait_set, const rmw_time_t * wait_timeout)
+rmw_wait(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_conditions, rmw_services_t * services, rmw_clients_t * clients, rmw_events_t * events, rmw_wait_set_t * wait_set, const rmw_time_t * wait_timeout)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2413,7 +2494,8 @@ rmw_wait(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_con
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_conditions, rmw_services_t * services, rmw_clients_t * clients, rmw_events_t * events, rmw_wait_set_t * wait_set, const rmw_time_t * wait_timeout)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_conditions, rmw_services_t * services, rmw_clients_t * clients, rmw_events_t * events, rmw_wait_set_t * wait_set, const rmw_time_t * wait_timeout)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_wait"));
 
   if (underlying_func == nullptr) {
@@ -2421,11 +2503,11 @@ rmw_wait(rmw_subscriptions_t * subscriptions, rmw_guard_conditions_t * guard_con
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(subscriptions, guard_conditions, services, clients, events, wait_set, wait_timeout);
+  return underlying_func(subscriptions, guard_conditions, services, clients, events, wait_set, wait_timeout);  // NOLINT(whitespace/line_length)
 }
 
 rmw_ret_t
-rmw_get_node_names(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces)
+rmw_get_node_names(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2433,7 +2515,8 @@ rmw_get_node_names(const rmw_node_t * node, rcutils_string_array_t * node_names,
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_node_names"));
 
   if (underlying_func == nullptr) {
@@ -2445,7 +2528,7 @@ rmw_get_node_names(const rmw_node_t * node, rcutils_string_array_t * node_names,
 }
 
 rmw_ret_t
-rmw_get_node_names_with_enclaves(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces, rcutils_string_array_t * enclaves)
+rmw_get_node_names_with_enclaves(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces, rcutils_string_array_t * enclaves)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2453,7 +2536,8 @@ rmw_get_node_names_with_enclaves(const rmw_node_t * node, rcutils_string_array_t
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces, rcutils_string_array_t * enclaves)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, rcutils_string_array_t * node_names, rcutils_string_array_t * node_namespaces, rcutils_string_array_t * enclaves)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_get_node_names_with_enclaves"));
 
   if (underlying_func == nullptr) {
@@ -2473,7 +2557,8 @@ rmw_count_publishers(const rmw_node_t * node, const char * topic_name, size_t * 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * topic_name, size_t * count)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * topic_name, size_t * count)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_count_publishers"));
 
   if (underlying_func == nullptr) {
@@ -2493,7 +2578,8 @@ rmw_count_subscribers(const rmw_node_t * node, const char * topic_name, size_t *
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * topic_name, size_t * count)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * topic_name, size_t * count)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_count_subscribers"));
 
   if (underlying_func == nullptr) {
@@ -2513,7 +2599,8 @@ rmw_count_clients(const rmw_node_t * node, const char * service_name, size_t * c
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * service_name, size_t * count)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * service_name, size_t * count)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_count_clients"));
 
   if (underlying_func == nullptr) {
@@ -2533,7 +2620,8 @@ rmw_count_services(const rmw_node_t * node, const char * service_name, size_t * 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * service_name, size_t * count)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const char * service_name, size_t * count)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_count_services"));
 
   if (underlying_func == nullptr) {
@@ -2553,7 +2641,8 @@ rmw_get_gid_for_publisher(const rmw_publisher_t * publisher, rmw_gid_t * gid)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rmw_gid_t * gid)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_publisher_t * publisher, rmw_gid_t * gid)>(
     dlsym(underlying_rmw_lib, "rmw_get_gid_for_publisher"));
 
   if (underlying_func == nullptr) {
@@ -2573,7 +2662,8 @@ rmw_get_gid_for_client(const rmw_client_t * client, rmw_gid_t * gid)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_gid_t * gid)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_client_t * client, rmw_gid_t * gid)>(
     dlsym(underlying_rmw_lib, "rmw_get_gid_for_client"));
 
   if (underlying_func == nullptr) {
@@ -2593,7 +2683,8 @@ rmw_compare_gids_equal(const rmw_gid_t * gid1, const rmw_gid_t * gid2, bool * re
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_gid_t * gid1, const rmw_gid_t * gid2, bool * result)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_gid_t * gid1, const rmw_gid_t * gid2, bool * result)>(
     dlsym(underlying_rmw_lib, "rmw_compare_gids_equal"));
 
   if (underlying_func == nullptr) {
@@ -2605,7 +2696,7 @@ rmw_compare_gids_equal(const rmw_gid_t * gid1, const rmw_gid_t * gid2, bool * re
 }
 
 rmw_ret_t
-rmw_service_server_is_available(const rmw_node_t * node, const rmw_client_t * client, bool * is_available)
+rmw_service_server_is_available(const rmw_node_t * node, const rmw_client_t * client, bool * is_available)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2613,7 +2704,8 @@ rmw_service_server_is_available(const rmw_node_t * node, const rmw_client_t * cl
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const rmw_client_t * client, bool * is_available)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_node_t * node, const rmw_client_t * client, bool * is_available)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_service_server_is_available"));
 
   if (underlying_func == nullptr) {
@@ -2645,7 +2737,7 @@ rmw_set_log_severity(rmw_log_severity_t severity)
 }
 
 rmw_ret_t
-rmw_subscription_set_on_new_message_callback(rmw_subscription_t * subscription, rmw_event_callback_t callback, const void * user_data)
+rmw_subscription_set_on_new_message_callback(rmw_subscription_t * subscription, rmw_event_callback_t callback, const void * user_data)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2653,7 +2745,8 @@ rmw_subscription_set_on_new_message_callback(rmw_subscription_t * subscription, 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_subscription_t * subscription, rmw_event_callback_t callback, const void * user_data)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_subscription_t * subscription, rmw_event_callback_t callback, const void * user_data)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_set_on_new_message_callback"));
 
   if (underlying_func == nullptr) {
@@ -2665,7 +2758,7 @@ rmw_subscription_set_on_new_message_callback(rmw_subscription_t * subscription, 
 }
 
 rmw_ret_t
-rmw_service_set_on_new_request_callback(rmw_service_t * service, rmw_event_callback_t callback, const void * user_data)
+rmw_service_set_on_new_request_callback(rmw_service_t * service, rmw_event_callback_t callback, const void * user_data)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2673,7 +2766,8 @@ rmw_service_set_on_new_request_callback(rmw_service_t * service, rmw_event_callb
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_service_t * service, rmw_event_callback_t callback, const void * user_data)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_service_t * service, rmw_event_callback_t callback, const void * user_data)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_service_set_on_new_request_callback"));
 
   if (underlying_func == nullptr) {
@@ -2685,7 +2779,7 @@ rmw_service_set_on_new_request_callback(rmw_service_t * service, rmw_event_callb
 }
 
 rmw_ret_t
-rmw_client_set_on_new_response_callback(rmw_client_t * client, rmw_event_callback_t callback, const void * user_data)
+rmw_client_set_on_new_response_callback(rmw_client_t * client, rmw_event_callback_t callback, const void * user_data)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2693,7 +2787,8 @@ rmw_client_set_on_new_response_callback(rmw_client_t * client, rmw_event_callbac
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_client_t * client, rmw_event_callback_t callback, const void * user_data)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_client_t * client, rmw_event_callback_t callback, const void * user_data)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_client_set_on_new_response_callback"));
 
   if (underlying_func == nullptr) {
@@ -2713,7 +2808,8 @@ rmw_event_set_callback(rmw_event_t * event, rmw_event_callback_t callback, const
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_event_t * event, rmw_event_callback_t callback, const void * user_data)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_event_t * event, rmw_event_callback_t callback, const void * user_data)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_event_set_callback"));
 
   if (underlying_func == nullptr) {
@@ -2785,7 +2881,7 @@ rmw_get_default_security_options(void)
 }
 
 rmw_ret_t
-rmw_security_options_copy(const rmw_security_options_t * src, const rcutils_allocator_t * allocator, rmw_security_options_t * dst)
+rmw_security_options_copy(const rmw_security_options_t * src, const rcutils_allocator_t * allocator, rmw_security_options_t * dst)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2793,7 +2889,8 @@ rmw_security_options_copy(const rmw_security_options_t * src, const rcutils_allo
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_security_options_t * src, const rcutils_allocator_t * allocator, rmw_security_options_t * dst)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_security_options_t * src, const rcutils_allocator_t * allocator, rmw_security_options_t * dst)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_security_options_copy"));
 
   if (underlying_func == nullptr) {
@@ -2805,7 +2902,7 @@ rmw_security_options_copy(const rmw_security_options_t * src, const rcutils_allo
 }
 
 rmw_ret_t
-rmw_security_options_set_root_path(const char * security_root_path, const rcutils_allocator_t * allocator, rmw_security_options_t * security_options)
+rmw_security_options_set_root_path(const char * security_root_path, const rcutils_allocator_t * allocator, rmw_security_options_t * security_options)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2813,7 +2910,8 @@ rmw_security_options_set_root_path(const char * security_root_path, const rcutil
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * security_root_path, const rcutils_allocator_t * allocator, rmw_security_options_t * security_options)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * security_root_path, const rcutils_allocator_t * allocator, rmw_security_options_t * security_options)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_security_options_set_root_path"));
 
   if (underlying_func == nullptr) {
@@ -2825,7 +2923,7 @@ rmw_security_options_set_root_path(const char * security_root_path, const rcutil
 }
 
 rmw_ret_t
-rmw_security_options_fini(rmw_security_options_t * security_options, const rcutils_allocator_t * allocator)
+rmw_security_options_fini(rmw_security_options_t * security_options, const rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2833,7 +2931,8 @@ rmw_security_options_fini(rmw_security_options_t * security_options, const rcuti
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_security_options_t * security_options, const rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_security_options_t * security_options, const rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_security_options_fini"));
 
   if (underlying_func == nullptr) {
@@ -2853,11 +2952,13 @@ rmw_get_zero_initialized_content_filter_options(void)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_subscription_content_filter_options_t(*)(void)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_subscription_content_filter_options_t(*)(void)>(
     dlsym(underlying_rmw_lib, "rmw_get_zero_initialized_content_filter_options"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_content_filter_options not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_get_zero_initialized_content_filter_options not available\n");
     return {};
   }
 
@@ -2865,7 +2966,7 @@ rmw_get_zero_initialized_content_filter_options(void)
 }
 
 rmw_ret_t
-rmw_subscription_content_filter_options_init(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)
+rmw_subscription_content_filter_options_init(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2873,7 +2974,8 @@ rmw_subscription_content_filter_options_init(const char * filter_expression, siz
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_content_filter_options_init"));
 
   if (underlying_func == nullptr) {
@@ -2881,11 +2983,11 @@ rmw_subscription_content_filter_options_init(const char * filter_expression, siz
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(filter_expression, expression_parameters_argc, expression_parameter_argv, allocator, options);
+  return underlying_func(filter_expression, expression_parameters_argc, expression_parameter_argv, allocator, options);  // NOLINT(whitespace/line_length)
 }
 
 rmw_ret_t
-rmw_subscription_content_filter_options_set(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)
+rmw_subscription_content_filter_options_set(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2893,7 +2995,8 @@ rmw_subscription_content_filter_options_set(const char * filter_expression, size
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * filter_expression, size_t expression_parameters_argc, const char * expression_parameter_argv[], const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * options)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_content_filter_options_set"));
 
   if (underlying_func == nullptr) {
@@ -2901,11 +3004,11 @@ rmw_subscription_content_filter_options_set(const char * filter_expression, size
     return RMW_RET_ERROR;
   }
 
-  return underlying_func(filter_expression, expression_parameters_argc, expression_parameter_argv, allocator, options);
+  return underlying_func(filter_expression, expression_parameters_argc, expression_parameter_argv, allocator, options);  // NOLINT(whitespace/line_length)
 }
 
 rmw_ret_t
-rmw_subscription_content_filter_options_copy(const rmw_subscription_content_filter_options_t * src, const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * dst)
+rmw_subscription_content_filter_options_copy(const rmw_subscription_content_filter_options_t * src, const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * dst)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2913,7 +3016,8 @@ rmw_subscription_content_filter_options_copy(const rmw_subscription_content_filt
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_content_filter_options_t * src, const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * dst)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const rmw_subscription_content_filter_options_t * src, const rcutils_allocator_t * allocator, rmw_subscription_content_filter_options_t * dst)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_content_filter_options_copy"));
 
   if (underlying_func == nullptr) {
@@ -2925,7 +3029,7 @@ rmw_subscription_content_filter_options_copy(const rmw_subscription_content_filt
 }
 
 rmw_ret_t
-rmw_subscription_content_filter_options_fini(rmw_subscription_content_filter_options_t * options, const rcutils_allocator_t * allocator)
+rmw_subscription_content_filter_options_fini(rmw_subscription_content_filter_options_t * options, const rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -2933,7 +3037,8 @@ rmw_subscription_content_filter_options_fini(rmw_subscription_content_filter_opt
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_subscription_content_filter_options_t * options, const rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_subscription_content_filter_options_t * options, const rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_subscription_content_filter_options_fini"));
 
   if (underlying_func == nullptr) {
@@ -2973,7 +3078,8 @@ rmw_time_equal(const rmw_time_t left, const rmw_time_t right)
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<bool(*)(const rmw_time_t left, const rmw_time_t right)>(
+  static auto underlying_func =
+      reinterpret_cast<bool(*)(const rmw_time_t left, const rmw_time_t right)>(
     dlsym(underlying_rmw_lib, "rmw_time_equal"));
 
   if (underlying_func == nullptr) {
@@ -3065,7 +3171,7 @@ rmw_get_zero_initialized_topic_endpoint_info(void)
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_fini(rmw_topic_endpoint_info_t * topic_endpoint_info, rcutils_allocator_t * allocator)
+rmw_topic_endpoint_info_fini(rmw_topic_endpoint_info_t * topic_endpoint_info, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3073,7 +3179,8 @@ rmw_topic_endpoint_info_fini(rmw_topic_endpoint_info_t * topic_endpoint_info, rc
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_fini"));
 
   if (underlying_func == nullptr) {
@@ -3085,7 +3192,7 @@ rmw_topic_endpoint_info_fini(rmw_topic_endpoint_info_t * topic_endpoint_info, rc
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_topic_type(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * topic_type, rcutils_allocator_t * allocator)
+rmw_topic_endpoint_info_set_topic_type(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * topic_type, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3093,7 +3200,8 @@ rmw_topic_endpoint_info_set_topic_type(rmw_topic_endpoint_info_t * topic_endpoin
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * topic_type, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * topic_type, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_topic_type"));
 
   if (underlying_func == nullptr) {
@@ -3105,7 +3213,7 @@ rmw_topic_endpoint_info_set_topic_type(rmw_topic_endpoint_info_t * topic_endpoin
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_topic_type_hash(rmw_topic_endpoint_info_t * topic_endpoint_info, const rosidl_type_hash_t * type_hash)
+rmw_topic_endpoint_info_set_topic_type_hash(rmw_topic_endpoint_info_t * topic_endpoint_info, const rosidl_type_hash_t * type_hash)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3113,7 +3221,8 @@ rmw_topic_endpoint_info_set_topic_type_hash(rmw_topic_endpoint_info_t * topic_en
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const rosidl_type_hash_t * type_hash)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const rosidl_type_hash_t * type_hash)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_topic_type_hash"));
 
   if (underlying_func == nullptr) {
@@ -3125,7 +3234,7 @@ rmw_topic_endpoint_info_set_topic_type_hash(rmw_topic_endpoint_info_t * topic_en
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_node_name(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_name, rcutils_allocator_t * allocator)
+rmw_topic_endpoint_info_set_node_name(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_name, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3133,7 +3242,8 @@ rmw_topic_endpoint_info_set_node_name(rmw_topic_endpoint_info_t * topic_endpoint
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_name, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_name, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_node_name"));
 
   if (underlying_func == nullptr) {
@@ -3145,7 +3255,7 @@ rmw_topic_endpoint_info_set_node_name(rmw_topic_endpoint_info_t * topic_endpoint
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_node_namespace(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_namespace, rcutils_allocator_t * allocator)
+rmw_topic_endpoint_info_set_node_namespace(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_namespace, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3153,7 +3263,8 @@ rmw_topic_endpoint_info_set_node_namespace(rmw_topic_endpoint_info_t * topic_end
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_namespace, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const char * node_namespace, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_node_namespace"));
 
   if (underlying_func == nullptr) {
@@ -3165,7 +3276,7 @@ rmw_topic_endpoint_info_set_node_namespace(rmw_topic_endpoint_info_t * topic_end
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_endpoint_type(rmw_topic_endpoint_info_t * topic_endpoint_info, rmw_endpoint_type_t type)
+rmw_topic_endpoint_info_set_endpoint_type(rmw_topic_endpoint_info_t * topic_endpoint_info, rmw_endpoint_type_t type)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3173,7 +3284,8 @@ rmw_topic_endpoint_info_set_endpoint_type(rmw_topic_endpoint_info_t * topic_endp
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, rmw_endpoint_type_t type)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, rmw_endpoint_type_t type)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_endpoint_type"));
 
   if (underlying_func == nullptr) {
@@ -3185,7 +3297,7 @@ rmw_topic_endpoint_info_set_endpoint_type(rmw_topic_endpoint_info_t * topic_endp
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_gid(rmw_topic_endpoint_info_t * topic_endpoint_info, const uint8_t * gid, size_t size)
+rmw_topic_endpoint_info_set_gid(rmw_topic_endpoint_info_t * topic_endpoint_info, const uint8_t * gid, size_t size)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3193,7 +3305,8 @@ rmw_topic_endpoint_info_set_gid(rmw_topic_endpoint_info_t * topic_endpoint_info,
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const uint8_t * gid, size_t size)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const uint8_t * gid, size_t size)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_gid"));
 
   if (underlying_func == nullptr) {
@@ -3205,7 +3318,7 @@ rmw_topic_endpoint_info_set_gid(rmw_topic_endpoint_info_t * topic_endpoint_info,
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_set_qos_profile(rmw_topic_endpoint_info_t * topic_endpoint_info, const rmw_qos_profile_t * qos_profile)
+rmw_topic_endpoint_info_set_qos_profile(rmw_topic_endpoint_info_t * topic_endpoint_info, const rmw_qos_profile_t * qos_profile)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3213,7 +3326,8 @@ rmw_topic_endpoint_info_set_qos_profile(rmw_topic_endpoint_info_t * topic_endpoi
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const rmw_qos_profile_t * qos_profile)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_t * topic_endpoint_info, const rmw_qos_profile_t * qos_profile)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_set_qos_profile"));
 
   if (underlying_func == nullptr) {
@@ -3237,7 +3351,8 @@ rmw_get_zero_initialized_topic_endpoint_info_array(void)
     dlsym(underlying_rmw_lib, "rmw_get_zero_initialized_topic_endpoint_info_array"));
 
   if (underlying_func == nullptr) {
-    fprintf(stderr, "rmw_robotops: rmw_get_zero_initialized_topic_endpoint_info_array not available\n");
+    fprintf(
+        stderr, "rmw_robotops: rmw_get_zero_initialized_topic_endpoint_info_array not available\n");
     return {};
   }
 
@@ -3245,7 +3360,7 @@ rmw_get_zero_initialized_topic_endpoint_info_array(void)
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_array_check_zero(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array)
+rmw_topic_endpoint_info_array_check_zero(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3253,7 +3368,8 @@ rmw_topic_endpoint_info_array_check_zero(rmw_topic_endpoint_info_array_t * topic
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array)>(
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_array_check_zero"));
 
   if (underlying_func == nullptr) {
@@ -3265,7 +3381,7 @@ rmw_topic_endpoint_info_array_check_zero(rmw_topic_endpoint_info_array_t * topic
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_array_init_with_size(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, size_t size, rcutils_allocator_t * allocator)
+rmw_topic_endpoint_info_array_init_with_size(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, size_t size, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3273,7 +3389,8 @@ rmw_topic_endpoint_info_array_init_with_size(rmw_topic_endpoint_info_array_t * t
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, size_t size, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, size_t size, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_array_init_with_size"));
 
   if (underlying_func == nullptr) {
@@ -3285,7 +3402,7 @@ rmw_topic_endpoint_info_array_init_with_size(rmw_topic_endpoint_info_array_t * t
 }
 
 rmw_ret_t
-rmw_topic_endpoint_info_array_fini(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, rcutils_allocator_t * allocator)
+rmw_topic_endpoint_info_array_fini(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, rcutils_allocator_t * allocator)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3293,7 +3410,8 @@ rmw_topic_endpoint_info_array_fini(rmw_topic_endpoint_info_array_t * topic_endpo
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, rcutils_allocator_t * allocator)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(rmw_topic_endpoint_info_array_t * topic_endpoint_info_array, rcutils_allocator_t * allocator)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_topic_endpoint_info_array_fini"));
 
   if (underlying_func == nullptr) {
@@ -3325,7 +3443,7 @@ rmw_get_zero_initialized_message_info(void)
 }
 
 rmw_ret_t
-rmw_validate_full_topic_name(const char * topic_name, int * validation_result, size_t * invalid_index)
+rmw_validate_full_topic_name(const char * topic_name, int * validation_result, size_t * invalid_index)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3333,7 +3451,8 @@ rmw_validate_full_topic_name(const char * topic_name, int * validation_result, s
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * topic_name, int * validation_result, size_t * invalid_index)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * topic_name, int * validation_result, size_t * invalid_index)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_validate_full_topic_name"));
 
   if (underlying_func == nullptr) {
@@ -3345,7 +3464,7 @@ rmw_validate_full_topic_name(const char * topic_name, int * validation_result, s
 }
 
 rmw_ret_t
-rmw_validate_full_topic_name_with_size(const char * topic_name, size_t topic_name_length, int * validation_result, size_t * invalid_index)
+rmw_validate_full_topic_name_with_size(const char * topic_name, size_t topic_name_length, int * validation_result, size_t * invalid_index)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3353,7 +3472,8 @@ rmw_validate_full_topic_name_with_size(const char * topic_name, size_t topic_nam
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * topic_name, size_t topic_name_length, int * validation_result, size_t * invalid_index)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * topic_name, size_t topic_name_length, int * validation_result, size_t * invalid_index)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_validate_full_topic_name_with_size"));
 
   if (underlying_func == nullptr) {
@@ -3393,7 +3513,8 @@ rmw_validate_namespace(const char * namespace_, int * validation_result, size_t 
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * namespace_, int * validation_result, size_t * invalid_index)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * namespace_, int * validation_result, size_t * invalid_index)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_validate_namespace"));
 
   if (underlying_func == nullptr) {
@@ -3405,7 +3526,7 @@ rmw_validate_namespace(const char * namespace_, int * validation_result, size_t 
 }
 
 rmw_ret_t
-rmw_validate_namespace_with_size(const char * namespace_, size_t namespace_length, int * validation_result, size_t * invalid_index)
+rmw_validate_namespace_with_size(const char * namespace_, size_t namespace_length, int * validation_result, size_t * invalid_index)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3413,7 +3534,8 @@ rmw_validate_namespace_with_size(const char * namespace_, size_t namespace_lengt
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * namespace_, size_t namespace_length, int * validation_result, size_t * invalid_index)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * namespace_, size_t namespace_length, int * validation_result, size_t * invalid_index)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_validate_namespace_with_size"));
 
   if (underlying_func == nullptr) {
@@ -3453,7 +3575,8 @@ rmw_validate_node_name(const char * node_name, int * validation_result, size_t *
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * node_name, int * validation_result, size_t * invalid_index)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * node_name, int * validation_result, size_t * invalid_index)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_validate_node_name"));
 
   if (underlying_func == nullptr) {
@@ -3465,7 +3588,7 @@ rmw_validate_node_name(const char * node_name, int * validation_result, size_t *
 }
 
 rmw_ret_t
-rmw_validate_node_name_with_size(const char * node_name, size_t node_name_length, int * validation_result, size_t * invalid_index)
+rmw_validate_node_name_with_size(const char * node_name, size_t node_name_length, int * validation_result, size_t * invalid_index)  // NOLINT(whitespace/line_length)
 {
   // Load underlying RMW if not already loaded
   if (underlying_rmw_lib == nullptr) {
@@ -3473,7 +3596,8 @@ rmw_validate_node_name_with_size(const char * node_name, size_t node_name_length
   }
 
   // Load function pointer if needed
-  static auto underlying_func = reinterpret_cast<rmw_ret_t(*)(const char * node_name, size_t node_name_length, int * validation_result, size_t * invalid_index)>(
+  static auto underlying_func =
+      reinterpret_cast<rmw_ret_t(*)(const char * node_name, size_t node_name_length, int * validation_result, size_t * invalid_index)>(  // NOLINT(whitespace/line_length)
     dlsym(underlying_rmw_lib, "rmw_validate_node_name_with_size"));
 
   if (underlying_func == nullptr) {
