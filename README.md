@@ -173,10 +173,13 @@ just ci
 # Both steps run even if one fails, matching GitHub Actions behavior
 
 # Expected results (as of 2026-01-05):
-# - 177 tests total
+# - 141 tests total (32 lint + 109 functional/performance)
 # - 29 tests skipped
-# - 2 functional failures (copyright lint - to be fixed)
-# - 3-5 performance test failures (environment-dependent)
+# - 0 functional failures ✅
+# - 4-5 performance test failures (need tuning for CI environment)
+#
+# Note: CI currently fails due to performance tests. These need threshold
+# adjustments to pass in containerized CI environments.
 ```
 
 **IMPORTANT:** Always run `just ci` before pushing to catch issues early!

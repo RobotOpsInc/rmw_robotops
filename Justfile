@@ -143,7 +143,7 @@ ci-inner:
     #!/usr/bin/env bash
     set -exo pipefail
     echo "🚀 Running CI suite (in container)..."
-    just ci-lint || true
-    just ci-test || true
-    just ci-benchmark
+    just ci-lint
+    just ci-test
+    just ci-benchmark || true  # Benchmark is best-effort
     echo "✅ CI suite completed!"
