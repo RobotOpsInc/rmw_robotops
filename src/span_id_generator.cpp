@@ -28,7 +28,8 @@ struct XorShift128State
   uint64_t s[2];
   bool initialized;
 
-  XorShift128State() : s{0, 0}, initialized(false) {}
+  XorShift128State()
+  : s{0, 0}, initialized(false) {}
 };
 
 thread_local XorShift128State tls_rng_state;

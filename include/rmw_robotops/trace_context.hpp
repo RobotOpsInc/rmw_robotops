@@ -68,7 +68,8 @@ struct PendingContexts
   TraceContext contexts[MAX_PENDING_CONTEXTS];
   size_t count;
 
-  PendingContexts() noexcept : count(0) {}
+  PendingContexts() noexcept
+  : count(0) {}
 
   /// Add a context to pending list (for SpanLinks)
   /// Returns false if buffer is full (graceful degradation)

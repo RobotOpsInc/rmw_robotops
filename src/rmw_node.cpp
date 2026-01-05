@@ -24,7 +24,6 @@ extern rmw_ret_t (* underlying_rmw_destroy_node)(rmw_node_t *);
 
 extern "C"
 {
-
 rmw_node_t *
 rmw_create_node(
   rmw_context_t * context,
@@ -51,5 +50,4 @@ rmw_destroy_node(rmw_node_t * node)
 
   return underlying_rmw_destroy_node(node);
 }
-
 }  // extern "C"

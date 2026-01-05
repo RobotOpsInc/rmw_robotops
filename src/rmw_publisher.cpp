@@ -144,7 +144,6 @@ void remove_publisher_metadata(const rmw_publisher_t * publisher) noexcept
 
 extern "C"
 {
-
 rmw_publisher_t *
 rmw_create_publisher(
   const rmw_node_t * node,
@@ -254,11 +253,13 @@ rmw_publish(
         std::memcpy(event.node_name, metadata.node_name, node_name_len);
         event.node_name[node_name_len] = '\0';
 
-        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), MAX_NODE_NAME_LENGTH - 1);
+        size_t node_ns_len = std::min(
+          std::strlen(metadata.node_namespace), MAX_NODE_NAME_LENGTH - 1);
         std::memcpy(event.node_namespace, metadata.node_namespace, node_ns_len);
         event.node_namespace[node_ns_len] = '\0';
 
-        size_t msg_type_len = std::min(std::strlen(metadata.message_type), MAX_MESSAGE_TYPE_LENGTH - 1);
+        size_t msg_type_len = std::min(
+          std::strlen(metadata.message_type), MAX_MESSAGE_TYPE_LENGTH - 1);
         std::memcpy(event.message_type, metadata.message_type, msg_type_len);
         event.message_type[msg_type_len] = '\0';
       } else {
@@ -315,5 +316,4 @@ rmw_publish_serialized_message(
   RMW_SET_ERROR_MSG("rmw_publish_serialized_message not yet implemented");
   return RMW_RET_UNSUPPORTED;
 }
-
 }  // extern "C"

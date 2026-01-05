@@ -152,7 +152,6 @@ extern "C" bool load_underlying_rmw() noexcept
 
 extern "C"
 {
-
 rmw_ret_t
 rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
 {
@@ -285,5 +284,4 @@ rmw_init_options_fini(rmw_init_options_t * init_options)
 
   return underlying_rmw_init_options_fini(init_options);
 }
-
 }  // extern "C"
