@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <chrono>
+#include <thread>
+
 #include <gtest/gtest.h>
 
 #include "rmw_robotops/config.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
-
-#include <chrono>
-#include <thread>
 
 using rmw_robotops::Config;
 using rmw_robotops::DEFAULT_TRACE_QUEUE_SIZE;

@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <gtest/gtest.h>
-
-#include "rmw_robotops/trace_context.hpp"
-
 #include <cstring>
 #include <thread>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include "rmw_robotops/trace_context.hpp"
 
 using rmw_robotops::clear_pending_contexts;
 using rmw_robotops::collect_pending_contexts;
