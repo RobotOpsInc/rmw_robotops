@@ -128,6 +128,12 @@ if(BUILD_TESTING)
   target_link_libraries(test_context_propagation ${PROJECT_NAME})
   ament_target_dependencies(test_context_propagation rmw rcutils)
 
+  # Metadata extraction test
+  ament_add_gtest(test_metadata_extraction
+    test/test_metadata_extraction.cpp
+  )
+  target_link_libraries(test_metadata_extraction ${PROJECT_NAME})
+
   # Performance benchmarks
   add_executable(benchmark_latency
     test/benchmark_latency.cpp
