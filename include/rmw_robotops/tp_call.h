@@ -107,6 +107,122 @@ TRACEPOINT_EVENT(
   )
 )
 
+// Client send request start event
+TRACEPOINT_EVENT(
+  robotops,
+  send_request_start,
+  TP_ARGS(
+    const void *, client_ptr,
+    const char *, trace_id,
+    const char *, span_id
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, client_ptr, client_ptr)
+    ctf_string(trace_id, trace_id)
+    ctf_string(span_id, span_id)
+  )
+)
+
+// Client send request end event
+TRACEPOINT_EVENT(
+  robotops,
+  send_request_end,
+  TP_ARGS(
+    const void *, client_ptr,
+    bool, success
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, client_ptr, client_ptr)
+    ctf_integer(unsigned char, success, success ? 1 : 0)
+  )
+)
+
+// Client take response start event
+TRACEPOINT_EVENT(
+  robotops,
+  take_response_start,
+  TP_ARGS(
+    const void *, client_ptr
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, client_ptr, client_ptr)
+  )
+)
+
+// Client take response end event
+TRACEPOINT_EVENT(
+  robotops,
+  take_response_end,
+  TP_ARGS(
+    const void *, response_ptr,
+    const char *, trace_id,
+    const char *, span_id
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, response_ptr, response_ptr)
+    ctf_string(trace_id, trace_id)
+    ctf_string(span_id, span_id)
+  )
+)
+
+// Service take request start event
+TRACEPOINT_EVENT(
+  robotops,
+  take_request_start,
+  TP_ARGS(
+    const void *, service_ptr
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, service_ptr, service_ptr)
+  )
+)
+
+// Service take request end event
+TRACEPOINT_EVENT(
+  robotops,
+  take_request_end,
+  TP_ARGS(
+    const void *, request_ptr,
+    const char *, trace_id,
+    const char *, span_id
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, request_ptr, request_ptr)
+    ctf_string(trace_id, trace_id)
+    ctf_string(span_id, span_id)
+  )
+)
+
+// Service send response start event
+TRACEPOINT_EVENT(
+  robotops,
+  send_response_start,
+  TP_ARGS(
+    const void *, service_ptr,
+    const char *, trace_id,
+    const char *, span_id
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, service_ptr, service_ptr)
+    ctf_string(trace_id, trace_id)
+    ctf_string(span_id, span_id)
+  )
+)
+
+// Service send response end event
+TRACEPOINT_EVENT(
+  robotops,
+  send_response_end,
+  TP_ARGS(
+    const void *, service_ptr,
+    bool, success
+  ),
+  TP_FIELDS(
+    ctf_integer_hex(const void *, service_ptr, service_ptr)
+    ctf_integer(unsigned char, success, success ? 1 : 0)
+  )
+)
+
 #endif  // RMW_ROBOTOPS__TP_CALL_H_
 
 #include <lttng/tracepoint-event.h>

@@ -47,6 +47,28 @@ rmw_ret_t (* underlying_rmw_take_with_info)(
   const rmw_subscription_t *, void *, bool *,
   rmw_message_info_t *, rmw_subscription_allocation_t *) = nullptr;
 
+// Client functions
+rmw_client_t * (* underlying_rmw_create_client)(
+  const rmw_node_t *, const rosidl_service_type_support_t *,
+  const char *, const rmw_qos_profile_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_destroy_client)(
+  rmw_node_t *, rmw_client_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_send_request)(
+  const rmw_client_t *, const void *, int64_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_take_response)(
+  const rmw_client_t *, rmw_service_info_t *, void *, bool *) = nullptr;
+
+// Service functions
+rmw_service_t * (* underlying_rmw_create_service)(
+  const rmw_node_t *, const rosidl_service_type_support_t *,
+  const char *, const rmw_qos_profile_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_destroy_service)(
+  rmw_node_t *, rmw_service_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_take_request)(
+  const rmw_service_t *, rmw_service_info_t *, void *, bool *) = nullptr;
+rmw_ret_t (* underlying_rmw_send_response)(
+  const rmw_service_t *, rmw_request_id_t *, void *) = nullptr;
+
 // Node functions
 rmw_node_t * (* underlying_rmw_create_node)(
   rmw_context_t *, const char *, const char *) = nullptr;
@@ -125,6 +147,20 @@ extern "C" bool load_underlying_rmw() noexcept
   success &= load_function(underlying_rmw_lib, "rmw_take", underlying_rmw_take);
   success &= load_function(
     underlying_rmw_lib, "rmw_take_with_info", underlying_rmw_take_with_info);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_create_client", underlying_rmw_create_client);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_destroy_client", underlying_rmw_destroy_client);
+  success &= load_function(underlying_rmw_lib, "rmw_send_request", underlying_rmw_send_request);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_take_response", underlying_rmw_take_response);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_create_service", underlying_rmw_create_service);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_destroy_service", underlying_rmw_destroy_service);
+  success &= load_function(underlying_rmw_lib, "rmw_take_request", underlying_rmw_take_request);
+  success &= load_function(
+    underlying_rmw_lib, "rmw_send_response", underlying_rmw_send_response);
   success &= load_function(underlying_rmw_lib, "rmw_create_node", underlying_rmw_create_node);
   success &= load_function(underlying_rmw_lib, "rmw_destroy_node", underlying_rmw_destroy_node);
   success &= load_function(underlying_rmw_lib, "rmw_init", underlying_rmw_init);
