@@ -31,10 +31,10 @@ inline uint32_t get_dds_domain_id() noexcept
   }
 
   char * endptr = nullptr;
-  unsigned long domain = std::strtoul(domain_str, &endptr, 10);
+  int64_t domain = std::strtoll(domain_str, &endptr, 10);
 
   // Validate: entire string consumed and value in valid range (0-232)
-  if (endptr == domain_str || *endptr != '\0' || domain > 232) {
+  if (endptr == domain_str || *endptr != '\0' || domain < 0 || domain > 232) {
     return 0;
   }
 

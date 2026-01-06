@@ -253,7 +253,6 @@ rmw_take_with_info(
       #ifdef ROS_TRACING_ENABLED
       tracepoint(robotops, take_rmw_start, subscription);
       #endif
-
     } catch (...) {
       record_trace_failure();
       tracing_active = false;  // Disable for this take
@@ -271,7 +270,8 @@ rmw_take_with_info(
       TraceContext extracted_context;
       rmw_robotops::CorrelationMetadata correlation_metadata;
 
-      // Pass DDS-specific sample info if available (rmw_fastrtps stores it in implementation_identifier)
+      // Pass DDS-specific sample info if available
+      // (rmw_fastrtps stores it in implementation_identifier)
       // For now, use nullptr - strategy will use message_info for fallback
       const void * dds_sample_info = nullptr;
 
@@ -280,7 +280,7 @@ rmw_take_with_info(
         message_info,
         dds_sample_info,
         ros_message,
-        sizeof(void*),  // TODO(ROB-55): Get actual serialized size
+        sizeof(void *),  // TODO(ROB-55): Get actual serialized size
         extracted_context,
         correlation_metadata);
 
@@ -288,13 +288,15 @@ rmw_take_with_info(
       TraceContext new_context;
       if (context_extracted && !extracted_context.is_empty()) {
         // Continue existing trace
-        std::memcpy(new_context.trace_id, extracted_context.trace_id, sizeof(new_context.trace_id) - 1);
+        std::memcpy(new_context.trace_id, extracted_context.trace_id,
+            sizeof(new_context.trace_id) - 1);
         new_context.trace_id[sizeof(new_context.trace_id) - 1] = '\0';
 
         std::memcpy(new_context.span_id, span_id_buf, sizeof(new_context.span_id) - 1);
         new_context.span_id[sizeof(new_context.span_id) - 1] = '\0';
 
-        std::memcpy(new_context.parent_span_id, extracted_context.span_id, sizeof(new_context.parent_span_id) - 1);
+        std::memcpy(new_context.parent_span_id, extracted_context.span_id,
+            sizeof(new_context.parent_span_id) - 1);
         new_context.parent_span_id[sizeof(new_context.parent_span_id) - 1] = '\0';
       } else {
         // No context found - this is a root span (start of new trace)
@@ -314,7 +316,7 @@ rmw_take_with_info(
       uint64_t content_hash = 0;
       if (!strategy->is_deterministic()) {
         // TODO(ROB-55): Use actual serialized message data
-        content_hash = compute_content_hash(ros_message, sizeof(void*));
+        content_hash = compute_content_hash(ros_message, sizeof(void *));
       }
 
       // Emit LTTng tracepoint
@@ -341,10 +343,12 @@ rmw_take_with_info(
       std::memcpy(start_event.span_id, span_id_buf, sizeof(start_event.span_id) - 1);
       start_event.span_id[sizeof(start_event.span_id) - 1] = '\0';
 
-      std::memcpy(start_event.parent_span_id, new_context.parent_span_id, sizeof(start_event.parent_span_id) - 1);
+      std::memcpy(start_event.parent_span_id, new_context.parent_span_id,
+          sizeof(start_event.parent_span_id) - 1);
       start_event.parent_span_id[sizeof(start_event.parent_span_id) - 1] = '\0';
 
-      size_t topic_len = std::min(std::strlen(subscription->topic_name), sizeof(start_event.topic_or_service) - 1);
+      size_t topic_len = std::min(std::strlen(subscription->topic_name),
+          sizeof(start_event.topic_or_service) - 1);
       std::memcpy(start_event.topic_or_service, subscription->topic_name, topic_len);
       start_event.topic_or_service[topic_len] = '\0';
 
@@ -354,7 +358,8 @@ rmw_take_with_info(
       start_event.correlation_method = strategy->get_correlation_method();
 
       // Correlation metadata from DDS
-      size_t gid_len = std::min(correlation_metadata.publisher_gid.length(), sizeof(start_event.publisher_gid) - 1);
+      size_t gid_len = std::min(correlation_metadata.publisher_gid.length(),
+          sizeof(start_event.publisher_gid) - 1);
       std::memcpy(start_event.publisher_gid, correlation_metadata.publisher_gid.c_str(), gid_len);
       start_event.publisher_gid[gid_len] = '\0';
 
@@ -364,15 +369,18 @@ rmw_take_with_info(
       // Get subscription metadata
       SubscriptionMetadata metadata;
       if (get_subscription_metadata(subscription, metadata)) {
-        size_t node_name_len = std::min(std::strlen(metadata.node_name), sizeof(start_event.node_name) - 1);
+        size_t node_name_len = std::min(std::strlen(metadata.node_name),
+            sizeof(start_event.node_name) - 1);
         std::memcpy(start_event.node_name, metadata.node_name, node_name_len);
         start_event.node_name[node_name_len] = '\0';
 
-        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), sizeof(start_event.node_namespace) - 1);
+        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace),
+            sizeof(start_event.node_namespace) - 1);
         std::memcpy(start_event.node_namespace, metadata.node_namespace, node_ns_len);
         start_event.node_namespace[node_ns_len] = '\0';
 
-        size_t msg_type_len = std::min(std::strlen(metadata.message_type), sizeof(start_event.message_type) - 1);
+        size_t msg_type_len = std::min(std::strlen(metadata.message_type),
+            sizeof(start_event.message_type) - 1);
         std::memcpy(start_event.message_type, metadata.message_type, msg_type_len);
         start_event.message_type[msg_type_len] = '\0';
       }
@@ -389,7 +397,6 @@ rmw_take_with_info(
       } else {
         record_trace_success();
       }
-
     } catch (...) {
       record_trace_failure();
     }

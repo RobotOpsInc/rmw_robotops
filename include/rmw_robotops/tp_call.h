@@ -14,6 +14,10 @@
 
 // LTTng tracepoint definitions for rmw_robotops
 // These tracepoints enable correlation with ros2_tracing for hierarchical span reconstruction
+//
+// Note: LTTng tracepoint headers use a multi-read pattern that differs from traditional
+// header guards. The TRACEPOINT_HEADER_MULTI_READ macro allows controlled re-inclusion.
+// NOLINT(build/header_guard)
 
 #undef TRACEPOINT_PROVIDER
 #define TRACEPOINT_PROVIDER robotops

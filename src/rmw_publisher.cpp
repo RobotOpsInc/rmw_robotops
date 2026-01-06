@@ -242,7 +242,7 @@ rmw_publish(
       if (!strategy->is_deterministic()) {
         // TODO(ROB-55): Get actual serialized message data and size
         // For now, use pointer as simple hash (not ideal but safe)
-        content_hash = compute_content_hash(ros_message, sizeof(void*));
+        content_hash = compute_content_hash(ros_message, sizeof(void *));
       }
 
       // Emit LTTng tracepoint
@@ -255,8 +255,7 @@ rmw_publish(
       #endif
 
       // Inject context into DDS metadata (best-effort)
-      strategy->inject_context(publisher, context, ros_message, sizeof(void*));
-
+      strategy->inject_context(publisher, context, ros_message, sizeof(void *));
     } catch (...) {
       record_trace_failure();
       tracing_active = false;  // Disable for this publish
@@ -287,10 +286,12 @@ rmw_publish(
       std::memcpy(start_event.span_id, span_id_buf, sizeof(start_event.span_id) - 1);
       start_event.span_id[sizeof(start_event.span_id) - 1] = '\0';
 
-      std::memcpy(start_event.parent_span_id, context.parent_span_id, sizeof(start_event.parent_span_id) - 1);
+      std::memcpy(start_event.parent_span_id, context.parent_span_id,
+          sizeof(start_event.parent_span_id) - 1);
       start_event.parent_span_id[sizeof(start_event.parent_span_id) - 1] = '\0';
 
-      size_t topic_len = std::min(std::strlen(publisher->topic_name), sizeof(start_event.topic_or_service) - 1);
+      size_t topic_len = std::min(std::strlen(publisher->topic_name),
+          sizeof(start_event.topic_or_service) - 1);
       std::memcpy(start_event.topic_or_service, publisher->topic_name, topic_len);
       start_event.topic_or_service[topic_len] = '\0';
 
@@ -302,15 +303,18 @@ rmw_publish(
       // Get publisher metadata
       PublisherMetadata metadata;
       if (get_publisher_metadata(publisher, metadata)) {
-        size_t node_name_len = std::min(std::strlen(metadata.node_name), sizeof(start_event.node_name) - 1);
+        size_t node_name_len = std::min(std::strlen(metadata.node_name),
+            sizeof(start_event.node_name) - 1);
         std::memcpy(start_event.node_name, metadata.node_name, node_name_len);
         start_event.node_name[node_name_len] = '\0';
 
-        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), sizeof(start_event.node_namespace) - 1);
+        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace),
+            sizeof(start_event.node_namespace) - 1);
         std::memcpy(start_event.node_namespace, metadata.node_namespace, node_ns_len);
         start_event.node_namespace[node_ns_len] = '\0';
 
-        size_t msg_type_len = std::min(std::strlen(metadata.message_type), sizeof(start_event.message_type) - 1);
+        size_t msg_type_len = std::min(std::strlen(metadata.message_type),
+            sizeof(start_event.message_type) - 1);
         std::memcpy(start_event.message_type, metadata.message_type, msg_type_len);
         start_event.message_type[msg_type_len] = '\0';
       }
@@ -327,7 +331,6 @@ rmw_publish(
       } else {
         record_trace_success();
       }
-
     } catch (...) {
       record_trace_failure();
     }

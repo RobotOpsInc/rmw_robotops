@@ -82,7 +82,8 @@ struct TraceEvent
   int64_t source_timestamp_ns;                    // Publisher's timestamp for fallback
 
   // Content hash for fallback correlation (non-FastDDS)
-  uint64_t content_hash;                          // xxHash64 of serialized message (0 if not computed)
+  // xxHash64 of serialized message (0 if not computed)
+  uint64_t content_hash;
 
   // Pointer for span reconstruction (correlate with ros2_tracing)
   uint64_t msg_ptr;                               // Message pointer for event correlation

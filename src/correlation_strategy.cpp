@@ -137,7 +137,6 @@ public:
 
       context = TraceContext();
       return false;
-
     } catch (...) {
       RCUTILS_LOG_ERROR_NAMED("rmw_robotops", "Exception in extract_context");
       return false;
@@ -242,7 +241,6 @@ public:
       // No trace context extracted from DDS
       context = TraceContext();
       return false;
-
     } catch (...) {
       RCUTILS_LOG_ERROR_NAMED("rmw_robotops", "Exception in fallback extract_context");
       return false;
@@ -270,7 +268,7 @@ private:
   {
     char hex[49];  // 24 bytes * 2 + null terminator
     for (size_t i = 0; i < 24; ++i) {
-      snprintf(hex + i * 2, 3, "%02x", gid[i]);
+      snprintf(hex + i * 2, sizeof(hex) - i * 2, "%02x", gid[i]);
     }
     return std::string(hex);
   }
