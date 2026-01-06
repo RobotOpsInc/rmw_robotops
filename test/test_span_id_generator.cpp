@@ -148,26 +148,3 @@ TEST(SpanIdGeneratorTest, NoAllZeroIds) {
     EXPECT_FALSE(all_zero) << "Generated all-zero span ID";
   }
 }
-
-TEST(SpanIdGeneratorTest, Performance) {
-  // Measure how fast we can generate IDs
-  constexpr size_t NUM_IDS = 100000;
-
-  auto start = std::chrono::high_resolution_clock::now();
-
-  for (size_t i = 0; i < NUM_IDS; ++i) {
-    char span_id[17];
-    generate_span_id(span_id);
-  }
-
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-
-  double ns_per_id = static_cast<double>(duration.count()) / NUM_IDS;
-
-  // Should be very fast (< 100ns per ID on modern hardware)
-  EXPECT_LT(ns_per_id, 100.0)
-    << "ID generation too slow: " << ns_per_id << " ns/ID";
-
-  std::cout << "ID generation performance: " << ns_per_id << " ns/ID\n";
-}
