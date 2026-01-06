@@ -28,14 +28,6 @@
 namespace rmw_robotops
 {
 
-// TODO(ROB-109): Remove these once robotops_msgs 0.2.1+ is in apt cache
-// Temporary definitions matching the updated schema (verified against source)
-#ifndef robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE
-constexpr uint8_t robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE = 1;
-constexpr uint8_t robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH = 2;
-constexpr uint8_t robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_TIMESTAMP = 3;
-#endif
-
 /// FastDDS correlation strategy - extracts metadata from SampleInfo
 ///
 /// This strategy leverages FastDDS's SampleInfo to extract:

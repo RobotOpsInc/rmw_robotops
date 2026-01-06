@@ -77,19 +77,30 @@ bool convert_to_ros_message(
       rosidl_runtime_c__String__assign(&msg.span_links.data[i], event.span_links[i]);
     }
 
-    // Event details
-    msg.operation = event.operation;
+    // Event type for hierarchical span reconstruction
+    msg.event_type = event.event_type;
+
+    // Topic/service identification
     rosidl_runtime_c__String__assign(&msg.topic_or_service, event.topic_or_service);
     rosidl_runtime_c__String__assign(&msg.node_name, event.node_name);
     rosidl_runtime_c__String__assign(&msg.node_namespace, event.node_namespace);
 
-    // Correlation fields
+    // Correlation metadata
     rosidl_runtime_c__String__assign(&msg.publisher_gid, event.publisher_gid);
     msg.sequence_number = event.sequence_number;
+    msg.source_timestamp_ns = event.source_timestamp_ns;
+    msg.content_hash = event.content_hash;
 
-    // Metadata
+    // Pointer for span reconstruction (correlation with ros2_tracing)
+    msg.msg_ptr = event.msg_ptr;
+
+    // Message metadata
     rosidl_runtime_c__String__assign(&msg.message_type, event.message_type);
     msg.message_size_bytes = event.message_size_bytes;
+
+    // DDS metadata
+    msg.dds_domain_id = event.dds_domain_id;
+    msg.correlation_method = event.correlation_method;
 
     return true;
   } catch (...) {

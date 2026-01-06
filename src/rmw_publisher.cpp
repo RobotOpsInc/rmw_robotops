@@ -159,12 +159,6 @@ std::unique_ptr<rmw_robotops::CorrelationStrategy> & get_correlation_strategy() 
   return strategy;
 }
 
-// TODO(ROB-109): Remove when robotops_msgs 0.2.1+ is in apt cache
-#ifndef robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START
-constexpr uint8_t robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START = 1;
-constexpr uint8_t robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_END = 2;
-#endif
-
 }  // anonymous namespace
 
 
@@ -285,14 +279,21 @@ rmw_publish(
       start_event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
       start_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START;
-      std::strncpy(start_event.trace_id, context.trace_id, sizeof(start_event.trace_id) - 1);
-      std::strncpy(start_event.span_id, span_id_buf, sizeof(start_event.span_id) - 1);
-      std::strncpy(
-        start_event.parent_span_id, context.parent_span_id,
-        sizeof(start_event.parent_span_id) - 1);
-      std::strncpy(
-        start_event.topic_or_service, publisher->topic_name,
-        sizeof(start_event.topic_or_service) - 1);
+
+      // Copy strings with explicit null termination
+      std::memcpy(start_event.trace_id, context.trace_id, sizeof(start_event.trace_id) - 1);
+      start_event.trace_id[sizeof(start_event.trace_id) - 1] = '\0';
+
+      std::memcpy(start_event.span_id, span_id_buf, sizeof(start_event.span_id) - 1);
+      start_event.span_id[sizeof(start_event.span_id) - 1] = '\0';
+
+      std::memcpy(start_event.parent_span_id, context.parent_span_id, sizeof(start_event.parent_span_id) - 1);
+      start_event.parent_span_id[sizeof(start_event.parent_span_id) - 1] = '\0';
+
+      size_t topic_len = std::min(std::strlen(publisher->topic_name), sizeof(start_event.topic_or_service) - 1);
+      std::memcpy(start_event.topic_or_service, publisher->topic_name, topic_len);
+      start_event.topic_or_service[topic_len] = '\0';
+
       start_event.msg_ptr = reinterpret_cast<uint64_t>(ros_message);
       start_event.content_hash = content_hash;
       start_event.dds_domain_id = get_dds_domain_id();
@@ -301,13 +302,17 @@ rmw_publish(
       // Get publisher metadata
       PublisherMetadata metadata;
       if (get_publisher_metadata(publisher, metadata)) {
-        std::strncpy(start_event.node_name, metadata.node_name, sizeof(start_event.node_name) - 1);
-        std::strncpy(
-          start_event.node_namespace, metadata.node_namespace,
-          sizeof(start_event.node_namespace) - 1);
-        std::strncpy(
-          start_event.message_type, metadata.message_type,
-          sizeof(start_event.message_type) - 1);
+        size_t node_name_len = std::min(std::strlen(metadata.node_name), sizeof(start_event.node_name) - 1);
+        std::memcpy(start_event.node_name, metadata.node_name, node_name_len);
+        start_event.node_name[node_name_len] = '\0';
+
+        size_t node_ns_len = std::min(std::strlen(metadata.node_namespace), sizeof(start_event.node_namespace) - 1);
+        std::memcpy(start_event.node_namespace, metadata.node_namespace, node_ns_len);
+        start_event.node_namespace[node_ns_len] = '\0';
+
+        size_t msg_type_len = std::min(std::strlen(metadata.message_type), sizeof(start_event.message_type) - 1);
+        std::memcpy(start_event.message_type, metadata.message_type, msg_type_len);
+        start_event.message_type[msg_type_len] = '\0';
       }
 
       // Emit END TraceEvent
