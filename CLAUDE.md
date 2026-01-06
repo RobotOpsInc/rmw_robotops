@@ -12,7 +12,7 @@ This file documents project-specific rules and conventions for AI-assisted devel
 
 ### Branch Naming
 
-Feature branches MUST be named according to the Linear issue's `gitBranchName` field:
+Feature branches MUST be named according to the issue's `gitBranchName` field:
 
 ```bash
 # Example from Linear issue ROB-55:

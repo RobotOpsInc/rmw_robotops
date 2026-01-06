@@ -16,6 +16,7 @@
 #define RMW_ROBOTOPS__DDS_METADATA_HPP_
 
 #include "rmw_robotops/trace_context.hpp"
+#include "rmw_robotops/visibility_control.hpp"
 
 namespace rmw_robotops
 {
@@ -28,6 +29,16 @@ namespace rmw_robotops
 ///
 /// @note Current implementation is a placeholder using thread-local storage.
 ///       Does NOT propagate across processes. See implementation for TODO details.
+///
+/// **Multi-DDS Extension Point:**
+/// The void* parameter is intentionally DDS-agnostic to support multiple DDS implementations.
+/// Future implementations should:
+/// - Cast void* to the appropriate DDS-specific type
+///   (e.g., FastDDS WriteParams, CycloneDDS ddsi_serdata)
+/// - Inject trace context using that DDS's metadata/property mechanism
+/// - Select implementation at runtime based on ROBOTOPS_UNDERLYING_RMW environment variable
+/// - Return false gracefully if the DDS implementation doesn't support metadata injection
+RMW_ROBOTOPS_PUBLIC
 bool inject_trace_context_to_dds(
   void * dds_sample_info,
   const TraceContext & context) noexcept;
@@ -40,6 +51,16 @@ bool inject_trace_context_to_dds(
 ///
 /// @note Current implementation is a placeholder using thread-local storage.
 ///       Does NOT extract across processes. See implementation for TODO details.
+///
+/// **Multi-DDS Extension Point:**
+/// The void* parameter is intentionally DDS-agnostic to support multiple DDS implementations.
+/// Future implementations should:
+/// - Cast void* to the appropriate DDS-specific type
+///   (e.g., FastDDS SampleInfo, CycloneDDS ddsi_serdata)
+/// - Extract trace context using that DDS's metadata/property mechanism
+/// - Select implementation at runtime based on ROBOTOPS_UNDERLYING_RMW environment variable
+/// - Return false gracefully if no context is found or DDS doesn't support metadata extraction
+RMW_ROBOTOPS_PUBLIC
 bool extract_trace_context_from_dds(
   const void * dds_sample_info,
   TraceContext & context) noexcept;

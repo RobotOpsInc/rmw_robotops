@@ -28,8 +28,8 @@
   <!-- FastDDS dependencies (can be swapped at runtime) -->
   <depend>rmw_fastrtps_cpp</depend>
   <depend>rmw_fastrtps_shared_cpp</depend>
-  <depend>fastrtps</depend>
-  <depend>fastcdr</depend>
+  <depend version_gte="2.10.0">fastrtps</depend>
+  <depend version_gte="2.2.0">fastcdr</depend>
 
   <!-- Testing dependencies -->
   <test_depend>ament_lint_auto</test_depend>

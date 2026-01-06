@@ -22,7 +22,24 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 7. **Auto-disable on failures** - Self-protecting circuit breaker
 8. **Background thread for publishing** - Non-blocking queue from robot threads
 
-## Prerequisites
+## Installation
+
+### Via apt (Recommended for End Users)
+
+```bash
+# Add Cloudsmith repository (one-time setup)
+curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
+
+# Install
+sudo apt update
+sudo apt install ros-jazzy-rmw-robotops
+```
+
+### From Source (For Development)
+
+See the Development section below for building from source in Docker.
+
+## Prerequisites (Development Only)
 
 **Batteries included!** Only 2 things needed on your host machine:
 
