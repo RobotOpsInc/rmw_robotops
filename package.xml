@@ -25,11 +25,19 @@
   <depend>rosidl_typesupport_introspection_c</depend>
   <depend>rosidl_typesupport_introspection_cpp</depend>
 
+  <!-- ros2_tracing for LTTng tracepoint emission -->
+  <depend>tracetools</depend>
+
   <!-- FastDDS dependencies (can be swapped at runtime) -->
   <depend>rmw_fastrtps_cpp</depend>
   <depend>rmw_fastrtps_shared_cpp</depend>
   <depend version_gte="2.10.0">fastrtps</depend>
   <depend version_gte="2.2.0">fastcdr</depend>
+
+  <!-- YAML parsing for configuration -->
+  <depend>yaml-cpp</depend>
+
+  <!-- xxHash for content hashing (system dependency) -->
 
   <!-- Testing dependencies -->
   <test_depend>ament_lint_auto</test_depend>

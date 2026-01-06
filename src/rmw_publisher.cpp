@@ -14,18 +14,28 @@
 
 #include <chrono>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 
 #include "rmw/error_handling.h"
 #include "rmw/rmw.h"
 #include "rmw_robotops/config.hpp"
+#include "rmw_robotops/correlation_strategy.hpp"
 #include "rmw_robotops/dds_metadata.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
+#include "rmw_robotops/utils.hpp"
+#include "robotops_msgs/msg/trace_event.h"
 #include "rosidl_typesupport_introspection_c/identifier.h"
 #include "rosidl_typesupport_introspection_c/message_introspection.h"
+
+// LTTng tracepoints (optional - gracefully degrades if not available)
+#ifdef ROS_TRACING_ENABLED
+#define TRACEPOINT_DEFINE
+#include "rmw_robotops/tp_call.h"
+#endif
 
 // Forward declaration of underlying RMW functions
 // These will be dynamically loaded from the underlying RMW implementation
@@ -139,6 +149,22 @@ void remove_publisher_metadata(const rmw_publisher_t * publisher) noexcept
   }
 }
 
+/// Global correlation strategy (lazy initialized)
+std::unique_ptr<rmw_robotops::CorrelationStrategy> & get_correlation_strategy() noexcept
+{
+  static std::unique_ptr<rmw_robotops::CorrelationStrategy> strategy;
+  if (!strategy) {
+    strategy = rmw_robotops::create_correlation_strategy();
+  }
+  return strategy;
+}
+
+// TODO(ROB-109): Remove when robotops_msgs 0.2.1+ is in apt cache
+#ifndef robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START
+constexpr uint8_t robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START = 1;
+constexpr uint8_t robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_END = 2;
+#endif
+
 }  // anonymous namespace
 
 
@@ -189,112 +215,115 @@ rmw_publish(
   const void * ros_message,
   rmw_publisher_allocation_t * allocation)
 {
+  using rmw_robotops::compute_content_hash;
+  using rmw_robotops::generate_span_id;
+  using rmw_robotops::get_dds_domain_id;
   using rmw_robotops::get_or_mint_trace_context;
   using rmw_robotops::get_trace_event_queue;
-  using rmw_robotops::inject_trace_context_to_dds;
   using rmw_robotops::is_tracing_enabled;
-  using rmw_robotops::MAX_MESSAGE_TYPE_LENGTH;
-  using rmw_robotops::MAX_NODE_NAME_LENGTH;
-  using rmw_robotops::MAX_TOPIC_NAME_LENGTH;
-  using rmw_robotops::OP_PUBLISH;
   using rmw_robotops::record_trace_failure;
   using rmw_robotops::record_trace_success;
-  using rmw_robotops::SPAN_ID_LENGTH;
-  using rmw_robotops::TRACE_ID_LENGTH;
   using rmw_robotops::TraceContext;
   using rmw_robotops::TraceEvent;
-
-  // Safety guarantee: Real message delivery NEVER blocked by tracing
-  // Call underlying RMW first, emit trace event after
 
   if (underlying_rmw_publish == nullptr) {
     RMW_SET_ERROR_MSG("Underlying RMW not initialized");
     return RMW_RET_ERROR;
   }
 
-  // STEP 1: Publish the real message (ALWAYS happens, even if tracing disabled)
-  rmw_ret_t ret = underlying_rmw_publish(publisher, ros_message, allocation);
+  // Get trace context and correlation strategy (lazy init, outside critical path)
+  TraceContext context;
+  auto & strategy = get_correlation_strategy();
+  bool tracing_active = is_tracing_enabled();
+  uint64_t content_hash = 0;
+  char span_id_buf[17] = {0};
 
-  // STEP 2: Emit trace event (best-effort, never fails the publish)
-  if (ret == RMW_RET_OK && is_tracing_enabled()) {
+  // STEP 1: Emit START event (BEFORE underlying publish)
+  if (tracing_active) {
     try {
-      // Get or create trace context for this thread
-      TraceContext context = get_or_mint_trace_context();
+      context = get_or_mint_trace_context();
+      generate_span_id(span_id_buf);
 
-      // Create trace event
-      TraceEvent event;
-      event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::system_clock::now().time_since_epoch()).count();
-
-      // Copy trace context (using memcpy for fixed-length hex strings)
-      std::memcpy(event.trace_id, context.trace_id, TRACE_ID_LENGTH);
-      event.trace_id[TRACE_ID_LENGTH] = '\0';
-      std::memcpy(event.span_id, context.span_id, SPAN_ID_LENGTH);
-      event.span_id[SPAN_ID_LENGTH] = '\0';
-      std::memcpy(event.parent_span_id, context.parent_span_id, SPAN_ID_LENGTH);
-      event.parent_span_id[SPAN_ID_LENGTH] = '\0';
-
-      // No span links for publish operations (used for fan-in scenarios)
-      event.span_link_count = 0;
-
-      // Event details
-      event.operation = OP_PUBLISH;
-      std::strncpy(
-        event.topic_or_service,
-        publisher->topic_name,
-        MAX_TOPIC_NAME_LENGTH - 1);
-      event.topic_or_service[MAX_TOPIC_NAME_LENGTH - 1] = '\0';
-
-      // Retrieve publisher metadata (node name, namespace, message type)
-      PublisherMetadata metadata;
-      if (get_publisher_metadata(publisher, metadata)) {
-        // Use strlcpy-style pattern: copy at most size-1, then null-terminate
-        size_t node_name_len = std::min(std::strlen(metadata.node_name), MAX_NODE_NAME_LENGTH - 1);
-        std::memcpy(event.node_name, metadata.node_name, node_name_len);
-        event.node_name[node_name_len] = '\0';
-
-        size_t node_ns_len = std::min(
-          std::strlen(metadata.node_namespace), MAX_NODE_NAME_LENGTH - 1);
-        std::memcpy(event.node_namespace, metadata.node_namespace, node_ns_len);
-        event.node_namespace[node_ns_len] = '\0';
-
-        size_t msg_type_len = std::min(
-          std::strlen(metadata.message_type), MAX_MESSAGE_TYPE_LENGTH - 1);
-        std::memcpy(event.message_type, metadata.message_type, msg_type_len);
-        event.message_type[msg_type_len] = '\0';
-      } else {
-        // Metadata not found - leave fields empty
-        event.node_name[0] = '\0';
-        event.node_namespace[0] = '\0';
-        event.message_type[0] = '\0';
+      // Compute content hash if needed for fallback correlation
+      if (!strategy->is_deterministic()) {
+        // TODO(ROB-55): Get actual serialized message data and size
+        // For now, use pointer as simple hash (not ideal but safe)
+        content_hash = compute_content_hash(ros_message, sizeof(void*));
       }
 
-      // Initialize remaining metadata fields
-      // TODO(ROB-55): Extract from DDS (requires FastDDS integration)
-      // - publisher_gid: Unique identifier for publisher instance
-      // - sequence_number: Message sequence number from DDS
-      event.publisher_gid[0] = '\0';
-      event.sequence_number = 0;
+      // Emit LTTng tracepoint
+      #ifdef ROS_TRACING_ENABLED
+      tracepoint(
+        robotops, publish_rmw_start,
+        ros_message, publisher->topic_name,
+        context.trace_id, span_id_buf, context.parent_span_id,
+        content_hash);
+      #endif
 
-      // TODO(ROB-55): Measure serialized message size
-      // - message_size_bytes: Actual bytes on the wire
-      // Requires serialization, which has overhead - consider if needed
-      event.message_size_bytes = 0;
+      // Inject context into DDS metadata (best-effort)
+      strategy->inject_context(publisher, context, ros_message, sizeof(void*));
 
-      // Try to inject context into DDS metadata (currently no-op placeholder)
-      inject_trace_context_to_dds(nullptr, context);
+    } catch (...) {
+      record_trace_failure();
+      tracing_active = false;  // Disable for this publish
+    }
+  }
 
-      // Try to push to trace event queue (non-blocking)
-      if (!get_trace_event_queue().try_push(event)) {
-        // Queue full - drop event (safety guarantee: never block)
-        // This is logged but doesn't fail the publish
+  // STEP 2: REAL MESSAGE FIRST (Safety guarantee - never blocked by tracing)
+  rmw_ret_t ret = underlying_rmw_publish(publisher, ros_message, allocation);
+
+  // STEP 3: Emit END event (AFTER underlying publish)
+  if (ret == RMW_RET_OK && tracing_active) {
+    try {
+      // Emit LTTng tracepoint
+      #ifdef ROS_TRACING_ENABLED
+      tracepoint(robotops, publish_rmw_end, ros_message, true);
+      #endif
+
+      // Emit START TraceEvent for robot_agent
+      TraceEvent start_event;
+      start_event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+      start_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START;
+      std::strncpy(start_event.trace_id, context.trace_id, sizeof(start_event.trace_id) - 1);
+      std::strncpy(start_event.span_id, span_id_buf, sizeof(start_event.span_id) - 1);
+      std::strncpy(
+        start_event.parent_span_id, context.parent_span_id,
+        sizeof(start_event.parent_span_id) - 1);
+      std::strncpy(
+        start_event.topic_or_service, publisher->topic_name,
+        sizeof(start_event.topic_or_service) - 1);
+      start_event.msg_ptr = reinterpret_cast<uint64_t>(ros_message);
+      start_event.content_hash = content_hash;
+      start_event.dds_domain_id = get_dds_domain_id();
+      start_event.correlation_method = strategy->get_correlation_method();
+
+      // Get publisher metadata
+      PublisherMetadata metadata;
+      if (get_publisher_metadata(publisher, metadata)) {
+        std::strncpy(start_event.node_name, metadata.node_name, sizeof(start_event.node_name) - 1);
+        std::strncpy(
+          start_event.node_namespace, metadata.node_namespace,
+          sizeof(start_event.node_namespace) - 1);
+        std::strncpy(
+          start_event.message_type, metadata.message_type,
+          sizeof(start_event.message_type) - 1);
+      }
+
+      // Emit END TraceEvent
+      TraceEvent end_event = start_event;
+      end_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_END;
+
+      // Push events to queue (non-blocking)
+      if (!get_trace_event_queue().try_push(start_event) ||
+        !get_trace_event_queue().try_push(end_event))
+      {
         record_trace_failure();
       } else {
         record_trace_success();
       }
+
     } catch (...) {
-      // Safety guarantee: Never propagate exceptions from tracing code
-      // Catch all exceptions and continue
       record_trace_failure();
     }
   }

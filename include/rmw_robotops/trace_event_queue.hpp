@@ -52,11 +52,14 @@ constexpr size_t MAX_SPAN_LINKS = 8;
 
 /// Trace event emitted by RMW interception
 /// Sent to background thread for publishing to /robotops/trace_events
-/// Matches robotops_msgs/msg/TraceEvent.msg schema
+/// Matches robotops_msgs/msg/TraceEvent.msg schema (0.2.1+)
 struct TraceEvent
 {
   // Timestamp (nanoseconds since epoch, converted to builtin_interfaces/Time)
   uint64_t timestamp_ns;
+
+  // Event type for hierarchical span reconstruction
+  uint8_t event_type;  // EVENT_PUBLISH_RMW_START, EVENT_PUBLISH_RMW_END, etc.
 
   // Trace identification
   char trace_id[TRACE_ID_LENGTH + 1];        // UUID, shared across related spans
@@ -68,8 +71,7 @@ struct TraceEvent
   size_t span_link_count;
   char span_links[MAX_SPAN_LINKS][TRACE_ID_LENGTH + SPAN_ID_LENGTH + 2];  // +2 for ':' and '\0'
 
-  // Event details
-  OperationType operation;
+  // Topic/service identification
   char topic_or_service[MAX_TOPIC_NAME_LENGTH];
   char node_name[MAX_NODE_NAME_LENGTH];           // Fully qualified (/namespace/node)
   char node_namespace[MAX_NODE_NAME_LENGTH];
@@ -77,17 +79,39 @@ struct TraceEvent
   // For correlation (matching publish to subscribe)
   char publisher_gid[MAX_PUBLISHER_GID_LENGTH];   // DDS publisher GUID (hex string)
   uint64_t sequence_number;                       // Message sequence number
+  int64_t source_timestamp_ns;                    // Publisher's timestamp for fallback
+
+  // Content hash for fallback correlation (non-FastDDS)
+  uint64_t content_hash;                          // xxHash64 of serialized message (0 if not computed)
+
+  // Pointer for span reconstruction (correlate with ros2_tracing)
+  uint64_t msg_ptr;                               // Message pointer for event correlation
 
   // Metadata
   char message_type[MAX_MESSAGE_TYPE_LENGTH];     // e.g., "sensor_msgs/msg/Image"
   uint32_t message_size_bytes;                    // Serialized message size
 
+  // DDS domain for multi-domain filtering
+  uint32_t dds_domain_id;
+
+  // Correlation metadata
+  uint8_t correlation_method;  // CORRELATION_FASTDDS_SEQUENCE, CORRELATION_FALLBACK_HASH, etc.
+
+  // Legacy operation field (deprecated, use event_type instead)
+  OperationType operation;
+
   TraceEvent() noexcept
   : timestamp_ns(0),
+    event_type(0),
     span_link_count(0),
-    operation(OP_PUBLISH),
     sequence_number(0),
-    message_size_bytes(0)
+    source_timestamp_ns(0),
+    content_hash(0),
+    msg_ptr(0),
+    message_size_bytes(0),
+    dds_domain_id(0),
+    correlation_method(0),
+    operation(OP_PUBLISH)
   {
     trace_id[0] = '\0';
     span_id[0] = '\0';

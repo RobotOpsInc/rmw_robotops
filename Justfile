@@ -6,7 +6,7 @@
 export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
 ## Production:
 # export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
-export ROBOTOPS_MSGS_VERSION := env_var_or_default('ROBOTOPS_MSGS_VERSION', '0.1.6-0noble')
+export ROBOTOPS_MSGS_VERSION := env_var_or_default('ROBOTOPS_MSGS_VERSION', '0.2.1-0noble')
 
 # Default recipe - show available commands
 default:

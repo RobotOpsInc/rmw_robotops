@@ -23,6 +23,8 @@ find_package(rmw_fastrtps_cpp REQUIRED)
 find_package(rmw_fastrtps_shared_cpp REQUIRED)
 find_package(fastrtps REQUIRED)
 find_package(fastcdr REQUIRED)
+find_package(tracetools REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Main library
 add_library(${PROJECT_NAME} SHARED
@@ -39,6 +41,8 @@ add_library(${PROJECT_NAME} SHARED
   src/span_id_generator.cpp
   src/dds_metadata.cpp
   src/config.cpp
+  src/correlation_strategy.cpp
+  src/utils.cpp
   src/rmw_stubs.cpp
 )
 
@@ -62,6 +66,12 @@ ament_target_dependencies(${PROJECT_NAME}
   rmw_fastrtps_shared_cpp
   fastrtps
   fastcdr
+  tracetools
+)
+
+# Link non-ament dependencies
+target_link_libraries(${PROJECT_NAME}
+  yaml-cpp
 )
 
 # Platform-specific libraries
