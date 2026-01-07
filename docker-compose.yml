@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Development container for interactive work
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
+        ROBOTOPS_MSGS_VERSION: ${ROBOTOPS_MSGS_VERSION:-0.1.6-0noble}
+      secrets:
+        - cloudsmith_key
+    image: rmw_robotops:dev
+    volumes:
+      - .:/workspace/src/rmw_robotops
+      - build_cache:/workspace/build
+      - install_cache:/workspace/install
+    environment:
+      - RMW_IMPLEMENTATION=rmw_robotops
+      - ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
+      - ROBOTOPS_TRACING_ENABLED=true
+    working_dir: /workspace/src/rmw_robotops
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # Build service - builds the package
+  build:
+    extends: dev
+    command: >
+      bash -c "
+        source /opt/ros/jazzy/setup.bash &&
+        colcon build \
+          --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          --event-handlers console_direct+
+      "
+
+  # Test service - runs tests with sanitizers
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+      args:
+        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
+        ROBOTOPS_MSGS_VERSION: ${ROBOTOPS_MSGS_VERSION:-0.1.6-0noble}
+      secrets:
+        - cloudsmith_key
+    image: rmw_robotops:test
+    volumes:
+      - .:/workspace/src/rmw_robotops
+      - build_cache:/workspace/build
+      - install_cache:/workspace/install
+    environment:
+      - ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1
+      - UBSAN_OPTIONS=print_stacktrace=1
+    working_dir: /workspace/src/rmw_robotops
+    command: >
+      bash -c "source /opt/ros/jazzy/setup.bash &&
+      colcon build
+      --cmake-args
+      -DCMAKE_BUILD_TYPE=Debug
+      -DCMAKE_CXX_FLAGS='-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer'
+      -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address -fsanitize=undefined' &&
+      source install/setup.bash &&
+      colcon test --event-handlers console_direct+ &&
+      colcon test-result --verbose"
+
+volumes:
+  build_cache:
+  install_cache:
+
+secrets:
+  cloudsmith_key:
+    file: ~/.cloudsmith/key
