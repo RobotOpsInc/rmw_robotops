@@ -284,7 +284,10 @@ rmw_publish(
       TraceEvent start_event;
       start_event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
-      start_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START;
+
+      // Detect action event type or use regular publish event
+      start_event.event_type = rmw_robotops::detect_action_event_type(
+        publisher->topic_name, true, true);
 
       // Copy strings with explicit null termination
       std::memcpy(start_event.trace_id, context.trace_id, sizeof(start_event.trace_id) - 1);
@@ -307,6 +310,23 @@ rmw_publish(
       start_event.dds_domain_id = get_dds_domain_id();
       start_event.correlation_method = strategy->get_correlation_method();
 
+      // Collect pending contexts for span links (fan-in scenario)
+      TraceContext pending_contexts[rmw_robotops::MAX_SPAN_LINKS];
+      size_t num_pending = rmw_robotops::collect_pending_contexts(
+        pending_contexts,
+        rmw_robotops::MAX_SPAN_LINKS);
+
+      start_event.span_link_count = num_pending;
+      for (size_t i = 0; i < num_pending; ++i) {
+        // Format as "trace_id:span_id"
+        snprintf(
+          start_event.span_links[i],
+          sizeof(start_event.span_links[i]),
+          "%s:%s",
+          pending_contexts[i].trace_id,
+          pending_contexts[i].span_id);
+      }
+
       // Get publisher metadata
       PublisherMetadata metadata;
       if (get_publisher_metadata(publisher, metadata)) {
@@ -328,7 +348,9 @@ rmw_publish(
 
       // Emit END TraceEvent
       TraceEvent end_event = start_event;
-      end_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_END;
+      // Detect action event type or use regular publish END event
+      end_event.event_type = rmw_robotops::detect_action_event_type(
+        publisher->topic_name, true, false);
 
       // Push events to queue (non-blocking)
       if (!get_trace_event_queue().try_push(start_event) ||

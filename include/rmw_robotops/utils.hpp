@@ -58,6 +58,24 @@ uint64_t compute_content_hash(const void * data, size_t size) noexcept;
 /// @note This is a conservative check - returns false if unsure
 bool is_intra_process_enabled(const void * publisher) noexcept;
 
+/// Detect action event type from topic name
+/// @param topic_name ROS topic name
+/// @param is_publisher true for publish, false for subscribe
+/// @return TraceEvent event_type constant
+///
+/// ROS2 actions use standard topic naming:
+/// - /_action/send_goal - Goal request
+/// - /_action/cancel_goal - Cancel request
+/// - /_action/get_result - Result request
+/// - /_action/feedback - Feedback messages
+/// - /_action/status - Status updates
+///
+/// @note Returns EVENT_PUBLISH_RMW_START/END or EVENT_TAKE_RMW_START/END if not an action
+uint8_t detect_action_event_type(
+  const char * topic_name,
+  bool is_publisher,
+  bool is_start_event) noexcept;
+
 }  // namespace rmw_robotops
 
 #endif  // RMW_ROBOTOPS__UTILS_HPP_

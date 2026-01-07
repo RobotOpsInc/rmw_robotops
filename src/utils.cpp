@@ -16,6 +16,10 @@
 
 #include <rcutils/logging_macros.h>
 
+#include <cstring>
+
+#include "robotops_msgs/msg/trace_event.h"
+
 // xxHash library for fast content hashing
 // We'll use a simple inline implementation to avoid external dependency for now
 // TODO(ROB-55): Consider using official xxhash library for optimal performance
@@ -64,6 +68,76 @@ bool is_intra_process_enabled(const void * publisher) noexcept
   // For safety, always inject DDS metadata (works for both intra and cross-process)
   // Intra-process will use TLS context, cross-process will use DDS metadata
   return false;
+}
+
+/// Helper: Check if string ends with suffix
+static bool ends_with(const char * str, const char * suffix) noexcept
+{
+  if (!str || !suffix) {
+    return false;
+  }
+
+  size_t str_len = std::strlen(str);
+  size_t suffix_len = std::strlen(suffix);
+
+  if (suffix_len > str_len) {
+    return false;
+  }
+
+  return std::strncmp(str + str_len - suffix_len, suffix, suffix_len) == 0;
+}
+
+uint8_t detect_action_event_type(
+  const char * topic_name,
+  bool is_publisher,
+  bool is_start_event) noexcept
+{
+  if (!topic_name) {
+    // Default to regular pub/sub events
+    if (is_publisher) {
+      if (is_start_event) {
+        return robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START;
+      } else {
+        return robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_END;
+      }
+    } else {
+      if (is_start_event) {
+        return robotops_msgs__msg__TraceEvent__EVENT_TAKE_RMW_START;
+      } else {
+        return robotops_msgs__msg__TraceEvent__EVENT_TAKE_RMW_END;
+      }
+    }
+  }
+
+  // Detect action topics by naming convention
+  // ROS2 actions use: /_action/send_goal, /_action/cancel_goal, etc.
+  if (ends_with(topic_name, "/_action/send_goal")) {
+    return robotops_msgs__msg__TraceEvent__EVENT_ACTION_GOAL;
+  }
+  if (ends_with(topic_name, "/_action/cancel_goal")) {
+    return robotops_msgs__msg__TraceEvent__EVENT_ACTION_CANCEL;
+  }
+  if (ends_with(topic_name, "/_action/get_result")) {
+    return robotops_msgs__msg__TraceEvent__EVENT_ACTION_RESULT;
+  }
+  if (ends_with(topic_name, "/_action/feedback")) {
+    return robotops_msgs__msg__TraceEvent__EVENT_ACTION_FEEDBACK;
+  }
+
+  // Not an action - use regular pub/sub event types
+  if (is_publisher) {
+    if (is_start_event) {
+      return robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_START;
+    } else {
+      return robotops_msgs__msg__TraceEvent__EVENT_PUBLISH_RMW_END;
+    }
+  } else {
+    if (is_start_event) {
+      return robotops_msgs__msg__TraceEvent__EVENT_TAKE_RMW_START;
+    } else {
+      return robotops_msgs__msg__TraceEvent__EVENT_TAKE_RMW_END;
+    }
+  }
 }
 
 }  // namespace rmw_robotops

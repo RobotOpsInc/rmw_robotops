@@ -315,6 +315,18 @@ rmw_take_with_info(
         new_context.parent_span_id[0] = '\0';  // Root span
       }
 
+      // Fan-in detection: If we already have a trace context and it's different
+      // from the incoming context, save it as pending for SpanLinks
+      auto current_context = rmw_robotops::get_trace_context();
+      if (!current_context.is_empty() &&
+        std::strncmp(
+          current_context.trace_id, new_context.trace_id,
+          rmw_robotops::TRACE_ID_LENGTH) != 0)
+      {
+        // Different trace - save current as pending for fan-in
+        rmw_robotops::save_pending_context(current_context);
+      }
+
       // Set trace context for downstream propagation
       set_trace_context(new_context);
 
@@ -348,7 +360,10 @@ rmw_take_with_info(
       TraceEvent start_event;
       start_event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
-      start_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_TAKE_RMW_START;
+
+      // Detect action event type or use regular take event
+      start_event.event_type = rmw_robotops::detect_action_event_type(
+        subscription->topic_name, false, true);
 
       // Copy strings with explicit null termination
       std::memcpy(start_event.trace_id, new_context.trace_id, sizeof(start_event.trace_id) - 1);
@@ -401,7 +416,9 @@ rmw_take_with_info(
 
       // Emit END TraceEvent
       TraceEvent end_event = start_event;
-      end_event.event_type = robotops_msgs__msg__TraceEvent__EVENT_TAKE_RMW_END;
+      // Detect action event type or use regular take END event
+      end_event.event_type = rmw_robotops::detect_action_event_type(
+        subscription->topic_name, false, false);
 
       // Push events to queue (non-blocking)
       if (!get_trace_event_queue().try_push(start_event) ||
