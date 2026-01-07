@@ -69,7 +69,8 @@ struct TraceEvent
   // Span links for fan-in scenarios (multiple inputs → one output)
   // Each link formatted as "trace_id:span_id"
   size_t span_link_count;
-  char span_links[MAX_SPAN_LINKS][TRACE_ID_LENGTH + SPAN_ID_LENGTH + 2];  // +2 for ':' and '\0'
+  // +3 for ':' and '\0' (safe for max length trace_id + span_id)
+  char span_links[MAX_SPAN_LINKS][TRACE_ID_LENGTH + SPAN_ID_LENGTH + 3];
 
   // Topic/service identification
   char topic_or_service[MAX_TOPIC_NAME_LENGTH];

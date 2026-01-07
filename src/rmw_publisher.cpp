@@ -318,12 +318,14 @@ rmw_publish(
 
       start_event.span_link_count = num_pending;
       for (size_t i = 0; i < num_pending; ++i) {
-        // Format as "trace_id:span_id"
+        // Format as "trace_id:span_id" with explicit length limits for compiler
         snprintf(
           start_event.span_links[i],
           sizeof(start_event.span_links[i]),
-          "%s:%s",
+          "%.*s:%.*s",
+          static_cast<int>(rmw_robotops::TRACE_ID_LENGTH),
           pending_contexts[i].trace_id,
+          static_cast<int>(rmw_robotops::SPAN_ID_LENGTH),
           pending_contexts[i].span_id);
       }
 
