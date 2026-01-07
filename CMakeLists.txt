@@ -28,7 +28,6 @@ find_package(yaml-cpp REQUIRED)
 
 # Main library
 add_library(${PROJECT_NAME} SHARED
-  src/rmw_robotops.cpp
   src/rmw_init.cpp
   src/rmw_node.cpp
   src/rmw_publisher.cpp
@@ -164,6 +163,20 @@ if(BUILD_TESTING)
   )
   target_link_libraries(test_pubsub_tracing ${PROJECT_NAME})
   ament_target_dependencies(test_pubsub_tracing rmw rcutils robotops_msgs)
+
+  # Service/client tracing integration test
+  ament_add_gtest(test_service_tracing
+    test/test_service_tracing.cpp
+  )
+  target_link_libraries(test_service_tracing ${PROJECT_NAME})
+  ament_target_dependencies(test_service_tracing rmw rcutils robotops_msgs)
+
+  # Correlation strategy tests
+  ament_add_gtest(test_correlation_strategies
+    test/test_correlation_strategies.cpp
+  )
+  target_link_libraries(test_correlation_strategies ${PROJECT_NAME})
+  ament_target_dependencies(test_correlation_strategies rmw rcutils robotops_msgs)
 
   # Performance benchmarks
   add_executable(benchmark_latency
