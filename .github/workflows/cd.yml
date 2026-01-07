@@ -12,7 +12,8 @@ jobs:
           - arch: amd64
             runner: ubuntu-24.04
           - arch: arm64
-            runner: custom-ubuntu-24.04-arm-4-core
+            runner: ubuntu-24.04-arm
+            # runner: custom-ubuntu-24.04-arm-4-core
     runs-on: ${{ matrix.runner }}
 
     steps:
@@ -62,6 +63,7 @@ jobs:
       - name: Build Debian package
         run: |
           docker run --rm \
+            -v ${{ github.workspace }}:/workspace/src/rmw_robotops \
             -v ${{ github.workspace }}:/output \
             rmw_robotops:build-${{ matrix.arch }} bash -c "
               cd /workspace/src/rmw_robotops && \
