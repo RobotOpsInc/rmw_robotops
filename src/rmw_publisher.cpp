@@ -240,9 +240,16 @@ rmw_publish(
 
       // Compute content hash if needed for fallback correlation
       if (!strategy->is_deterministic()) {
-        // TODO(ROB-55): Get actual serialized message data and size
-        // For now, use pointer as simple hash (not ideal but safe)
-        content_hash = compute_content_hash(ros_message, sizeof(void *));
+        // NOTE: We don't have direct access to the serialized CDR buffer here
+        // because the underlying RMW handles serialization internally.
+        // Use message pointer + timestamp as a proxy for content identity.
+        // True content-based hashing requires DDS-level interception (ROB-106).
+        uint64_t timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+          std::chrono::system_clock::now().time_since_epoch()).count();
+
+        // Hash pointer XOR timestamp for a unique-per-publish fingerprint
+        uint64_t composite = reinterpret_cast<uintptr_t>(ros_message) ^ timestamp_ns;
+        content_hash = compute_content_hash(&composite, sizeof(composite));
       }
 
       // Emit LTTng tracepoint

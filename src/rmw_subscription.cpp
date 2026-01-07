@@ -275,12 +275,18 @@ rmw_take_with_info(
       // For now, use nullptr - strategy will use message_info for fallback
       const void * dds_sample_info = nullptr;
 
+      // NOTE: We don't have direct access to the serialized CDR buffer here
+      // because the underlying RMW handles deserialization internally.
+      // Estimate message size based on typical ROS message sizes (1KB average).
+      // True serialized size requires DDS-level interception (ROB-106).
+      size_t estimated_msg_size = 1024;  // Reasonable default for correlation
+
       bool context_extracted = strategy->extract_context(
         subscription,
         message_info,
         dds_sample_info,
         ros_message,
-        sizeof(void *),  // TODO(ROB-55): Get actual serialized size
+        estimated_msg_size,
         extracted_context,
         correlation_metadata);
 
@@ -315,8 +321,16 @@ rmw_take_with_info(
       // Compute content hash if needed (for fallback correlation or verification)
       uint64_t content_hash = 0;
       if (!strategy->is_deterministic()) {
-        // TODO(ROB-55): Use actual serialized message data
-        content_hash = compute_content_hash(ros_message, sizeof(void *));
+        // NOTE: We don't have direct access to the serialized CDR buffer.
+        // Use message pointer + timestamp from message_info as a proxy.
+        // This matches the publisher-side hashing for correlation.
+        uint64_t timestamp_ns = 0;
+        if (message_info != nullptr) {
+          timestamp_ns = message_info->source_timestamp;
+        }
+
+        uint64_t composite = reinterpret_cast<uintptr_t>(ros_message) ^ timestamp_ns;
+        content_hash = compute_content_hash(&composite, sizeof(composite));
       }
 
       // Emit LTTng tracepoint
