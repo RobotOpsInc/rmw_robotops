@@ -66,11 +66,6 @@ jobs:
             -v ${{ github.workspace }}:/workspace/src/rmw_robotops \
             -v ${{ github.workspace }}:/output \
             rmw_robotops:build-${{ matrix.arch }} bash -c "
-              # Add custom rosdep rule for robotops_msgs
-              mkdir -p /etc/ros/rosdep/sources.list.d
-              echo 'yaml file:///tmp/custom-rosdep.yaml' > /etc/ros/rosdep/sources.list.d/50-custom.list
-              printf '%s\\n' 'robotops_msgs:' '  ubuntu:' '    - ros-jazzy-robotops-msgs' > /tmp/custom-rosdep.yaml
-              rosdep update && \
               cd /workspace/src/rmw_robotops && \
               bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy && \
               dpkg-buildpackage -us -uc -b && \

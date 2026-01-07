@@ -9,7 +9,6 @@ services:
       target: dev
       args:
         CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
-        ROBOTOPS_MSGS_VERSION: ${ROBOTOPS_MSGS_VERSION:-0.1.6-0noble}
       secrets:
         - cloudsmith_key
     image: rmw_robotops:dev
@@ -45,7 +44,6 @@ services:
       target: test
       args:
         CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
-        ROBOTOPS_MSGS_VERSION: ${ROBOTOPS_MSGS_VERSION:-0.1.6-0noble}
       secrets:
         - cloudsmith_key
     image: rmw_robotops:test
