@@ -5,9 +5,8 @@
 # ============================================================================
 FROM ros:jazzy-ros-base AS base
 
-# Build arguments for configurable Cloudsmith repository and package version
+# Build arguments for configurable Cloudsmith repository
 ARG CLOUDSMITH_REPO=robotops-development
-ARG ROBOTOPS_MSGS_VERSION=0.1.6-0noble
 
 # Install core build dependencies and packaging tools
 RUN apt-get update && apt-get install -y \
@@ -27,12 +26,6 @@ RUN apt-get update && apt-get install -y \
 # Install just command runner
 RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
-# Install FastDDS (our primary DDS implementation)
-RUN apt-get update && apt-get install -y \
-    ros-jazzy-rmw-fastrtps-cpp \
-    ros-jazzy-fastrtps \
-    && rm -rf /var/lib/apt/lists/*
-
 # Configure Cloudsmith repository using buildx secret
 # Secret file format: username:api_key
 RUN --mount=type=secret,id=cloudsmith_key \
@@ -41,10 +34,19 @@ RUN --mount=type=secret,id=cloudsmith_key \
     "https://dl.cloudsmith.io/basic/robotops/${CLOUDSMITH_REPO}/setup.deb.sh" \
     | bash
 
-# Install robotops_msgs from Cloudsmith
-RUN apt-get update && apt-get install -y \
-    ros-jazzy-robotops-msgs=${ROBOTOPS_MSGS_VERSION} \
-    && rm -rf /var/lib/apt/lists/*
+# Add custom rosdep rule for robotops_msgs (from Cloudsmith, not rosdistro)
+RUN mkdir -p /etc/ros/rosdep/sources.list.d && \
+    printf '%s\n' 'robotops_msgs:' '  ubuntu:' '    - ros-jazzy-robotops-msgs' > /etc/ros/rosdep/custom.yaml && \
+    echo 'yaml file:///etc/ros/rosdep/custom.yaml' > /etc/ros/rosdep/sources.list.d/50-custom.list
+
+# Copy package.xml to install dependencies from it (single source of truth)
+WORKDIR /workspace/src/rmw_robotops
+COPY package.xml .
+
+# Initialize rosdep and install dependencies from package.xml
+# This respects version constraints like version_gte="0.2.1" in package.xml
+RUN rosdep update && \
+    rosdep install --from-paths . --ignore-src -y --rosdistro jazzy
 
 WORKDIR /workspace
 

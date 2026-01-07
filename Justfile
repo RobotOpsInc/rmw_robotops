@@ -6,19 +6,18 @@
 export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
 ## Production:
 # export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
-export ROBOTOPS_MSGS_VERSION := env_var_or_default('ROBOTOPS_MSGS_VERSION', '0.2.1-0noble')
 
 # Default recipe - show available commands
 default:
     @just --list
 
 # Build the development Docker image
-build repo=CLOUDSMITH_REPO version=ROBOTOPS_MSGS_VERSION:
-    CLOUDSMITH_REPO={{repo}} ROBOTOPS_MSGS_VERSION={{version}} DOCKER_BUILDKIT=1 docker-compose build dev
+build repo=CLOUDSMITH_REPO:
+    CLOUDSMITH_REPO={{repo}} DOCKER_BUILDKIT=1 docker-compose build dev
 
 # Build all Docker images (dev + test)
-build-all repo=CLOUDSMITH_REPO version=ROBOTOPS_MSGS_VERSION:
-    CLOUDSMITH_REPO={{repo}} ROBOTOPS_MSGS_VERSION={{version}} DOCKER_BUILDKIT=1 docker-compose build
+build-all repo=CLOUDSMITH_REPO:
+    CLOUDSMITH_REPO={{repo}} DOCKER_BUILDKIT=1 docker-compose build
 
 # Start interactive development shell
 dev:
