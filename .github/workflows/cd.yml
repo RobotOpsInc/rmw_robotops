@@ -69,11 +69,7 @@ jobs:
               # Add custom rosdep rule for robotops_msgs
               mkdir -p /etc/ros/rosdep/sources.list.d
               echo 'yaml file:///tmp/custom-rosdep.yaml' > /etc/ros/rosdep/sources.list.d/50-custom.list
-              cat > /tmp/custom-rosdep.yaml << 'EOF'
-              robotops_msgs:
-                ubuntu:
-                  - ros-jazzy-robotops-msgs
-              EOF
+              printf '%s\\n' 'robotops_msgs:' '  ubuntu:' '    - ros-jazzy-robotops-msgs' > /tmp/custom-rosdep.yaml
               rosdep update && \
               cd /workspace/src/rmw_robotops && \
               bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy && \
@@ -84,9 +80,21 @@ jobs:
       - name: Find built package
         id: deb
         run: |
-          DEB_FILE=$(ls *.deb | head -n1)
+          echo "=== Listing all files in workspace ==="
+          ls -la
+          echo "=== Looking for .deb files ==="
+          ls -la *.deb || echo "No .deb files found!"
+
+          DEB_FILE=$(ls *.deb 2>/dev/null | head -n1)
+
+          if [ -z "$DEB_FILE" ]; then
+            echo "ERROR: No .deb file found!"
+            exit 1
+          fi
+
           echo "file=$DEB_FILE" >> $GITHUB_OUTPUT
           echo "Built package: $DEB_FILE"
+          echo "Full path: $(readlink -f $DEB_FILE)"
 
       - name: Upload to Cloudsmith
         uses: cloudsmith-io/action@v0.6.10
