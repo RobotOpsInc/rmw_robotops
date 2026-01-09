@@ -64,13 +64,18 @@ curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -
 
 ### 2. Configure Cloudsmith Credentials
 
+Create a `.env.local` file in the project root with your Cloudsmith credentials:
+
 ```bash
-mkdir -p ~/.cloudsmith
-echo "your-username:YOUR_API_KEY_HERE" > ~/.cloudsmith/key
-chmod 600 ~/.cloudsmith/key
+# Copy the template
+cp .env.local.template .env.local
+
+# Edit with your credentials
+# CLOUDSMITH_USERNAME=your-cloudsmith-username
+# CLOUDSMITH_API_KEY=your-cloudsmith-api-key
 ```
 
-**Format:** `username:api_key` (replace with your Cloudsmith username and API key)
+The `.env.local` file is automatically loaded by `docker-compose` and `.gitignore`'d to keep credentials secure.
 
 ### 3. Build and develop
 
@@ -309,11 +314,12 @@ just check-setup  # Checks Docker, API key, and build
 ### Cloudsmith Authentication Failed
 
 ```bash
-# Verify your credentials are in the correct format (username:api_key)
-cat ~/.cloudsmith/key
+# Verify your credentials in .env.local
+cat .env.local
 
-# Should output: your-username:your-api-key
-# NOT just the API key alone
+# Should contain:
+# CLOUDSMITH_USERNAME=your-username
+# CLOUDSMITH_API_KEY=your-api-key
 
 # Rebuild without cache
 just rebuild

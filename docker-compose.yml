@@ -9,8 +9,8 @@ services:
       target: dev
       args:
         CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
-      secrets:
-        - cloudsmith_key
+        CLOUDSMITH_USERNAME: ${CLOUDSMITH_USERNAME}
+        CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY}
     image: rmw_robotops:dev
     volumes:
       - .:/workspace/src/rmw_robotops
@@ -28,13 +28,7 @@ services:
   # Build service - builds the package
   build:
     extends: dev
-    command: >
-      bash -c "
-        source /opt/ros/jazzy/setup.bash &&
-        colcon build \
-          --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-          --event-handlers console_direct+
-      "
+    command: bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo --event-handlers console_direct+"
 
   # Test service - runs tests with sanitizers
   test:
@@ -44,8 +38,8 @@ services:
       target: test
       args:
         CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
-      secrets:
-        - cloudsmith_key
+        CLOUDSMITH_USERNAME: ${CLOUDSMITH_USERNAME}
+        CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY}
     image: rmw_robotops:test
     volumes:
       - .:/workspace/src/rmw_robotops
@@ -55,21 +49,8 @@ services:
       - ASAN_OPTIONS=detect_leaks=1:check_initialization_order=1
       - UBSAN_OPTIONS=print_stacktrace=1
     working_dir: /workspace/src/rmw_robotops
-    command: >
-      bash -c "source /opt/ros/jazzy/setup.bash &&
-      colcon build
-      --cmake-args
-      -DCMAKE_BUILD_TYPE=Debug
-      -DCMAKE_CXX_FLAGS='-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer'
-      -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address -fsanitize=undefined' &&
-      source install/setup.bash &&
-      colcon test --event-handlers console_direct+ &&
-      colcon test-result --verbose"
+    command: bash -c "source /opt/ros/jazzy/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS='-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer' -DCMAKE_EXE_LINKER_FLAGS='-fsanitize=address -fsanitize=undefined' && source install/setup.bash && colcon test --event-handlers console_direct+ && colcon test-result --verbose"
 
 volumes:
   build_cache:
   install_cache:
-
-secrets:
-  cloudsmith_key:
-    file: ~/.cloudsmith/key

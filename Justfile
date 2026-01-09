@@ -1,9 +1,15 @@
 # rmw_robotops development commands
 # Install just: https://github.com/casey/just
 
+# Load credentials from .env.local
+set dotenv-load
+set dotenv-filename := ".env.local"
+
 # Configuration - can be overridden via environment variables
 ## Development:
 export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
+export CLOUDSMITH_USERNAME := env_var_or_default('CLOUDSMITH_USERNAME', '')
+export CLOUDSMITH_API_KEY := env_var_or_default('CLOUDSMITH_API_KEY', '')
 ## Production:
 # export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
 
@@ -13,11 +19,11 @@ default:
 
 # Build the development Docker image
 build repo=CLOUDSMITH_REPO:
-    CLOUDSMITH_REPO={{repo}} DOCKER_BUILDKIT=1 docker-compose build dev
+    CLOUDSMITH_REPO={{repo}} CLOUDSMITH_USERNAME={{CLOUDSMITH_USERNAME}} CLOUDSMITH_API_KEY={{CLOUDSMITH_API_KEY}} DOCKER_BUILDKIT=1 docker-compose build dev
 
 # Build all Docker images (dev + test)
 build-all repo=CLOUDSMITH_REPO:
-    CLOUDSMITH_REPO={{repo}} DOCKER_BUILDKIT=1 docker-compose build
+    CLOUDSMITH_REPO={{repo}} CLOUDSMITH_USERNAME={{CLOUDSMITH_USERNAME}} CLOUDSMITH_API_KEY={{CLOUDSMITH_API_KEY}} DOCKER_BUILDKIT=1 docker-compose build
 
 # Start interactive development shell
 dev:

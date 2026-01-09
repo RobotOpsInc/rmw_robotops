@@ -4,6 +4,9 @@ on:
   push:
     branches: [development, main]
 
+env:
+  CLOUDSMITH_USERNAME: github-actions-bk1d
+
 jobs:
   deploy:
     strategy:
@@ -41,11 +44,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Prepare Cloudsmith credentials
-        run: |
-          # Service account format: service_account_username:api_key
-          echo "github-actions-bk1d:${{ secrets.CLOUDSMITH_API_KEY }}" > /tmp/cloudsmith_key
-
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -57,8 +55,9 @@ jobs:
           tags: rmw_robotops:build-${{ matrix.arch }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
-          secret-files: |
-            cloudsmith_key=/tmp/cloudsmith_key
+          build-args: |
+            CLOUDSMITH_USERNAME=${{ env.CLOUDSMITH_USERNAME }}
+            CLOUDSMITH_API_KEY=${{ secrets.CLOUDSMITH_API_KEY }}
 
       - name: Build Debian package
         run: |

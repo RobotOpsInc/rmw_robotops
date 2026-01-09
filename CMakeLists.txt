@@ -10,6 +10,11 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Conan integration for robotops-config dependency
+if(EXISTS "${CMAKE_BINARY_DIR}/conan_toolchain.cmake")
+  include("${CMAKE_BINARY_DIR}/conan_toolchain.cmake")
+endif()
+
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rcutils REQUIRED)
@@ -25,6 +30,9 @@ find_package(fastrtps REQUIRED)
 find_package(fastcdr REQUIRED)
 find_package(tracetools REQUIRED)
 find_package(yaml-cpp REQUIRED)
+
+# Find robotops-config from conan (optional - gracefully degrade if not available)
+find_package(robotops-config QUIET)
 
 # Main library
 add_library(${PROJECT_NAME} SHARED
@@ -72,6 +80,14 @@ ament_target_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   yaml-cpp
 )
+
+# Link robotops-config if available
+if(robotops-config_FOUND)
+  target_link_libraries(${PROJECT_NAME} robotops-config::robotops-config)
+  message(STATUS "robotops-config found and linked")
+else()
+  message(STATUS "robotops-config not found - using embedded defaults")
+endif()
 
 # Platform-specific libraries
 if(UNIX AND NOT APPLE)
