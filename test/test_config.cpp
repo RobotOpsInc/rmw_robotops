@@ -68,8 +68,8 @@ protected:
 TEST_F(ConfigTest, DefaultConfiguration) {
   Config & config = get_config();
 
-  // Should have default underlying RMW
-  EXPECT_NE(nullptr, config.underlying_rmw);
+  // Should have default underlying RMW (non-empty string)
+  EXPECT_FALSE(config.underlying_rmw.empty());
 
   // Failure threshold should be positive
   EXPECT_GT(config.failure_threshold, 0u);

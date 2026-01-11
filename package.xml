@@ -20,10 +20,13 @@
   <depend>rcpputils</depend>
 
   <!-- Message dependencies -->
-  <depend version_gte="0.2.1">robotops_msgs</depend>
+  <depend version_gte="0.3.1">robotops_msgs</depend>
   <depend>rosidl_runtime_c</depend>
   <depend>rosidl_typesupport_introspection_c</depend>
   <depend>rosidl_typesupport_introspection_cpp</depend>
+
+  <!-- Configuration dependencies -->
+  <depend version_gte="0.4.14">robotops-config</depend>
 
   <!-- ros2_tracing for LTTng tracepoint emission -->
   <depend>tracetools</depend>

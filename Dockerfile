@@ -7,6 +7,8 @@ FROM ros:jazzy-ros-base AS base
 
 # Build arguments for configurable Cloudsmith repository
 ARG CLOUDSMITH_REPO=robotops-development
+ARG CLOUDSMITH_USERNAME
+ARG CLOUDSMITH_API_KEY
 
 # Install core build dependencies and packaging tools
 RUN apt-get update && apt-get install -y \
@@ -16,27 +18,34 @@ RUN apt-get update && apt-get install -y \
     python3-colcon-common-extensions \
     python3-rosdep \
     python3-bloom \
+    python3-pip \
     fakeroot \
     dpkg-dev \
     debhelper \
     curl \
     ca-certificates \
+    libprotobuf-dev \
+    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
 # Install just command runner
 RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
-# Configure Cloudsmith repository using buildx secret
-# Secret file format: username:api_key
-RUN --mount=type=secret,id=cloudsmith_key \
-    CLOUDSMITH_CREDS=$(cat /run/secrets/cloudsmith_key) && \
-    curl -u "${CLOUDSMITH_CREDS}" -1sLf \
-    "https://dl.cloudsmith.io/basic/robotops/${CLOUDSMITH_REPO}/setup.deb.sh" \
-    | bash
+# Configure Cloudsmith APT repositories
+# 1. Development repository (private) - for in-development packages
+# 2. Public repository - for released packages like robotops-config
+RUN echo "deb [trusted=yes] https://${CLOUDSMITH_USERNAME}:${CLOUDSMITH_API_KEY}@dl.cloudsmith.io/basic/robotops/${CLOUDSMITH_REPO}/deb/ubuntu noble main" \
+    > /etc/apt/sources.list.d/robotops-${CLOUDSMITH_REPO}.list && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | bash && \
+    # Update package cache to include new repositories
+    apt-get update
 
-# Add custom rosdep rule for robotops_msgs (from Cloudsmith, not rosdistro)
+# Add custom rosdep rules for RobotOps packages (from Cloudsmith, not rosdistro)
 RUN mkdir -p /etc/ros/rosdep/sources.list.d && \
-    printf '%s\n' 'robotops_msgs:' '  ubuntu:' '    - ros-jazzy-robotops-msgs' > /etc/ros/rosdep/custom.yaml && \
+    printf '%s\n' \
+    'robotops-config:' '  ubuntu:' '    - ros-jazzy-robotops-config' \
+    'robotops_msgs:' '  ubuntu:' '    - ros-jazzy-robotops-msgs' \
+    > /etc/ros/rosdep/custom.yaml && \
     echo 'yaml file:///etc/ros/rosdep/custom.yaml' > /etc/ros/rosdep/sources.list.d/50-custom.list
 
 # Copy package.xml to install dependencies from it (single source of truth)

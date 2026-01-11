@@ -15,15 +15,13 @@
 #include "rmw_robotops/config.hpp"
 
 #include <rcutils/logging_macros.h>
+#include <robotops/config/v1/defaults.hpp>
 
 #include <cstdlib>
 #include <cstring>
 
 namespace rmw_robotops
 {
-
-// Default failure threshold (safety guarantee #7)
-constexpr uint32_t DEFAULT_FAILURE_THRESHOLD = 100;
 
 // Helper to get environment variable with default
 static const char * get_env_or_default(const char * name, const char * default_value) noexcept
@@ -92,42 +90,51 @@ static uint32_t get_env_uint32(const char * name, uint32_t default_value) noexce
 
 Config::Config() noexcept
 : tracing_enabled(true),
-  underlying_rmw(nullptr),
-  topic_filter_regex(nullptr),
-  failure_threshold(DEFAULT_FAILURE_THRESHOLD),
-  consecutive_failures(0)
+  underlying_rmw(),
+  failure_threshold(100),
+  consecutive_failures(0),
+  proto_config_(nullptr)
 {
-  // Load configuration from environment variables
+  try {
+    // Load generated defaults from robotops-config
+    proto_config_ = std::make_unique<robotops::config::v1::Config>(
+      robotops::config::v1::CreateDefaultConfig());
 
-  // ROBOTOPS_TRACING_ENABLED: Enable/disable tracing (default: true)
-  bool enabled = get_env_bool("ROBOTOPS_TRACING_ENABLED", true);
-  tracing_enabled.store(enabled, std::memory_order_relaxed);
+    // Apply environment variable overrides
+    // ROBOTOPS_TRACING_ENABLED: Enable/disable tracing
+    bool enabled = get_env_bool(
+      "ROBOTOPS_TRACING_ENABLED",
+      proto_config_->tracing().enabled());
+    tracing_enabled.store(enabled, std::memory_order_relaxed);
 
-  // ROBOTOPS_UNDERLYING_RMW: Which RMW to delegate to (required!)
-  underlying_rmw = get_env_or_default("ROBOTOPS_UNDERLYING_RMW", "rmw_fastrtps_cpp");
+    // ROBOTOPS_UNDERLYING_RMW: Which RMW to delegate to
+    underlying_rmw = get_env_or_default(
+      "ROBOTOPS_UNDERLYING_RMW",
+      proto_config_->tracing().underlying_rmw().c_str());
 
-  // ROBOTOPS_TRACE_TOPIC_FILTER: Optional topic filter regex
-  const char * filter = std::getenv("ROBOTOPS_TRACE_TOPIC_FILTER");
-  if (filter && filter[0] != '\0') {
-    topic_filter_regex = filter;
-  }
+    // ROBOTOPS_FAILURE_THRESHOLD: Auto-disable threshold
+    failure_threshold = get_env_uint32(
+      "ROBOTOPS_FAILURE_THRESHOLD",
+      proto_config_->tracing().performance().failure_threshold());
 
-  // ROBOTOPS_FAILURE_THRESHOLD: Auto-disable threshold (default: 100)
-  failure_threshold = get_env_uint32("ROBOTOPS_FAILURE_THRESHOLD", DEFAULT_FAILURE_THRESHOLD);
-
-  // Log configuration
-  RCUTILS_LOG_INFO_NAMED(
-    "rmw_robotops",
-    "Configuration loaded: tracing=%s, underlying_rmw=%s, failure_threshold=%u",
-    enabled ? "enabled" : "disabled",
-    underlying_rmw,
-    failure_threshold);
-
-  if (topic_filter_regex) {
+    // Log configuration
     RCUTILS_LOG_INFO_NAMED(
       "rmw_robotops",
-      "Topic filter enabled: %s",
-      topic_filter_regex);
+      "Configuration loaded: schema_version=%s, tracing=%s, underlying_rmw=%s, failure_threshold=%u",
+      proto_config_->schema_version().c_str(),
+      enabled ? "enabled" : "disabled",
+      underlying_rmw.c_str(),
+      failure_threshold);
+  } catch (const std::exception & e) {
+    // Fallback to hardcoded defaults if robotops-config fails
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_robotops",
+      "Failed to load robotops-config defaults: %s. Using hardcoded fallbacks.",
+      e.what());
+
+    tracing_enabled.store(true, std::memory_order_relaxed);
+    underlying_rmw = "rmw_fastrtps_cpp";
+    failure_threshold = 100;
   }
 }
 

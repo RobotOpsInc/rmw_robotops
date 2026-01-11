@@ -24,20 +24,65 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 
 ## Installation
 
-### Via apt (Recommended for End Users)
+### Option 1: Binary Package
 
 ```bash
 # Add Cloudsmith repository (one-time setup)
 curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
 
-# Install
+# Install pre-built binary
 sudo apt update
 sudo apt install ros-jazzy-rmw-robotops
 ```
 
+### Option 2: Build from Source (Recommended for Maximum Compatibility)
+
+Building from source ensures maximum ABI compatibility with your exact environment (compiler version, dependency versions, glibc, etc.). All dependencies (`robotops_msgs`, `robotops-config`) compile together in your environment for perfect ABI alignment.
+
+**Setup:**
+
+```bash
+# Add Cloudsmith repository (one-time setup)
+curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
+
+# Configure rosdep to find RobotOps packages from Cloudsmith
+mkdir -p /etc/ros/rosdep/sources.list.d
+sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
+robotops-config:
+  ubuntu:
+    - ros-jazzy-robotops-config
+
+robotops_msgs:
+  ubuntu:
+    - ros-jazzy-robotops-msgs
+
+rmw_robotops:
+  ubuntu:
+    - ros-jazzy-rmw-robotops
+EOF
+
+rosdep update
+```
+
+**In your ROS2 package's `package.xml`:**
+
+```xml
+<depend>rmw_robotops</depend>
+```
+
+**Build:**
+
+```bash
+cd ~/your_ros2_workspace
+rosdep install --from-paths src --ignore-src -y
+colcon build
+```
+
+`rosdep` automatically fetches the source packages from Cloudsmith, and `colcon` builds them all together in your environment.
+
 ### From Source (For Development)
 
-See the Development section below for building from source in Docker.
+See the Development section below for building in Docker with interactive development tools.
 
 ## Prerequisites (Development Only)
 

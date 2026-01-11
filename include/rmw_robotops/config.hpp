@@ -17,26 +17,35 @@
 
 #include <atomic>
 #include <cstdint>
+#include <memory>
+
+// Include robotops-config generated types
+#include <robotops/config/v1/config.pb.h>
 
 namespace rmw_robotops
 {
 
 /// Runtime configuration for rmw_robotops
-/// Loaded from environment variables on first use
-struct Config
+/// Wraps the robotops-config generated Config protobuf with runtime state
+class Config
 {
+public:
+  /// Constructor - loads from generated defaults and applies environment variable overrides
+  Config() noexcept;
+
+  /// Get the underlying protobuf config (immutable defaults)
+  const robotops::config::v1::Config & proto_config() const noexcept
+  {
+    return *proto_config_;
+  }
+
   /// Is tracing enabled? (Safety guarantee #6: runtime kill switch)
   /// Can be set to false at runtime for zero-overhead passthrough
   std::atomic<bool> tracing_enabled;
 
   /// Underlying RMW implementation to delegate to
   /// Example: "rmw_fastrtps_cpp", "rmw_cyclonedds_cpp"
-  const char * underlying_rmw;
-
-  /// Topic filter regex (optional)
-  /// Only trace topics matching this pattern
-  /// nullptr = trace all topics
-  const char * topic_filter_regex;
+  std::string underlying_rmw;
 
   /// Auto-disable threshold (Safety guarantee #7)
   /// If consecutive failures exceed this, disable tracing
@@ -45,7 +54,9 @@ struct Config
   /// Current consecutive failure count
   std::atomic<uint32_t> consecutive_failures;
 
-  Config() noexcept;
+private:
+  /// Protobuf config with defaults from robotops-config
+  std::unique_ptr<robotops::config::v1::Config> proto_config_;
 };
 
 /// Get the global configuration singleton
@@ -81,7 +92,7 @@ void record_trace_success() noexcept;
 /// Get the underlying RMW implementation name
 inline const char * get_underlying_rmw() noexcept
 {
-  return get_config().underlying_rmw;
+  return get_config().underlying_rmw.c_str();
 }
 
 }  // namespace rmw_robotops
