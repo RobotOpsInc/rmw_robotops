@@ -29,7 +29,7 @@ bump-version type:
         exit 1
     fi
 
-    CURRENT=$(grep -oP '(?<=<version>)[^<]+' package.xml)
+    CURRENT=$(grep '<version>' package.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
     IFS='.' read -r major minor patch <<< "$CURRENT"
     DATE=$(date +%Y-%m-%d)
 
@@ -59,13 +59,13 @@ bump-version type:
     rm package.xml.bak
 
     # Add changelog entry
-    cat > /tmp/changelog_entry.txt << EOF
-$NEW_VERSION ($DATE)
--------------------
-
-*
-
-EOF
+    {
+        echo "$NEW_VERSION ($DATE)"
+        echo "-------------------"
+        echo ""
+        echo "*"
+        echo ""
+    } > /tmp/changelog_entry.txt
 
     # Insert at the top of CHANGELOG.rst (after the header)
     awk '/^[0-9]+\.[0-9]+\.[0-9]+ \(/ { if (!inserted) { system("cat /tmp/changelog_entry.txt"); inserted=1 } } { print }' CHANGELOG.rst > /tmp/CHANGELOG.rst.new
@@ -74,7 +74,9 @@ EOF
 
     echo "✅ Version bumped to $NEW_VERSION"
     echo "📝 Edit CHANGELOG.rst to add your changes"
-    [[ "{{type}}" == "major" ]] && echo "⚠️  Coordinate with other RobotOps repos for aligned major version bump!"
+    if [[ "{{type}}" == "major" ]]; then
+        echo "⚠️  Coordinate with other RobotOps repos for aligned major version bump!"
+    fi
 
 # Build the development Docker image
 build repo=CLOUDSMITH_REPO:
