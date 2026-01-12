@@ -17,6 +17,67 @@ export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
 default:
     @just --list
 
+# Version Management
+
+# Bump version (usage: just bump-version patch|minor|major)
+bump-version type:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if [[ "{{type}}" != "patch" && "{{type}}" != "minor" && "{{type}}" != "major" ]]; then
+        echo "Error: type must be 'patch', 'minor', or 'major'"
+        exit 1
+    fi
+
+    CURRENT=$(grep '<version>' package.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+    IFS='.' read -r major minor patch <<< "$CURRENT"
+    DATE=$(date +%Y-%m-%d)
+
+    # Calculate new version
+    case "{{type}}" in
+        patch)
+            NEW_VERSION="$major.$minor.$((patch + 1))"
+            ;;
+        minor)
+            NEW_VERSION="$major.$((minor + 1)).0"
+            ;;
+        major)
+            NEW_VERSION="$((major + 1)).0.0"
+            echo "⚠️  MAJOR VERSION BUMP: $CURRENT -> $NEW_VERSION"
+            echo "⚠️  Remember: Major versions must align across all RobotOps components!"
+            echo "   - robotops_config"
+            echo "   - robotops_msgs"
+            echo "   - rmw_robotops"
+            echo "   - robot_agent"
+            ;;
+    esac
+
+    echo "Bumping version: $CURRENT -> $NEW_VERSION"
+
+    # Update package.xml
+    sed -i.bak "s|<version>$CURRENT</version>|<version>$NEW_VERSION</version>|" package.xml
+    rm package.xml.bak
+
+    # Add changelog entry
+    {
+        echo "$NEW_VERSION ($DATE)"
+        echo "-------------------"
+        echo ""
+        echo "*"
+        echo ""
+    } > /tmp/changelog_entry.txt
+
+    # Insert at the top of CHANGELOG.rst (after the header)
+    awk '/^[0-9]+\.[0-9]+\.[0-9]+ \(/ { if (!inserted) { system("cat /tmp/changelog_entry.txt"); inserted=1 } } { print }' CHANGELOG.rst > /tmp/CHANGELOG.rst.new
+    mv /tmp/CHANGELOG.rst.new CHANGELOG.rst
+    rm /tmp/changelog_entry.txt
+
+    echo "✅ Version bumped to $NEW_VERSION"
+    echo "📝 Edit CHANGELOG.rst to add your changes"
+    if [[ "{{type}}" == "major" ]]; then
+        echo "⚠️  Coordinate with other RobotOps repos for aligned major version bump!"
+    fi
+
 # Build the development Docker image
 build repo=CLOUDSMITH_REPO:
     CLOUDSMITH_REPO={{repo}} CLOUDSMITH_USERNAME={{CLOUDSMITH_USERNAME}} CLOUDSMITH_API_KEY={{CLOUDSMITH_API_KEY}} DOCKER_BUILDKIT=1 docker-compose build dev

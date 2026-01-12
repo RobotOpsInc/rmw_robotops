@@ -34,6 +34,79 @@ gh pr create --base development --head feature/rob-55-...
 gh pr create --base main --head feature/rob-55-...
 ```
 
+## Versioning and Releases
+
+### Version Management
+
+The `package.xml` file is the source of truth for versioning. Use the `bump-version` command:
+
+```bash
+# For bug fixes (0.1.4 → 0.1.5)
+just bump-version patch
+
+# For new features (0.1.4 → 0.2.0)
+just bump-version minor
+
+# For breaking changes (0.1.4 → 1.0.0) - COORDINATE WITH TEAM!
+just bump-version major
+```
+
+Each command:
+- Updates version in `package.xml`
+- Creates a new entry in `CHANGELOG.rst` with today's date
+- Prompts you to fill in the changelog
+
+**After bumping:**
+1. Edit `CHANGELOG.rst` to document your changes
+2. Commit both `package.xml` and `CHANGELOG.rst`
+3. Create a PR to `development`
+
+### Version Alignment
+
+**Major versions** must align across the RobotOps ecosystem:
+- `robotops_config`
+- `robotops_msgs`
+- `rmw_robotops` (this repo)
+- `robot_agent`
+
+**Minor and patch versions** evolve independently within the same major version. Backward compatibility is maintained.
+
+### Release Process
+
+**DO NOT create releases manually.** Use GitHub Actions workflows:
+
+#### Production Release (from `main` branch)
+
+1. Merge PR from `development` to `main`
+2. Go to **Actions** → **Release** in GitHub UI
+3. Click **Run workflow** on `main` branch
+4. Workflow:
+   - Creates git tag `v{version}` (e.g., `v0.1.5`)
+   - Builds Debian packages for amd64 and arm64
+   - Publishes to Cloudsmith `robotops` repo
+   - Creates GitHub Release with changelog excerpt
+
+#### Development Release (from `development` branch)
+
+1. Go to **Actions** → **Release Development** in GitHub UI
+2. Click **Run workflow** on `development` branch
+3. Workflow:
+   - Creates git tag `v{version}-development-{sha}` (e.g., `v0.1.5-development-abc123`)
+   - Builds Debian packages for amd64 and arm64
+   - Publishes to Cloudsmith `robotops-development` repo
+   - Creates GitHub Pre-Release with changelog excerpt
+
+**Both workflows support dry-run mode** for validation before actual release.
+
+### Version Check CI
+
+Pull requests to `main` or `development` automatically verify:
+- Version in `package.xml` has been incremented
+- CHANGELOG.rst has an entry for the new version (format: `X.Y.Z (YYYY-MM-DD)`)
+- New version is higher than latest published version in Cloudsmith
+
+If these checks fail, update your version and changelog before merging.
+
 ## Code Standards
 
 ### Safety-Critical Guidelines

@@ -2,6 +2,16 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.5 (2026-01-12)
+-------------------
+
+* Implemented versioning and release automation strategy
+* Added GitHub Actions workflows for production and development releases
+* Added matrix builds for amd64 and arm64 architectures
+* Enhanced version-check workflow to validate CHANGELOG.rst entries
+* Added ``just bump-version`` command for version management (patch/minor/major)
+* Updated README and CLAUDE.md with versioning policy and release process
+
 0.1.0 (2025-01-05)
 ------------------
 * Initial open source release
