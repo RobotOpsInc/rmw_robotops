@@ -49,6 +49,27 @@ jobs:
             echo "Target: development (robotops-development)"
           fi
 
+      - name: Check CHANGELOG.rst for version entry
+        run: |
+          VERSION="${{ steps.pkg_version.outputs.version }}"
+
+          # Check if CHANGELOG.rst has an entry for this version
+          # Format: "X.Y.Z (YYYY-MM-DD)" at the start of a line
+          if ! grep -qE "^${VERSION} \([0-9]{4}-[0-9]{2}-[0-9]{2}\)" CHANGELOG.rst; then
+            echo "::error::CHANGELOG.rst missing entry for version ${VERSION}"
+            echo "Expected format: '${VERSION} (YYYY-MM-DD)'"
+            echo ""
+            echo "Add a changelog entry like:"
+            echo ""
+            echo "${VERSION} ($(date +%Y-%m-%d))"
+            echo "-------------------"
+            echo ""
+            echo "* Your changes here"
+            exit 1
+          fi
+
+          echo "✅ CHANGELOG.rst has entry for version ${VERSION}"
+
       - name: Check version against Cloudsmith
         env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}

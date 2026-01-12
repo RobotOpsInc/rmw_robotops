@@ -167,6 +167,44 @@ just build
 **Defaults:**
 - Repository: `robotops`
 
+## Versioning
+
+This repository uses **semantic versioning** expressed in `package.xml` and enforced via git tags (e.g., `v0.1.4`, `v0.2.0`).
+
+### Lockstep Major Versions
+
+**Major versions** move in lockstep across the entire RobotOps ecosystem:
+
+- `robotops_config`
+- `robotops_msgs`
+- `rmw_robotops` (this repository)
+- `robot_agent`
+
+When any component introduces a breaking change, all components bump to the next major version together (e.g., all move from `v1.x.x` to `v2.0.0`).
+
+### Independent Minor and Patch Versions
+
+Between major version boundaries, each component evolves independently:
+
+- **Minor versions** (e.g., `v0.1.0` → `v0.2.0`) add backward-compatible features
+- **Patch versions** (e.g., `v0.1.4` → `v0.1.5`) fix bugs without breaking compatibility
+
+**Backward compatibility is maintained by design** for all minor and patch releases within the same major version.
+
+### Examples
+
+```
+robotops_config v0.4.14   ← May be ahead (added new config section)
+robotops_msgs v0.3.2      ← May be behind (stable, no changes needed)
+rmw_robotops v0.1.5       ← Independent evolution
+
+rmw_robotops v1.0.0       ← Breaking change: all components bump major version
+robotops_config v1.0.0
+robotops_msgs v1.0.0
+```
+
+**Recommendation:** Always reference a specific version tag in production deployments for stability.
+
 ## Usage
 
 ### Basic Configuration
@@ -359,6 +397,72 @@ just ci
 ```
 
 **IMPORTANT:** Always run `just ci` before pushing to catch issues early!
+
+## Development Workflow
+
+### Making Changes
+
+1. **Create a feature branch** from `development`:
+   ```bash
+   git checkout development
+   git pull origin development
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make your changes** and ensure tests pass:
+   ```bash
+   just ci  # Run full CI suite locally
+   ```
+
+3. **Bump the version** (if needed):
+   ```bash
+   # For bug fixes (0.1.4 → 0.1.5)
+   just bump-version patch
+
+   # For new features (0.1.4 → 0.2.0)
+   just bump-version minor
+
+   # For breaking changes (0.1.4 → 1.0.0) - coordinate with team!
+   just bump-version major
+   ```
+
+4. **Edit CHANGELOG.rst** with your changes:
+   ```rst
+   0.1.5 (2026-01-12)
+   ------------------
+
+   * Fixed memory leak in trace context cleanup
+   * Added support for custom trace sampling rates
+   ```
+
+5. **Create a pull request** to `development`:
+   ```bash
+   git add .
+   git commit -m "feat: your changes"
+   git push origin feature/your-feature-name
+   gh pr create --base development
+   ```
+
+### Creating Releases
+
+**Production Release** (from `main` branch):
+1. Merge changes from `development` to `main`
+2. Navigate to **Actions** → **Release** in GitHub
+3. Click "Run workflow" on `main` branch
+4. Packages published to `robotops` Cloudsmith repo
+
+**Development Release** (from `development` branch):
+1. Navigate to **Actions** → **Release Development** in GitHub
+2. Click "Run workflow" on `development` branch
+3. Packages published to `robotops-development` Cloudsmith repo
+
+Both workflows:
+- Create git tags (`v0.1.5` for production, `v0.1.5-development-abc123` for dev)
+- Build for amd64 and arm64 architectures
+- Publish source Debian packages to Cloudsmith
+- Extract release notes from CHANGELOG.rst
+
+**Dry Run:** Both workflows support dry-run mode to validate before creating releases.
 
 ### Code Quality
 
