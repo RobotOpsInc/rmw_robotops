@@ -197,6 +197,116 @@ ros2 run my_package my_node
 ros2 topic echo /robotops/trace_events
 ```
 
+## Configuration
+
+`rmw_robotops` uses a layered configuration system with the following precedence (highest to lowest):
+
+### Configuration Precedence
+
+1. **Environment Variables** (highest priority)
+2. **Custom YAML Config** via `ROBOTOPS_CONFIG_PATH`
+3. **System YAML Config** at `/etc/robotops/config.yaml`
+4. **Package Defaults** from `robotops-config`
+
+Each layer overrides settings from lower layers. This allows:
+- System-wide defaults in `/etc/robotops/config.yaml` for production deployments
+- Per-robot customization via `ROBOTOPS_CONFIG_PATH`
+- Quick overrides via environment variables for testing
+
+### Environment Variables
+
+```bash
+# Tracing control
+export ROBOTOPS_TRACING_ENABLED=true          # Enable/disable tracing (default: from config)
+export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp  # Underlying RMW implementation (required)
+export ROBOTOPS_FAILURE_THRESHOLD=100         # Auto-disable after N failures (default: 100)
+
+# Custom config path
+export ROBOTOPS_CONFIG_PATH=/path/to/custom/config.yaml  # Override default config location
+```
+
+### YAML Configuration Format
+
+Create a YAML configuration file at `/etc/robotops/config.yaml` (system-wide) or specify a custom path:
+
+```yaml
+schema_version: "1.0.0"
+tracing:
+  enabled: true
+  underlying_rmw: "rmw_fastrtps_cpp"
+  performance:
+    failure_threshold: 100
+```
+
+**Field descriptions:**
+- `schema_version`: Configuration schema version (currently "1.0.0")
+- `tracing.enabled`: Enable distributed tracing (bool)
+- `tracing.underlying_rmw`: RMW implementation to delegate to (string)
+- `tracing.performance.failure_threshold`: Auto-disable threshold for consecutive failures (uint32)
+
+### Configuration Examples
+
+**Example 1: Production deployment with system config**
+
+```bash
+# /etc/robotops/config.yaml (system-wide defaults)
+schema_version: "1.0.0"
+tracing:
+  enabled: true
+  underlying_rmw: "rmw_fastrtps_cpp"
+  performance:
+    failure_threshold: 100
+```
+
+```bash
+# Launch node (uses system config)
+export RMW_IMPLEMENTATION=rmw_robotops
+ros2 run my_package my_node
+```
+
+**Example 2: Custom robot configuration**
+
+```bash
+# /opt/robot/config/rmw.yaml (robot-specific config)
+schema_version: "1.0.0"
+tracing:
+  enabled: true
+  underlying_rmw: "rmw_cyclonedds_cpp"
+  performance:
+    failure_threshold: 50
+```
+
+```bash
+# Launch node with custom config
+export RMW_IMPLEMENTATION=rmw_robotops
+export ROBOTOPS_CONFIG_PATH=/opt/robot/config/rmw.yaml
+ros2 run my_package my_node
+```
+
+**Example 3: Temporary testing override**
+
+```bash
+# Quick disable for testing (env var overrides all config files)
+export RMW_IMPLEMENTATION=rmw_robotops
+export ROBOTOPS_TRACING_ENABLED=false
+ros2 run my_package my_node
+```
+
+### Configuration Logging
+
+On startup, `rmw_robotops` logs the final configuration:
+
+```
+[INFO] [rmw_robotops]: No system config found at /etc/robotops/config.yaml (using defaults)
+[INFO] [rmw_robotops]: Configuration loaded: schema_version=1.0.0, tracing=enabled, underlying_rmw=rmw_fastrtps_cpp, failure_threshold=100
+```
+
+If a custom config path is specified but invalid:
+
+```
+[WARN] [rmw_robotops]: ROBOTOPS_CONFIG_PATH=/invalid/path.yaml specified but file not found or invalid
+```
+
 ## Common Tasks
 
 All tasks use `just` commands for simplicity. Run `just` to see all available commands.
