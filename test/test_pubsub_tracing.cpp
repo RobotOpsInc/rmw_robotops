@@ -29,6 +29,7 @@ using rmw_robotops::get_dds_domain_id;
 using rmw_robotops::get_or_mint_trace_context;
 using rmw_robotops::get_trace_context;
 using rmw_robotops::get_trace_event_queue;
+using rmw_robotops::get_tracing_state;
 using rmw_robotops::is_tracing_enabled;
 using rmw_robotops::set_trace_context;
 using rmw_robotops::TraceContext;
@@ -39,6 +40,12 @@ class PubSubTracingTest : public ::testing::Test
 protected:
   void SetUp() override
   {
+    // Enable tracing for tests
+    auto & state = get_tracing_state();
+    state.enabled.store(true);
+    state.consecutive_failures.store(0);
+    state.failure_threshold = 100;  // Set reasonable threshold for tests
+
     // Clear trace context
     set_trace_context(TraceContext::empty());
 
