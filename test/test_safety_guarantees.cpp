@@ -22,13 +22,10 @@
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
 
-using rmw_robotops::Config;
 using rmw_robotops::DEFAULT_TRACE_QUEUE_SIZE;
-using rmw_robotops::disable_tracing;
-using rmw_robotops::enable_tracing;
 using rmw_robotops::generate_span_id;
 using rmw_robotops::generate_trace_id;
-using rmw_robotops::get_config;
+using rmw_robotops::get_tracing_state;
 using rmw_robotops::get_or_mint_trace_context;
 using rmw_robotops::get_trace_context;
 using rmw_robotops::get_trace_event_queue;
@@ -85,8 +82,6 @@ TEST(SafetyTest, NoExceptionsPropagateNoexcept) {
   EXPECT_TRUE(noexcept(generate_span_id(buffer)));
 
   EXPECT_TRUE(noexcept(is_tracing_enabled()));
-  EXPECT_TRUE(noexcept(enable_tracing()));
-  EXPECT_TRUE(noexcept(disable_tracing()));
 
   LockFreeQueue<10> queue;
   TraceEvent event;
@@ -99,11 +94,11 @@ TEST(SafetyTest, LockFreeOperations) {
   // Thread-local storage is lock-free by design
   // Atomic operations use lock-free primitives
 
-  Config & config = get_config();
+  auto & state = get_tracing_state();
 
   // Verify atomics are lock-free
-  EXPECT_TRUE(config.tracing_enabled.is_lock_free());
-  EXPECT_TRUE(config.consecutive_failures.is_lock_free());
+  EXPECT_TRUE(state.enabled.is_lock_free());
+  EXPECT_TRUE(state.consecutive_failures.is_lock_free());
 
   // Queue head/tail should be lock-free
   // (Checked at compile-time with std::atomic requirements)
@@ -112,7 +107,8 @@ TEST(SafetyTest, LockFreeOperations) {
 
 // Safety Guarantee #6: Runtime kill switch with zero overhead
 TEST(SafetyTest, KillSwitchZeroOverhead) {
-  disable_tracing();
+  auto & state = get_tracing_state();
+  state.enabled.store(false);
 
   // When disabled, tracing should have zero overhead
   // This is a fast atomic read (relaxed memory order)
@@ -136,32 +132,32 @@ TEST(SafetyTest, KillSwitchZeroOverhead) {
   std::cout << "Kill switch overhead: " << ns_per_check << " ns/check\n";
 
   // Re-enable for other tests
-  enable_tracing();
+  state.enabled.store(true);
 }
 
 // Safety Guarantee #7: Auto-disable on repeated failures
 TEST(SafetyTest, AutoDisableProtection) {
-  Config & config = get_config();
+  auto & state = get_tracing_state();
 
   // Set low threshold for testing
-  config.failure_threshold = 10;
-  config.consecutive_failures.store(0);
-  enable_tracing();
+  state.failure_threshold = 10;
+  state.consecutive_failures.store(0);
+  state.enabled.store(true);
 
   EXPECT_TRUE(is_tracing_enabled());
 
   // Simulate repeated failures
-  for (uint32_t i = 0; i <= config.failure_threshold; ++i) {
+  for (uint32_t i = 0; i <= state.failure_threshold; ++i) {
     record_trace_failure();
   }
 
   // Should auto-disable
   EXPECT_FALSE(is_tracing_enabled())
-    << "Tracing should auto-disable after " << config.failure_threshold << " failures";
+    << "Tracing should auto-disable after " << state.failure_threshold << " failures";
 
   // Re-enable for other tests
-  enable_tracing();
-  config.consecutive_failures.store(0);
+  state.enabled.store(true);
+  state.consecutive_failures.store(0);
 }
 
 // Safety Guarantee #8: Background queue is non-blocking
