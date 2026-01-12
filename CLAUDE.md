@@ -114,18 +114,17 @@ This keeps the setup DRY and maintainable.
 
 ### Cloudsmith Authentication
 
-Private `robotops_msgs` dependency requires credentials file:
+Private `robotops_msgs` dependency requires Cloudsmith credentials:
 
 ```bash
-# One-time setup
-mkdir -p ~/.cloudsmith
-echo "your-username:YOUR_API_KEY_HERE" > ~/.cloudsmith/key
-chmod 600 ~/.cloudsmith/key
+# Copy template and configure
+cp .env.local.template .env.local
+# Edit .env.local with your credentials:
+# CLOUDSMITH_USERNAME=your-username
+# CLOUDSMITH_API_KEY=your-api-key
 ```
 
-**Format:** `username:api_key` (colon-separated, no spaces)
-
-Docker buildx secrets automatically mount this file (never committed to repo).
+The `.env.local` file is automatically loaded by `docker-compose` and must **never be committed** (see `.gitignore`).
 
 Each developer uses their own Cloudsmith username and API key.
 

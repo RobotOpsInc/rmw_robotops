@@ -26,6 +26,9 @@ find_package(fastcdr REQUIRED)
 find_package(tracetools REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
+# Find robotops-config (required for shared configuration)
+find_package(robotops-config REQUIRED)
+
 # Main library
 add_library(${PROJECT_NAME} SHARED
   src/rmw_init.cpp
@@ -71,6 +74,7 @@ ament_target_dependencies(${PROJECT_NAME}
 # Link non-ament dependencies
 target_link_libraries(${PROJECT_NAME}
   yaml-cpp
+  robotops-config::robotops-config
 )
 
 # Platform-specific libraries

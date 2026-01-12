@@ -15,13 +15,13 @@
 #include <gtest/gtest.h>
 
 #include <cstdlib>
+#include <thread>
+#include <vector>
 
 #include "rmw_robotops/config.hpp"
 
-using rmw_robotops::Config;
-using rmw_robotops::disable_tracing;
-using rmw_robotops::enable_tracing;
 using rmw_robotops::get_config;
+using rmw_robotops::get_tracing_state;
 using rmw_robotops::get_underlying_rmw;
 using rmw_robotops::is_tracing_enabled;
 using rmw_robotops::record_trace_failure;
@@ -66,73 +66,81 @@ protected:
 };
 
 TEST_F(ConfigTest, DefaultConfiguration) {
-  Config & config = get_config();
+  const auto & config = get_config();
 
-  // Should have default underlying RMW
-  EXPECT_NE(nullptr, config.underlying_rmw);
+  // Should have tracing configuration
+  EXPECT_TRUE(config.has_tracing());
 
-  // Failure threshold should be positive
-  EXPECT_GT(config.failure_threshold, 0u);
+  // Should have default underlying RMW (non-empty string)
+  EXPECT_FALSE(config.tracing().underlying_rmw().empty());
 
-  // Should start with zero failures
-  EXPECT_EQ(0u, config.consecutive_failures.load());
+  // Should have performance config with failure threshold
+  EXPECT_TRUE(config.tracing().has_performance());
+  EXPECT_GT(config.tracing().performance().failure_threshold(), 0u);
+
+  // Tracing state should start with zero failures
+  auto & state = get_tracing_state();
+  EXPECT_EQ(0u, state.consecutive_failures.load());
 }
 
 TEST_F(ConfigTest, TracingEnabledByDefault) {
-  // Default should be enabled
-  EXPECT_TRUE(is_tracing_enabled());
+  // Default should be enabled (unless overridden by env var)
+  const auto & config = get_config();
+  EXPECT_EQ(config.tracing().enabled(), is_tracing_enabled());
 }
 
-TEST_F(ConfigTest, EnableDisableTracing) {
+TEST_F(ConfigTest, TracingStateCanBeToggled) {
+  auto & state = get_tracing_state();
+
   // Enable
-  enable_tracing();
+  state.enabled.store(true);
   EXPECT_TRUE(is_tracing_enabled());
 
   // Disable
-  disable_tracing();
+  state.enabled.store(false);
   EXPECT_FALSE(is_tracing_enabled());
 
   // Re-enable
-  enable_tracing();
+  state.enabled.store(true);
   EXPECT_TRUE(is_tracing_enabled());
 }
 
 TEST_F(ConfigTest, RecordFailureSuccess) {
-  Config & config = get_config();
+  auto & state = get_tracing_state();
 
   // Reset state
-  config.consecutive_failures.store(0);
-  enable_tracing();
+  state.consecutive_failures.store(0);
+  state.enabled.store(true);
 
   // Record a success (should keep failures at 0)
   record_trace_success();
-  EXPECT_EQ(0u, config.consecutive_failures.load());
+  EXPECT_EQ(0u, state.consecutive_failures.load());
 
   // Record a failure
   record_trace_failure();
-  EXPECT_EQ(1u, config.consecutive_failures.load());
+  EXPECT_EQ(1u, state.consecutive_failures.load());
 
   // Record another failure
   record_trace_failure();
-  EXPECT_EQ(2u, config.consecutive_failures.load());
+  EXPECT_EQ(2u, state.consecutive_failures.load());
 
   // Record success (should reset)
   record_trace_success();
-  EXPECT_EQ(0u, config.consecutive_failures.load());
+  EXPECT_EQ(0u, state.consecutive_failures.load());
 }
 
 TEST_F(ConfigTest, AutoDisableOnFailures) {
-  Config & config = get_config();
+  auto & state = get_tracing_state();
 
   // Set a low threshold for testing
-  config.failure_threshold = 5;
-  config.consecutive_failures.store(0);
-  enable_tracing();
+  state.failure_threshold = 5;
+  state.consecutive_failures.store(0);
+  state.enabled.store(true);
 
   EXPECT_TRUE(is_tracing_enabled());
 
   // Record failures up to threshold
-  for (uint32_t i = 0; i < config.failure_threshold; ++i) {
+  for (uint32_t i = 0; i < state.failure_threshold; ++i) {
     record_trace_failure();
     EXPECT_TRUE(is_tracing_enabled()) << "Should still be enabled at failure " << i;
   }
@@ -149,11 +157,23 @@ TEST_F(ConfigTest, UnderlyingRMW) {
   EXPECT_GT(std::strlen(rmw), 0u);
 }
 
+TEST_F(ConfigTest, ConfigIsImmutable) {
+  const auto & config1 = get_config();
+  const auto & config2 = get_config();
+
+  // Should return the same instance
+  EXPECT_EQ(&config1, &config2);
+
+  // Schema version should be set
+  EXPECT_FALSE(config1.schema_version().empty());
+}
+
 TEST_F(ConfigTest, ThreadSafety) {
   // Test that atomic operations are thread-safe
   constexpr size_t NUM_THREADS = 10;
   constexpr size_t OPS_PER_THREAD = 1000;
 
+  auto & state = get_tracing_state();
   std::vector<std::thread> threads;
 
   for (size_t t = 0; t < NUM_THREADS; ++t) {
@@ -161,9 +181,9 @@ TEST_F(ConfigTest, ThreadSafety) {
         for (size_t i = 0; i < OPS_PER_THREAD; ++i) {
         // Toggle tracing
           if (i % 2 == 0) {
-            enable_tracing();
+            state.enabled.store(true);
           } else {
-            disable_tracing();
+            state.enabled.store(false);
           }
 
         // Check state (should never crash)

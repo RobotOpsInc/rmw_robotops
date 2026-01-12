@@ -4,17 +4,12 @@ on:
   push:
     branches: [development, main]
 
+env:
+  CLOUDSMITH_USERNAME: github-actions-bk1d
+
 jobs:
   deploy:
-    strategy:
-      matrix:
-        include:
-          - arch: amd64
-            runner: ubuntu-24.04
-          - arch: arm64
-            runner: ubuntu-24.04-arm
-            # runner: custom-ubuntu-24.04-arm-4-core
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -41,11 +36,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Prepare Cloudsmith credentials
-        run: |
-          # Service account format: service_account_username:api_key
-          echo "github-actions-bk1d:${{ secrets.CLOUDSMITH_API_KEY }}" > /tmp/cloudsmith_key
-
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -54,18 +44,19 @@ jobs:
           target: dev
           push: false
           load: true
-          tags: rmw_robotops:build-${{ matrix.arch }}
-          cache-from: type=gha,scope=${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
-          secret-files: |
-            cloudsmith_key=/tmp/cloudsmith_key
+          tags: rmw_robotops:build
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            CLOUDSMITH_USERNAME=${{ env.CLOUDSMITH_USERNAME }}
+            CLOUDSMITH_API_KEY=${{ secrets.CLOUDSMITH_API_KEY }}
 
       - name: Build Debian package
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/workspace/src/rmw_robotops \
             -v ${{ github.workspace }}:/output \
-            rmw_robotops:build-${{ matrix.arch }} bash -c "
+            rmw_robotops:build bash -c "
               cd /workspace/src/rmw_robotops && \
               bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy && \
               dpkg-buildpackage -us -uc -b && \
@@ -109,6 +100,6 @@ jobs:
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Version:** ${{ steps.pkg_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Architecture:** ${{ matrix.arch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Architecture:** all (architecture-independent)" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository:** ${{ steps.repo.outputs.repo }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY

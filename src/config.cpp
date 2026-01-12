@@ -14,16 +14,17 @@
 
 #include "rmw_robotops/config.hpp"
 
-#include <rcutils/logging_macros.h>
-
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
+#include <optional>
+
+#include <rcutils/logging_macros.h>  // NOLINT(build/include_order)
+#include <robotops/config/v1/defaults.hpp>  // NOLINT(build/include_order)
+#include <yaml-cpp/yaml.h>  // NOLINT(build/include_order)
 
 namespace rmw_robotops
 {
-
-// Default failure threshold (safety guarantee #7)
-constexpr uint32_t DEFAULT_FAILURE_THRESHOLD = 100;
 
 // Helper to get environment variable with default
 static const char * get_env_or_default(const char * name, const char * default_value) noexcept
@@ -90,76 +91,201 @@ static uint32_t get_env_uint32(const char * name, uint32_t default_value) noexce
   return static_cast<uint32_t>(parsed);
 }
 
-Config::Config() noexcept
-: tracing_enabled(true),
-  underlying_rmw(nullptr),
-  topic_filter_regex(nullptr),
-  failure_threshold(DEFAULT_FAILURE_THRESHOLD),
-  consecutive_failures(0)
+// Helper to safely load YAML file
+static std::optional<YAML::Node> load_yaml_file(const char * path) noexcept
 {
-  // Load configuration from environment variables
-
-  // ROBOTOPS_TRACING_ENABLED: Enable/disable tracing (default: true)
-  bool enabled = get_env_bool("ROBOTOPS_TRACING_ENABLED", true);
-  tracing_enabled.store(enabled, std::memory_order_relaxed);
-
-  // ROBOTOPS_UNDERLYING_RMW: Which RMW to delegate to (required!)
-  underlying_rmw = get_env_or_default("ROBOTOPS_UNDERLYING_RMW", "rmw_fastrtps_cpp");
-
-  // ROBOTOPS_TRACE_TOPIC_FILTER: Optional topic filter regex
-  const char * filter = std::getenv("ROBOTOPS_TRACE_TOPIC_FILTER");
-  if (filter && filter[0] != '\0') {
-    topic_filter_regex = filter;
-  }
-
-  // ROBOTOPS_FAILURE_THRESHOLD: Auto-disable threshold (default: 100)
-  failure_threshold = get_env_uint32("ROBOTOPS_FAILURE_THRESHOLD", DEFAULT_FAILURE_THRESHOLD);
-
-  // Log configuration
-  RCUTILS_LOG_INFO_NAMED(
-    "rmw_robotops",
-    "Configuration loaded: tracing=%s, underlying_rmw=%s, failure_threshold=%u",
-    enabled ? "enabled" : "disabled",
-    underlying_rmw,
-    failure_threshold);
-
-  if (topic_filter_regex) {
-    RCUTILS_LOG_INFO_NAMED(
+  try {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+      return std::nullopt;
+    }
+    return YAML::Load(file);
+  } catch (const std::exception & e) {
+    RCUTILS_LOG_WARN_NAMED(
       "rmw_robotops",
-      "Topic filter enabled: %s",
-      topic_filter_regex);
+      "Failed to parse YAML config at %s: %s",
+      path, e.what());
+    return std::nullopt;
   }
 }
 
-// Global configuration singleton
-static Config g_config;
-
-Config & get_config() noexcept
+// Helper to apply YAML configuration to protobuf config
+static void apply_yaml_config(
+  robotops::config::v1::Config & config,
+  const YAML::Node & yaml) noexcept
 {
-  return g_config;
+  try {
+    // Schema version
+    if (yaml["schema_version"]) {
+      config.set_schema_version(yaml["schema_version"].as<std::string>());
+    }
+
+    // Tracing section
+    if (yaml["tracing"]) {
+      const auto & tracing = yaml["tracing"];
+
+      if (tracing["enabled"]) {
+        config.mutable_tracing()->set_enabled(tracing["enabled"].as<bool>());
+      }
+
+      if (tracing["underlying_rmw"]) {
+        config.mutable_tracing()->set_underlying_rmw(
+          tracing["underlying_rmw"].as<std::string>());
+      }
+
+      // Performance section
+      if (tracing["performance"]) {
+        const auto & perf = tracing["performance"];
+
+        if (perf["failure_threshold"]) {
+          config.mutable_tracing()->mutable_performance()->set_failure_threshold(
+            perf["failure_threshold"].as<uint32_t>());
+        }
+      }
+    }
+  } catch (const std::exception & e) {
+    RCUTILS_LOG_WARN_NAMED(
+      "rmw_robotops",
+      "Error applying YAML config values: %s",
+      e.what());
+  }
+}
+
+// Helper to apply environment variable overrides
+static void apply_env_overrides(robotops::config::v1::Config & config) noexcept
+{
+  // ROBOTOPS_TRACING_ENABLED: Enable/disable tracing
+  bool enabled = get_env_bool(
+    "ROBOTOPS_TRACING_ENABLED",
+    config.tracing().enabled());
+  config.mutable_tracing()->set_enabled(enabled);
+
+  // ROBOTOPS_UNDERLYING_RMW: Which RMW to delegate to
+  const char * underlying_rmw = get_env_or_default(
+    "ROBOTOPS_UNDERLYING_RMW",
+    config.tracing().underlying_rmw().c_str());
+  config.mutable_tracing()->set_underlying_rmw(underlying_rmw);
+
+  // ROBOTOPS_FAILURE_THRESHOLD: Auto-disable threshold
+  uint32_t failure_threshold = get_env_uint32(
+    "ROBOTOPS_FAILURE_THRESHOLD",
+    config.tracing().performance().failure_threshold());
+  config.mutable_tracing()->mutable_performance()->set_failure_threshold(failure_threshold);
+}
+
+// Load configuration with layered precedence:
+// 0. robotops-config package defaults
+// 1. /etc/robotops/config.yaml (system config)
+// 2. ROBOTOPS_CONFIG_PATH env var (custom path)
+// 3. Environment variable overrides (highest priority)
+static robotops::config::v1::Config load_config() noexcept
+{
+  try {
+    // Layer 0: Start with package defaults
+    auto config = robotops::config::v1::CreateDefaultConfig();
+
+    // Layer 1: Apply system config if exists
+    constexpr const char * SYSTEM_CONFIG_PATH = "/etc/robotops/config.yaml";
+    auto system_yaml = load_yaml_file(SYSTEM_CONFIG_PATH);
+    if (system_yaml) {
+      RCUTILS_LOG_INFO_NAMED(
+        "rmw_robotops",
+        "Loading system config from %s",
+        SYSTEM_CONFIG_PATH);
+      apply_yaml_config(config, *system_yaml);
+    } else {
+      RCUTILS_LOG_INFO_NAMED(
+        "rmw_robotops",
+        "No system config found at %s (using defaults)",
+        SYSTEM_CONFIG_PATH);
+    }
+
+    // Layer 2: Apply custom config path if specified
+    const char * custom_path = std::getenv("ROBOTOPS_CONFIG_PATH");
+    if (custom_path && custom_path[0] != '\0') {
+      auto custom_yaml = load_yaml_file(custom_path);
+      if (custom_yaml) {
+        RCUTILS_LOG_INFO_NAMED(
+          "rmw_robotops",
+          "Loading custom config from ROBOTOPS_CONFIG_PATH=%s",
+          custom_path);
+        apply_yaml_config(config, *custom_yaml);
+      } else {
+        RCUTILS_LOG_WARN_NAMED(
+          "rmw_robotops",
+          "ROBOTOPS_CONFIG_PATH=%s specified but file not found or invalid",
+          custom_path);
+      }
+    }
+
+    // Layer 3: Apply environment variable overrides
+    apply_env_overrides(config);
+
+    // Log final configuration
+    RCUTILS_LOG_INFO_NAMED(
+      "rmw_robotops",
+      "Configuration loaded: schema_version=%s, tracing=%s, "
+      "underlying_rmw=%s, failure_threshold=%u",
+      config.schema_version().c_str(),
+      config.tracing().enabled() ? "enabled" : "disabled",
+      config.tracing().underlying_rmw().c_str(),
+      config.tracing().performance().failure_threshold());
+
+    return config;
+  } catch (const std::exception & e) {
+    // Fallback to hardcoded defaults if configuration loading fails
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_robotops",
+      "Failed to load configuration: %s. Using hardcoded fallbacks.",
+      e.what());
+
+    robotops::config::v1::Config config;
+    config.set_schema_version("1.0.0");
+    config.mutable_tracing()->set_enabled(true);
+    config.mutable_tracing()->set_underlying_rmw("rmw_fastrtps_cpp");
+    config.mutable_tracing()->mutable_performance()->set_failure_threshold(100);
+    return config;
+  }
+}
+
+const robotops::config::v1::Config & get_config() noexcept
+{
+  static const robotops::config::v1::Config config = load_config();
+  return config;
+}
+
+TracingState & get_tracing_state() noexcept
+{
+  static TracingState state{
+    get_config().tracing().enabled(),  // enabled
+    0,  // consecutive_failures
+    // failure_threshold
+    static_cast<uint32_t>(get_config().tracing().performance().failure_threshold())
+  };
+  return state;
 }
 
 void record_trace_failure() noexcept
 {
-  Config & config = get_config();
+  TracingState & state = get_tracing_state();
 
-  uint32_t failures = config.consecutive_failures.fetch_add(1, std::memory_order_relaxed) + 1;
+  uint32_t failures = state.consecutive_failures.fetch_add(1, std::memory_order_relaxed) + 1;
 
-  if (failures > config.failure_threshold) {
+  if (failures > state.failure_threshold) {
     // Auto-disable tracing (safety guarantee #7)
-    config.tracing_enabled.store(false, std::memory_order_relaxed);
+    state.enabled.store(false, std::memory_order_relaxed);
 
     RCUTILS_LOG_ERROR_NAMED(
       "rmw_robotops",
       "Tracing auto-disabled after %u consecutive failures (threshold: %u)",
-      failures, config.failure_threshold);
+      failures, state.failure_threshold);
   }
 }
 
 void record_trace_success() noexcept
 {
-  Config & config = get_config();
-  config.consecutive_failures.store(0, std::memory_order_relaxed);
+  TracingState & state = get_tracing_state();
+  state.consecutive_failures.store(0, std::memory_order_relaxed);
 }
 
 }  // namespace rmw_robotops

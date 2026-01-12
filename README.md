@@ -24,20 +24,65 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 
 ## Installation
 
-### Via apt (Recommended for End Users)
+### Option 1: Binary Package
 
 ```bash
 # Add Cloudsmith repository (one-time setup)
 curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
 
-# Install
+# Install pre-built binary
 sudo apt update
 sudo apt install ros-jazzy-rmw-robotops
 ```
 
+### Option 2: Build from Source (Recommended for Maximum Compatibility)
+
+Building from source ensures maximum ABI compatibility with your exact environment (compiler version, dependency versions, glibc, etc.). All dependencies (`robotops_msgs`, `robotops-config`) compile together in your environment for perfect ABI alignment.
+
+**Setup:**
+
+```bash
+# Add Cloudsmith repository (one-time setup)
+curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
+
+# Configure rosdep to find RobotOps packages from Cloudsmith
+mkdir -p /etc/ros/rosdep/sources.list.d
+sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
+robotops-config:
+  ubuntu:
+    - ros-jazzy-robotops-config
+
+robotops_msgs:
+  ubuntu:
+    - ros-jazzy-robotops-msgs
+
+rmw_robotops:
+  ubuntu:
+    - ros-jazzy-rmw-robotops
+EOF
+
+rosdep update
+```
+
+**In your ROS2 package's `package.xml`:**
+
+```xml
+<depend>rmw_robotops</depend>
+```
+
+**Build:**
+
+```bash
+cd ~/your_ros2_workspace
+rosdep install --from-paths src --ignore-src -y
+colcon build
+```
+
+`rosdep` automatically fetches the source packages from Cloudsmith, and `colcon` builds them all together in your environment.
+
 ### From Source (For Development)
 
-See the Development section below for building from source in Docker.
+See the Development section below for building in Docker with interactive development tools.
 
 ## Prerequisites (Development Only)
 
@@ -64,13 +109,18 @@ curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -
 
 ### 2. Configure Cloudsmith Credentials
 
+Create a `.env.local` file in the project root with your Cloudsmith credentials:
+
 ```bash
-mkdir -p ~/.cloudsmith
-echo "your-username:YOUR_API_KEY_HERE" > ~/.cloudsmith/key
-chmod 600 ~/.cloudsmith/key
+# Copy the template
+cp .env.local.template .env.local
+
+# Edit with your credentials
+# CLOUDSMITH_USERNAME=your-cloudsmith-username
+# CLOUDSMITH_API_KEY=your-cloudsmith-api-key
 ```
 
-**Format:** `username:api_key` (replace with your Cloudsmith username and API key)
+The `.env.local` file is automatically loaded by `docker-compose` and `.gitignore`'d to keep credentials secure.
 
 ### 3. Build and develop
 
@@ -78,7 +128,7 @@ chmod 600 ~/.cloudsmith/key
 # See all available commands
 just
 
-# Build development image (uses defaults: robotops-development repo, v0.1.6)
+# Build development image (uses defaults: robotops repo)
 just build
 
 # Build with different Cloudsmith repo or version
@@ -115,8 +165,7 @@ just build
 ```
 
 **Defaults:**
-- Repository: `robotops-development`
-- Version: `0.1.6-0noble`
+- Repository: `robotops`
 
 ## Usage
 
@@ -146,6 +195,116 @@ ros2 run my_package my_node
 
 # Terminal 2: Monitor trace events
 ros2 topic echo /robotops/trace_events
+```
+
+## Configuration
+
+`rmw_robotops` uses a layered configuration system with the following precedence (highest to lowest):
+
+### Configuration Precedence
+
+1. **Environment Variables** (highest priority)
+2. **Custom YAML Config** via `ROBOTOPS_CONFIG_PATH`
+3. **System YAML Config** at `/etc/robotops/config.yaml`
+4. **Package Defaults** from `robotops-config`
+
+Each layer overrides settings from lower layers. This allows:
+- System-wide defaults in `/etc/robotops/config.yaml` for production deployments
+- Per-robot customization via `ROBOTOPS_CONFIG_PATH`
+- Quick overrides via environment variables for testing
+
+### Environment Variables
+
+```bash
+# Tracing control
+export ROBOTOPS_TRACING_ENABLED=true          # Enable/disable tracing (default: from config)
+export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp  # Underlying RMW implementation (required)
+export ROBOTOPS_FAILURE_THRESHOLD=100         # Auto-disable after N failures (default: 100)
+
+# Custom config path
+export ROBOTOPS_CONFIG_PATH=/path/to/custom/config.yaml  # Override default config location
+```
+
+### YAML Configuration Format
+
+Create a YAML configuration file at `/etc/robotops/config.yaml` (system-wide) or specify a custom path:
+
+```yaml
+schema_version: "1.0.0"
+tracing:
+  enabled: true
+  underlying_rmw: "rmw_fastrtps_cpp"
+  performance:
+    failure_threshold: 100
+```
+
+**Field descriptions:**
+- `schema_version`: Configuration schema version (currently "1.0.0")
+- `tracing.enabled`: Enable distributed tracing (bool)
+- `tracing.underlying_rmw`: RMW implementation to delegate to (string)
+- `tracing.performance.failure_threshold`: Auto-disable threshold for consecutive failures (uint32)
+
+### Configuration Examples
+
+**Example 1: Production deployment with system config**
+
+```bash
+# /etc/robotops/config.yaml (system-wide defaults)
+schema_version: "1.0.0"
+tracing:
+  enabled: true
+  underlying_rmw: "rmw_fastrtps_cpp"
+  performance:
+    failure_threshold: 100
+```
+
+```bash
+# Launch node (uses system config)
+export RMW_IMPLEMENTATION=rmw_robotops
+ros2 run my_package my_node
+```
+
+**Example 2: Custom robot configuration**
+
+```bash
+# /opt/robot/config/rmw.yaml (robot-specific config)
+schema_version: "1.0.0"
+tracing:
+  enabled: true
+  underlying_rmw: "rmw_cyclonedds_cpp"
+  performance:
+    failure_threshold: 50
+```
+
+```bash
+# Launch node with custom config
+export RMW_IMPLEMENTATION=rmw_robotops
+export ROBOTOPS_CONFIG_PATH=/opt/robot/config/rmw.yaml
+ros2 run my_package my_node
+```
+
+**Example 3: Temporary testing override**
+
+```bash
+# Quick disable for testing (env var overrides all config files)
+export RMW_IMPLEMENTATION=rmw_robotops
+export ROBOTOPS_TRACING_ENABLED=false
+ros2 run my_package my_node
+```
+
+### Configuration Logging
+
+On startup, `rmw_robotops` logs the final configuration:
+
+```
+[INFO] [rmw_robotops]: No system config found at /etc/robotops/config.yaml (using defaults)
+[INFO] [rmw_robotops]: Configuration loaded: schema_version=1.0.0, tracing=enabled, underlying_rmw=rmw_fastrtps_cpp, failure_threshold=100
+```
+
+If a custom config path is specified but invalid:
+
+```
+[WARN] [rmw_robotops]: ROBOTOPS_CONFIG_PATH=/invalid/path.yaml specified but file not found or invalid
 ```
 
 ## Common Tasks
@@ -309,11 +468,12 @@ just check-setup  # Checks Docker, API key, and build
 ### Cloudsmith Authentication Failed
 
 ```bash
-# Verify your credentials are in the correct format (username:api_key)
-cat ~/.cloudsmith/key
+# Verify your credentials in .env.local
+cat .env.local
 
-# Should output: your-username:your-api-key
-# NOT just the API key alone
+# Should contain:
+# CLOUDSMITH_USERNAME=your-username
+# CLOUDSMITH_API_KEY=your-api-key
 
 # Rebuild without cache
 just rebuild

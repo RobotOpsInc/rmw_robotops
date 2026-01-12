@@ -1,11 +1,17 @@
 # rmw_robotops development commands
 # Install just: https://github.com/casey/just
 
+# Load credentials from .env.local
+set dotenv-load
+set dotenv-filename := ".env.local"
+
 # Configuration - can be overridden via environment variables
 ## Development:
-export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
+# export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
+export CLOUDSMITH_USERNAME := env_var_or_default('CLOUDSMITH_USERNAME', '')
+export CLOUDSMITH_API_KEY := env_var_or_default('CLOUDSMITH_API_KEY', '')
 ## Production:
-# export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
+export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
 
 # Default recipe - show available commands
 default:
@@ -13,11 +19,11 @@ default:
 
 # Build the development Docker image
 build repo=CLOUDSMITH_REPO:
-    CLOUDSMITH_REPO={{repo}} DOCKER_BUILDKIT=1 docker-compose build dev
+    CLOUDSMITH_REPO={{repo}} CLOUDSMITH_USERNAME={{CLOUDSMITH_USERNAME}} CLOUDSMITH_API_KEY={{CLOUDSMITH_API_KEY}} DOCKER_BUILDKIT=1 docker-compose build dev
 
 # Build all Docker images (dev + test)
 build-all repo=CLOUDSMITH_REPO:
-    CLOUDSMITH_REPO={{repo}} DOCKER_BUILDKIT=1 docker-compose build
+    CLOUDSMITH_REPO={{repo}} CLOUDSMITH_USERNAME={{CLOUDSMITH_USERNAME}} CLOUDSMITH_API_KEY={{CLOUDSMITH_API_KEY}} DOCKER_BUILDKIT=1 docker-compose build
 
 # Start interactive development shell
 dev:
@@ -81,18 +87,24 @@ check-setup:
     @docker buildx version || echo "❌ Docker buildx not available"
     @echo ""
     @echo "Checking Cloudsmith credentials..."
-    @if [ -f ~/.cloudsmith/key ]; then \
-        if grep -q ':' ~/.cloudsmith/key; then \
-            echo "✅ Credentials file found with correct format"; \
-        else \
-            echo "❌ Credentials file missing ':' separator (format: username:api_key)"; \
-        fi; \
+    @if [ -z "{{CLOUDSMITH_USERNAME}}" ]; then \
+        echo "❌ CLOUDSMITH_USERNAME not set (check .env.local)"; \
+    elif [ -z "{{CLOUDSMITH_API_KEY}}" ]; then \
+        echo "❌ CLOUDSMITH_API_KEY not set (check .env.local)"; \
     else \
-        echo "❌ Credentials file missing (see README.md)"; \
+        echo "✅ Cloudsmith credentials configured"; \
+        echo "   Username: {{CLOUDSMITH_USERNAME}}"; \
+        echo "   API Key: <redacted>"; \
+    fi
+    @echo ""
+    @if [ -f .env.local ]; then \
+        echo "✅ .env.local file found"; \
+    else \
+        echo "❌ .env.local file missing (copy from .env.local.template)"; \
     fi
     @echo ""
     @echo "Testing Docker build..."
-    @DOCKER_BUILDKIT=1 docker-compose build dev > /dev/null 2>&1 && echo "✅ Docker build successful" || echo "❌ Docker build failed"
+    @CLOUDSMITH_REPO={{CLOUDSMITH_REPO}} CLOUDSMITH_USERNAME={{CLOUDSMITH_USERNAME}} CLOUDSMITH_API_KEY={{CLOUDSMITH_API_KEY}} DOCKER_BUILDKIT=1 docker-compose build dev > /dev/null 2>&1 && echo "✅ Docker build successful" || echo "❌ Docker build failed"
 
 # CI commands
 
