@@ -7,11 +7,11 @@ set dotenv-filename := ".env.local"
 
 # Configuration - can be overridden via environment variables
 ## Development:
-export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
+# export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops-development')
 export CLOUDSMITH_USERNAME := env_var_or_default('CLOUDSMITH_USERNAME', '')
 export CLOUDSMITH_API_KEY := env_var_or_default('CLOUDSMITH_API_KEY', '')
 ## Production:
-# export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
+export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
 
 # Default recipe - show available commands
 default:

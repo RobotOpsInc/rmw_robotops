@@ -128,7 +128,7 @@ The `.env.local` file is automatically loaded by `docker-compose` and `.gitignor
 # See all available commands
 just
 
-# Build development image (uses defaults: robotops-development repo, v0.1.6)
+# Build development image (uses defaults: robotops repo)
 just build
 
 # Build with different Cloudsmith repo or version
@@ -165,8 +165,7 @@ just build
 ```
 
 **Defaults:**
-- Repository: `robotops-development`
-- Version: `0.1.6-0noble`
+- Repository: `robotops`
 
 ## Usage
 

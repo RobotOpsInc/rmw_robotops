@@ -8,7 +8,10 @@ services:
       dockerfile: Dockerfile
       target: dev
       args:
-        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
+        # Production
+        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops}
+        # Development
+        # CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
         CLOUDSMITH_USERNAME: ${CLOUDSMITH_USERNAME}
         CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY}
     image: rmw_robotops:dev
@@ -37,7 +40,10 @@ services:
       dockerfile: Dockerfile
       target: test
       args:
-        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
+        # Production
+        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops}
+        # Development
+        # CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
         CLOUDSMITH_USERNAME: ${CLOUDSMITH_USERNAME}
         CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY}
     image: rmw_robotops:test

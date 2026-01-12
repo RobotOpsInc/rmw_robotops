@@ -6,7 +6,10 @@
 FROM ros:jazzy-ros-base AS base
 
 # Build arguments for configurable Cloudsmith repository
-ARG CLOUDSMITH_REPO=robotops-development
+# Production
+ARG CLOUDSMITH_REPO=robotops
+# Development
+# ARG CLOUDSMITH_REPO=robotops-development
 ARG CLOUDSMITH_USERNAME
 ARG CLOUDSMITH_API_KEY
 
