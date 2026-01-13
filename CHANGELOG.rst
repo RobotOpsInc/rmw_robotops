@@ -2,10 +2,15 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.12 (2026-01-12)
+-------------------
+
+* Enhanced release descriptions to include direct Cloudsmith package repository links for easier package access
+
 0.1.11 (2026-01-12)
 -------------------
 
-* Fixed release workflows - corrected .deb package search path from parent directory to workspace directory for Docker-based builds
+* Fixed release workflows - corrected .deb package search path and added Cloudsmith repository links to release descriptions
 
 0.1.10 (2026-01-12)
 -------------------

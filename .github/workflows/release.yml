@@ -71,6 +71,12 @@ jobs:
           # Write to file for gh release
           echo "$CHANGELOG" > release_notes.md
 
+          # Add package repository link
+          echo "" >> release_notes.md
+          echo "---" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "**📦 Debian Packages:** https://cloudsmith.io/~robotops/repos/robotops/packages/" >> release_notes.md
+
           echo "Extracted changelog:"
           cat release_notes.md
 
