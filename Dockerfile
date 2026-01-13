@@ -31,8 +31,8 @@ RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
-# Install just command runner
-RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+# Install just command runner (make installation non-fatal in case of download issues)
+RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin || echo "Warning: just installation failed, but continuing..."
 
 # Configure Cloudsmith APT repositories
 # 1. Development repository (private) - for in-development packages
