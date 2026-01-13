@@ -2,6 +2,12 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.7 (2026-01-12)
+-------------------
+
+* Fixed release workflows - removed invalid ``continue`` statement from awk script in changelog extraction
+* Contributors: Kristoph Matthews, Claude Sonnet 4.5
+
 0.1.6 (2026-01-12)
 -------------------
 

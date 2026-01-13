@@ -60,7 +60,6 @@ jobs:
             /^---/ {
               if (found) {
                 next  # Skip the separator line
-                continue
               }
             }
             /^[0-9]+\.[0-9]+\.[0-9]+ \(/ {
