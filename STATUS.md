@@ -255,9 +255,9 @@ rmw_ret_t function_name(params) {
    - **Impact:** Enhanced trace correlation and debugging capabilities
 
 ### Lower Priority
-5. **Documentation & Examples**
+5. **Documentation**
    - User guide for enabling tracing
-   - Example trace analysis workflows
+   - Trace analysis workflows documentation
    - Integration with observability platforms
    - **Impact:** Improve developer experience and adoption
 
@@ -288,11 +288,14 @@ ros2 topic echo /robotops/trace_events robotops_msgs/msg/TraceEvent
 ### Validation
 
 ```bash
-# Simple smoke test
-./examples/simple_validation.sh
+# Run full test suite
+just test
 
-# Full end-to-end test (requires Release build)
-./examples/validate_tracing.sh
+# Run only safety tests
+just test-safety
+
+# Run benchmarks
+just benchmark
 ```
 
 ## 🎉 Summary
