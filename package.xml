@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rmw_robotops</name>
-  <version>0.1.12</version>
+  <version>0.1.13</version>
   <description>
     ROS2 RMW implementation that wraps underlying RMW (FastDDS, CycloneDDS, etc.)
     to add distributed tracing capabilities with OpenTelemetry context propagation.
@@ -20,7 +20,7 @@
   <depend>rcpputils</depend>
 
   <!-- Message dependencies -->
-  <depend version_gte="0.3.1">robotops_msgs</depend>
+  <depend version_gte="0.3.2">robotops_msgs</depend>
   <depend>rosidl_runtime_c</depend>
   <depend>rosidl_typesupport_introspection_c</depend>
   <depend>rosidl_typesupport_introspection_cpp</depend>
