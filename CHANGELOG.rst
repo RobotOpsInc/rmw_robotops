@@ -2,6 +2,11 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.14 (2026-01-12)
+-------------------
+
+* Fixed release workflows - added rosdep install step to ensure build dependencies are satisfied before dpkg-buildpackage
+
 0.1.13 (2026-01-12)
 -------------------
 
