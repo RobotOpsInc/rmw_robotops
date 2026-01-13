@@ -159,6 +159,7 @@ jobs:
             rmw-robotops:build-${{ matrix.arch }} bash -c "
               cd /ws && \
               apt-get update && \
+              apt-get install --only-upgrade -y ros-jazzy-robotops-msgs ros-jazzy-robotops-config || true && \
               rosdep update && \
               rosdep install --from-paths src --ignore-src -r -y && \
               cd /ws/src/rmw_robotops && \
