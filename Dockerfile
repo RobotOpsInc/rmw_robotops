@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y \
     protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
+# Install just command runner (make installation non-fatal in case of download issues)
+RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin || echo "Warning: just installation failed, but continuing..."
+
 # Configure Cloudsmith APT repositories
 # 1. Development repository (private) - for in-development packages
 # 2. Public repository - for released packages like robotops-config
@@ -63,9 +66,6 @@ WORKDIR /workspace
 # Development stage - For interactive development
 # ============================================================================
 FROM base AS dev
-
-# Install just command runner for development workflows
-RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
 # Source ROS in bashrc for interactive use
 RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc

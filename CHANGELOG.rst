@@ -6,7 +6,7 @@ Changelog for package rmw_robotops
 -------------------
 
 * Fixed release workflows - added explicit upgrade of robotops packages before rosdep install to ensure latest versions are used
-* Moved just installation from base to dev stage only in Dockerfile (not needed for release builds)
+* Made just installation non-fatal in Dockerfile to avoid build failures if download server is unavailable
 
 0.1.14 (2026-01-12)
 -------------------
