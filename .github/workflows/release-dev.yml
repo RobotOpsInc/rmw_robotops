@@ -146,15 +146,32 @@ jobs:
       - name: Initialize rosdep
         run: |
           sudo rosdep init || true
+
+          # Create custom rosdep YAML for RobotOps packages
+          sudo mkdir -p /etc/ros/rosdep/sources.list.d
+          cat <<'ROSDEP_EOF' | sudo tee /etc/ros/rosdep/robotops.yaml > /dev/null
+          robotops-config:
+            ubuntu:
+              - ros-jazzy-robotops-config
+          robotops_msgs:
+            ubuntu:
+              - ros-jazzy-robotops-msgs
+          ROSDEP_EOF
+
+          # Add custom rosdep source
+          echo "yaml file:///etc/ros/rosdep/robotops.yaml" | sudo tee /etc/ros/rosdep/sources.list.d/50-robotops.list
+
           rosdep update
 
       - name: Install dependencies
         run: |
           source /opt/ros/jazzy/setup.bash
-          rosdep install --from-paths . --ignore-src -y --skip-keys "robotops-config robotops_msgs"
 
-          # Install RobotOps dependencies from Cloudsmith
+          # Install RobotOps dependencies from Cloudsmith first
           sudo apt install -y ros-jazzy-robotops-config ros-jazzy-robotops-msgs
+
+          # Now install remaining dependencies via rosdep
+          rosdep install --from-paths . --ignore-src -y
 
       - name: Build Debian package
         run: |

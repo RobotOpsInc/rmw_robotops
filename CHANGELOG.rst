@@ -2,10 +2,17 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.9 (2026-01-12)
+-------------------
+
+* Fixed release workflows - added custom rosdep YAML to resolve robotops-config and robotops_msgs during bloom-generate
+* Contributors: Kristoph Matthews, Claude Sonnet 4.5
+
 0.1.8 (2026-01-12)
 -------------------
 
 * Fixed release workflows - corrected ROS2 APT repository path from ``/etc/os/sources.list.d/`` to ``/etc/apt/sources.list.d/``
+* Fixed release workflows - added custom rosdep source for robotops-config and robotops_msgs dependencies
 * Updated CLAUDE.md with mandatory pre-commit workflow (version bump before every commit)
 
 0.1.7 (2026-01-12)
