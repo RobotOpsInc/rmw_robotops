@@ -165,8 +165,7 @@ Environment variables for runtime configuration:
 **Resolution (2026-01-05):** Successfully implemented all missing RMW API functions and passed end-to-end validation!
 
 **Implementation Completed:**
-- **Total RMW Functions:** 190 (17 hand-coded + 173 auto-generated)
-- **Method:** Created automated signature extraction tool (`scripts/extract_rmw_signatures.py`)
+- **Total RMW Functions:** 190 (17 hand-coded + 173 auto-generated stubs)
 - **Generated Code:** `src/rmw_stubs.cpp` (3,520 lines of pass-through implementations)
 - **Build Time:** <1 second (Release mode)
 - **Status:** Fully functional RMW wrapper

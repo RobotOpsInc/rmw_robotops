@@ -60,11 +60,11 @@ This project follows ROS 2 coding standards:
 ### Running Linters
 
 ```bash
-# Python files
-python3 -m flake8 scripts/
-
 # C++ files (automatic via colcon test)
 colcon test --packages-select rmw_robotops --ctest-args -R lint
+
+# Or run full CI suite
+just ci
 ```
 
 ## Pull Request Process
