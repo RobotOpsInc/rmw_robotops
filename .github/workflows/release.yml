@@ -127,55 +127,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up ROS 2 Jazzy
-        run: |
-          sudo apt update
-          sudo apt install -y software-properties-common curl
-          sudo add-apt-repository universe
-          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
-          sudo apt update
-          sudo apt install -y ros-jazzy-ros-base python3-bloom python3-rosdep fakeroot debhelper dpkg-dev
-
-      - name: Add Cloudsmith repository for dependencies
-        run: |
-          curl -1sLf 'https://dl.cloudsmith.io/public/robotops/${{ steps.repo.outputs.repo }}/setup.deb.sh' | sudo bash
-
-      - name: Initialize rosdep
-        run: |
-          sudo rosdep init || true
-
-          # Create custom rosdep YAML for RobotOps packages
-          sudo mkdir -p /etc/ros/rosdep/sources.list.d
-          cat <<'ROSDEP_EOF' | sudo tee /etc/ros/rosdep/robotops.yaml > /dev/null
-          robotops-config:
-            ubuntu:
-              - ros-jazzy-robotops-config
-          robotops_msgs:
-            ubuntu:
-              - ros-jazzy-robotops-msgs
-          ROSDEP_EOF
-
-          # Add custom rosdep source
-          echo "yaml file:///etc/ros/rosdep/robotops.yaml" | sudo tee /etc/ros/rosdep/sources.list.d/50-robotops.list
-
-          rosdep update
-
-      - name: Install dependencies
-        run: |
-          source /opt/ros/jazzy/setup.bash
-
-          # Install RobotOps dependencies from Cloudsmith first
-          sudo apt install -y ros-jazzy-robotops-config ros-jazzy-robotops-msgs
-
-          # Now install remaining dependencies via rosdep
-          rosdep install --from-paths . --ignore-src -y
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          target: base
+          push: false
+          load: true
+          tags: rmw-robotops:build-${{ matrix.arch }}
+          build-args: |
+            CLOUDSMITH_REPO=${{ steps.repo.outputs.repo }}
+            CLOUDSMITH_USERNAME=${{ secrets.CLOUDSMITH_USERNAME }}
+            CLOUDSMITH_API_KEY=${{ secrets.CLOUDSMITH_API_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build Debian package
         run: |
-          source /opt/ros/jazzy/setup.bash
-          bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy
-          fakeroot debian/rules binary
+          docker run --rm \
+            -v ${{ github.workspace }}:/ws/src/rmw_robotops \
+            -v ${{ github.workspace }}:/output \
+            rmw-robotops:build-${{ matrix.arch }} bash -c "
+              cd /ws/src/rmw_robotops && \
+              apt-get update && \
+              bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy && \
+              dpkg-buildpackage -us -uc -b && \
+              cp /ws/src/*.deb /output/
+            "
 
       - name: Find built package
         id: deb
