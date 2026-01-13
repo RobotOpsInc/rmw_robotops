@@ -63,6 +63,7 @@ struct SubscriptionMetadata
   char node_name[MAX_NODE_NAME_LENGTH];
   char node_namespace[MAX_NODE_NAME_LENGTH];
   char message_type[MAX_MESSAGE_TYPE_LENGTH];
+  const rosidl_typesupport_introspection_c__MessageMembers * members;
 };
 
 /// Cache of subscription metadata (keyed by subscription pointer)
@@ -87,7 +88,8 @@ void store_subscription_metadata(
     std::memcpy(metadata.node_namespace, node->namespace_, ns_len);
     metadata.node_namespace[ns_len] = '\0';
 
-    // Store message type name from type support
+    // Store message type name and introspection members from type support
+    metadata.members = nullptr;
     if (type_support != nullptr && type_support->data != nullptr) {
       const rosidl_message_type_support_t * ts =
         get_message_typesupport_handle(
@@ -104,6 +106,8 @@ void store_subscription_metadata(
             "%s/%s",
             members->message_namespace_,
             members->message_name_);
+          // Cache members pointer for content hashing
+          metadata.members = members;
         }
       }
     }
@@ -224,6 +228,7 @@ rmw_take_with_info(
   rmw_subscription_allocation_t * allocation)
 {
   using rmw_robotops::compute_content_hash;
+  using rmw_robotops::compute_message_hash;
   using rmw_robotops::generate_span_id;
   using rmw_robotops::get_dds_domain_id;
   using rmw_robotops::get_trace_event_queue;
@@ -330,19 +335,14 @@ rmw_take_with_info(
       // Set trace context for downstream propagation
       set_trace_context(new_context);
 
-      // Compute content hash if needed (for fallback correlation or verification)
+      // Compute content hash using introspection (always computed for correlation)
       uint64_t content_hash = 0;
-      if (!strategy->is_deterministic()) {
-        // NOTE: We don't have direct access to the serialized CDR buffer.
-        // Use message pointer + timestamp from message_info as a proxy.
-        // This matches the publisher-side hashing for correlation.
-        uint64_t timestamp_ns = 0;
-        if (message_info != nullptr) {
-          timestamp_ns = message_info->source_timestamp;
-        }
+      // Get cached introspection members for this subscription
+      SubscriptionMetadata sub_metadata;
+      bool have_metadata = get_subscription_metadata(subscription, sub_metadata);
 
-        uint64_t composite = reinterpret_cast<uintptr_t>(ros_message) ^ timestamp_ns;
-        content_hash = compute_content_hash(&composite, sizeof(composite));
+      if (have_metadata && sub_metadata.members != nullptr) {
+        content_hash = compute_message_hash(ros_message, sub_metadata.members);
       }
 
       // Emit LTTng tracepoint

@@ -18,6 +18,11 @@
 #include <cstdint>
 #include <cstdlib>
 
+// Forward declaration for introspection type
+struct rosidl_typesupport_introspection_c__MessageMembers_s;
+typedef struct rosidl_typesupport_introspection_c__MessageMembers_s
+  rosidl_typesupport_introspection_c__MessageMembers;
+
 namespace rmw_robotops
 {
 
@@ -49,6 +54,19 @@ inline uint32_t get_dds_domain_id() noexcept
 /// @note Uses XXH64 from xxhash library for fast hashing (~33ns per 1KB)
 /// @note Returns 0 if data is null or size is 0 (indicates no hash computed)
 uint64_t compute_content_hash(const void * data, size_t size) noexcept;
+
+/// Compute content hash of ROS message using introspection
+/// @param ros_message Pointer to typed ROS message
+/// @param members Introspection metadata for the message type
+/// @return FNV-1a hash of message content, or 0 on failure
+///
+/// @note Walks entire message structure, dereferencing pointers for strings/arrays
+/// @note Same message content produces same hash on publisher and subscriber
+/// @note Handles all ROS2 types: primitives, strings, arrays, nested messages
+/// @note Returns 0 if ros_message or members is null
+uint64_t compute_message_hash(
+  const void * ros_message,
+  const rosidl_typesupport_introspection_c__MessageMembers * members) noexcept;
 
 /// Check if intra-process communication is enabled for this publisher
 /// @param publisher RMW publisher handle

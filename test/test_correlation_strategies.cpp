@@ -54,10 +54,8 @@ TEST_F(CorrelationStrategyTest, HasCorrelationMethod) {
   ASSERT_NE(nullptr, strategy);
 
   uint8_t method = strategy->get_correlation_method();
-  // Should be one of the known correlation methods
-  EXPECT_TRUE(
-    method == robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE ||
-    method == robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_TIMESTAMP);
+  // Should use content hash correlation (DDS-agnostic)
+  EXPECT_EQ(robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH, method);
 }
 
 TEST_F(CorrelationStrategyTest, IsDeterministicProperty) {

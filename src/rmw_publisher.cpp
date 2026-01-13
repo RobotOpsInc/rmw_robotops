@@ -61,6 +61,7 @@ struct PublisherMetadata
   char node_name[MAX_NODE_NAME_LENGTH];
   char node_namespace[MAX_NODE_NAME_LENGTH];
   char message_type[MAX_MESSAGE_TYPE_LENGTH];
+  const rosidl_typesupport_introspection_c__MessageMembers * members;
 };
 
 /// Cache of publisher metadata (keyed by publisher pointer)
@@ -87,7 +88,8 @@ void store_publisher_metadata(
     std::memcpy(metadata.node_namespace, node->namespace_, ns_len);
     metadata.node_namespace[ns_len] = '\0';
 
-    // Store message type name from type support
+    // Store message type name and introspection members from type support
+    metadata.members = nullptr;
     if (type_support != nullptr && type_support->data != nullptr) {
       // Extract type name from type support (e.g., "std_msgs/msg/String")
       const rosidl_message_type_support_t * ts =
@@ -106,6 +108,8 @@ void store_publisher_metadata(
             "%s/%s",
             members->message_namespace_,
             members->message_name_);
+          // Cache members pointer for content hashing
+          metadata.members = members;
         }
       }
     }
@@ -210,6 +214,7 @@ rmw_publish(
   rmw_publisher_allocation_t * allocation)
 {
   using rmw_robotops::compute_content_hash;
+  using rmw_robotops::compute_message_hash;
   using rmw_robotops::generate_span_id;
   using rmw_robotops::get_dds_domain_id;
   using rmw_robotops::get_or_mint_trace_context;
@@ -238,18 +243,13 @@ rmw_publish(
       context = get_or_mint_trace_context();
       generate_span_id(span_id_buf);
 
-      // Compute content hash if needed for fallback correlation
-      if (!strategy->is_deterministic()) {
-        // NOTE: We don't have direct access to the serialized CDR buffer here
-        // because the underlying RMW handles serialization internally.
-        // Use message pointer + timestamp as a proxy for content identity.
-        // True content-based hashing requires DDS-level interception (ROB-106).
-        uint64_t timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-          std::chrono::system_clock::now().time_since_epoch()).count();
+      // Compute content hash using introspection (always computed for correlation)
+      // Get cached introspection members for this publisher
+      PublisherMetadata pub_metadata;
+      bool have_metadata = get_publisher_metadata(publisher, pub_metadata);
 
-        // Hash pointer XOR timestamp for a unique-per-publish fingerprint
-        uint64_t composite = reinterpret_cast<uintptr_t>(ros_message) ^ timestamp_ns;
-        content_hash = compute_content_hash(&composite, sizeof(composite));
+      if (have_metadata && pub_metadata.members != nullptr) {
+        content_hash = compute_message_hash(ros_message, pub_metadata.members);
       }
 
       // Emit LTTng tracepoint
