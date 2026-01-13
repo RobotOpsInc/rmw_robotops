@@ -1,0 +1,194 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    # Manual trigger only - production releases from main branch only
+    inputs:
+      dry_run:
+        description: 'Dry run (validate without creating release)'
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed to create releases and tags
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure release is from main branch
+        run: |
+          if [[ "${{ github.ref }}" != "refs/heads/main" ]]; then
+            echo "::error::Production releases can only be created from main branch"
+            echo "Current branch: ${{ github.ref }}"
+            echo "For development releases, use the Release Development workflow"
+            exit 1
+          fi
+          echo "📦 Production release from main branch"
+
+      - name: Get version from package.xml
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=<version>)[^<]+' package.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Package version: $VERSION"
+
+      - name: Check tag doesn't already exist
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/${{ steps.version.outputs.tag }}$"; then
+            echo "::error::Tag ${{ steps.version.outputs.tag }} already exists"
+            exit 1
+          fi
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Extract section from CHANGELOG.rst
+          # Format: version (date) followed by --- separator
+          CHANGELOG=$(awk -v ver="$VERSION" '
+            /^[0-9]+\.[0-9]+\.[0-9]+ \(/ {
+              if (found) exit
+              if ($0 ~ ver) {
+                found=1
+                next  # Skip the version line
+              }
+            }
+            /^---/ {
+              if (found) {
+                next  # Skip the separator line
+                continue
+              }
+            }
+            /^[0-9]+\.[0-9]+\.[0-9]+ \(/ {
+              if (found) exit  # Stop at next version
+            }
+            found { print }
+          ' CHANGELOG.rst)
+
+          # Write to file for gh release
+          echo "$CHANGELOG" > release_notes.md
+
+          echo "Extracted changelog:"
+          cat release_notes.md
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "Release ${{ steps.version.outputs.tag }}" \
+            --notes-file release_notes.md
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "## Dry Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Would create release:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Title:** Release ${{ steps.version.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Release Notes" >> $GITHUB_STEP_SUMMARY
+          cat release_notes.md >> $GITHUB_STEP_SUMMARY
+
+  publish-packages:
+    runs-on: ${{ matrix.runner }}
+    needs: release
+    if: ${{ !inputs.dry_run }}
+    permissions:
+      contents: write  # Needed to upload release assets
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(grep -oP '(?<=<version>)[^<]+' package.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine Cloudsmith repository
+        id: repo
+        run: |
+          echo "repo=robotops" >> $GITHUB_OUTPUT
+          echo "Deploying to: production (robotops)"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up ROS 2 Jazzy
+        run: |
+          sudo apt update
+          sudo apt install -y software-properties-common curl
+          sudo add-apt-repository universe
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/os/sources.list.d/ros2.list > /dev/null
+          sudo apt update
+          sudo apt install -y ros-jazzy-ros-base python3-bloom python3-rosdep fakeroot debhelper dpkg-dev
+
+      - name: Add Cloudsmith repository for dependencies
+        run: |
+          curl -1sLf 'https://dl.cloudsmith.io/public/robotops/${{ steps.repo.outputs.repo }}/setup.deb.sh' | sudo bash
+
+      - name: Initialize rosdep
+        run: |
+          sudo rosdep init || true
+          rosdep update
+
+      - name: Install dependencies
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          rosdep install --from-paths . --ignore-src -y --skip-keys "robotops-config robotops_msgs"
+
+          # Install RobotOps dependencies from Cloudsmith
+          sudo apt install -y ros-jazzy-robotops-config ros-jazzy-robotops-msgs
+
+      - name: Build Debian package
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy
+          fakeroot debian/rules binary
+
+      - name: Find built package
+        id: deb
+        run: |
+          DEB_FILE=$(ls ../*.deb | head -n1)
+          mv "$DEB_FILE" .
+          DEB_FILE=$(basename "$DEB_FILE")
+          echo "file=$DEB_FILE" >> $GITHUB_OUTPUT
+          echo "Built package: $DEB_FILE"
+
+      - name: Upload to Cloudsmith
+        uses: cloudsmith-io/action@v0.6.10
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "deb"
+          owner: "robotops"
+          repo: ${{ steps.repo.outputs.repo }}
+          distro: "ubuntu"
+          release: "noble"
+          republish: "true"
+          file: ${{ steps.deb.outputs.file }}
+
+      - name: Summary
+        run: |
+          echo "## Package Publishing (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Version: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Package: ${{ steps.deb.outputs.file }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Debian package: https://cloudsmith.io/~robotops/repos/${{ steps.repo.outputs.repo }}/packages/" >> $GITHUB_STEP_SUMMARY
