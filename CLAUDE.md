@@ -243,6 +243,34 @@ Multi-DDS support (CycloneDDS, etc.) tracked in ROB-105.
 - **ROB-33**: Distributed Tracing epic (parent)
 - **ROB-105**: Multi-DDS testing
 
+## Pre-Commit Workflow
+
+**CRITICAL: Before EVERY commit, you MUST:**
+
+1. **Bump the version** (unless it's already been bumped for this change):
+   ```bash
+   just bump-version patch  # For most changes
+   just bump-version minor  # For new features
+   just bump-version major  # For breaking changes (coordinate with team)
+   ```
+
+2. **Update CHANGELOG.rst** with your changes - the bump-version command creates the entry, you fill in the details
+
+3. **Stage all changes including package.xml and CHANGELOG.rst**:
+   ```bash
+   git add -A
+   ```
+
+4. **Then commit** with conventional commit message
+
+**This applies to ALL commits, including:**
+- Bug fixes
+- Workflow fixes
+- Documentation updates
+- Any code changes
+
+The only exception is if you're making multiple related changes in quick succession and want to bundle them into a single version bump - but this should be rare.
+
 ## Commit Message Format
 
 Follow conventional commits:

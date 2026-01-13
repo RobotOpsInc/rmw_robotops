@@ -2,10 +2,17 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.8 (2026-01-12)
+-------------------
+
+* Fixed release workflows - corrected ROS2 APT repository path from ``/etc/os/sources.list.d/`` to ``/etc/apt/sources.list.d/``
+* Updated CLAUDE.md with mandatory pre-commit workflow (version bump before every commit)
+
 0.1.7 (2026-01-12)
 -------------------
 
 * Fixed release workflows - removed invalid ``continue`` statement from awk script in changelog extraction
+* Fixed release workflows - corrected path from ``/etc/os/sources.list.d/`` to ``/etc/apt/sources.list.d/``
 * Contributors: Kristoph Matthews, Claude Sonnet 4.5
 
 0.1.6 (2026-01-12)
