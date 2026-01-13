@@ -161,9 +161,7 @@ jobs:
       - name: Find built package
         id: deb
         run: |
-          DEB_FILE=$(ls ../*.deb | head -n1)
-          mv "$DEB_FILE" .
-          DEB_FILE=$(basename "$DEB_FILE")
+          DEB_FILE=$(ls *.deb | head -n1)
           echo "file=$DEB_FILE" >> $GITHUB_OUTPUT
           echo "Built package: $DEB_FILE"
 
