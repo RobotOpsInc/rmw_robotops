@@ -2,6 +2,13 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.10 (2026-01-12)
+-------------------
+
+* Refactored release workflows to use Docker-based builds for consistency with local development
+* Removed manual ROS2/dependency installation in favor of pre-built Docker images
+* Now using same Dockerfile as local ``just`` commands for CI/CD
+
 0.1.9 (2026-01-12)
 -------------------
 
