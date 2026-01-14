@@ -479,6 +479,18 @@ just check-setup  # Verify Docker, Cloudsmith, and build setup
 
 ## Architecture
 
+**For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).**
+
+This document covers:
+- Component architecture and responsibilities
+- Detailed data flows (publish, subscribe, services)
+- Safety guarantees and implementation
+- Trace context propagation (intra-process and cross-process)
+- Thread safety model
+- Edge cases and performance characteristics
+
+**High-level overview:**
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Robot Node Process                       │

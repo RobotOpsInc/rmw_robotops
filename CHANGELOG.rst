@@ -2,6 +2,34 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2026-01-13)
+-------------------
+
+* Added comprehensive integration tests with real RMW pub/sub to validate cross-process correlation
+* Implemented 7 integration tests including ContentHashConsistency and CompleteCorrelationMetadata
+* Fixed RMW lifecycle in tests - added proper rmw_shutdown() call before rmw_context_fini()
+* Cleaned up misleading "fallback" terminology - content-based correlation is now primary/only method
+* Added Documentation Maintenance section to CLAUDE.md for keeping ARCHITECTURE.md in sync
+* Referenced ARCHITECTURE.md in README.md for better documentation discoverability
+* All 214 tests passing (8 unit tests, 5 lint checks)
+
+0.3.0 (2026-01-13)
+-------------------
+
+* **BREAKING**: Simplified to DDS-agnostic design - removed FastDDS-specific correlation strategy
+* Implemented true content-based hashing using message introspection (walks full message structure)
+* Correlation now uses: GID + timestamp + content_hash (works with any DDS)
+* Reduced correlation_strategy.cpp from 499 to 140 lines (72% smaller, more maintainable)
+* Updated COMPATIBILITY.md to reflect DDS-agnostic design and multi-DDS support
+
+0.2.0 (2026-01-13)
+-------------------
+
+* Added COMPATIBILITY.md to track FastDDS version compatibility and breaking changes
+* Implemented cross-process trace propagation infrastructure using FastDDS related_sample_identity
+* Enhanced FastDDSCorrelationStrategy with trace context encoding/decoding (injection pending ROB-55)
+* Added dependency tracking section to CLAUDE.md for monitoring upstream changes
+
 0.1.15 (2026-01-12)
 -------------------
 

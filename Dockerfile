@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     libprotobuf-dev \
     protobuf-compiler \
+    libxxhash-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install just command runner (make installation non-fatal in case of download issues)

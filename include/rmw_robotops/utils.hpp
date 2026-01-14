@@ -17,9 +17,28 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
+
+// Forward declaration for introspection type
+struct rosidl_typesupport_introspection_c__MessageMembers_s;
+typedef struct rosidl_typesupport_introspection_c__MessageMembers_s
+  rosidl_typesupport_introspection_c__MessageMembers;
 
 namespace rmw_robotops
 {
+
+/// Correlation metadata extracted from a received message
+///
+/// Used for post-hoc correlation by robot_agent to match
+/// publish events with corresponding subscribe events.
+struct CorrelationMetadata
+{
+  std::string publisher_gid;        ///< DDS publisher GUID (hex string)
+  uint64_t sequence_number;         ///< Message sequence number
+  int64_t source_timestamp_ns;      ///< Publisher's timestamp
+  uint64_t content_hash;            ///< xxHash64 of message content (0 if not computed)
+  uint8_t correlation_method;       ///< Method used (from TraceEvent constants)
+};
 
 /// Get the DDS domain ID from environment
 /// @return Domain ID from ROS_DOMAIN_ID env var, or 0 if not set
@@ -41,7 +60,7 @@ inline uint32_t get_dds_domain_id() noexcept
   return static_cast<uint32_t>(domain);
 }
 
-/// Compute xxHash64 of message content for fallback correlation
+/// Compute xxHash64 of message content for correlation
 /// @param data Pointer to serialized message data
 /// @param size Size of data in bytes
 /// @return xxHash64 hash value, or 0 on failure
@@ -50,13 +69,18 @@ inline uint32_t get_dds_domain_id() noexcept
 /// @note Returns 0 if data is null or size is 0 (indicates no hash computed)
 uint64_t compute_content_hash(const void * data, size_t size) noexcept;
 
-/// Check if intra-process communication is enabled for this publisher
-/// @param publisher RMW publisher handle
-/// @return true if intra-process is enabled, false otherwise
+/// Compute content hash of ROS message using introspection
+/// @param ros_message Pointer to typed ROS message
+/// @param members Introspection metadata for the message type
+/// @return FNV-1a hash of message content, or 0 on failure
 ///
-/// @note Intra-process messages don't need DDS metadata injection
-/// @note This is a conservative check - returns false if unsure
-bool is_intra_process_enabled(const void * publisher) noexcept;
+/// @note Walks entire message structure, dereferencing pointers for strings/arrays
+/// @note Same message content produces same hash on publisher and subscriber
+/// @note Handles all ROS2 types: primitives, strings, arrays, nested messages
+/// @note Returns 0 if ros_message or members is null
+uint64_t compute_message_hash(
+  const void * ros_message,
+  const rosidl_typesupport_introspection_c__MessageMembers * members) noexcept;
 
 /// Detect action event type from topic name
 /// @param topic_name ROS topic name
@@ -75,6 +99,18 @@ uint8_t detect_action_event_type(
   const char * topic_name,
   bool is_publisher,
   bool is_start_event) noexcept;
+
+/// Convert DDS GID to hex string for correlation
+/// @param gid DDS publisher GUID (24 bytes)
+/// @return Hex string representation (48 characters)
+inline std::string gid_to_hex_string(const uint8_t gid[24]) noexcept
+{
+  char hex[49];  // 24 bytes * 2 + null terminator
+  for (size_t i = 0; i < 24; ++i) {
+    snprintf(hex + i * 2, sizeof(hex) - i * 2, "%02x", gid[i]);
+  }
+  return std::string(hex);
+}
 
 }  // namespace rmw_robotops
 
