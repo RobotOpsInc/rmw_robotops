@@ -21,8 +21,6 @@
 #include "rmw/error_handling.h"
 #include "rmw/rmw.h"
 #include "rmw_robotops/config.hpp"
-#include "rmw_robotops/correlation_strategy.hpp"
-#include "rmw_robotops/dds_metadata.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
@@ -151,16 +149,6 @@ void remove_subscription_metadata(const rmw_subscription_t * subscription) noexc
   }
 }
 
-/// Global correlation strategy (lazy initialized)
-std::unique_ptr<rmw_robotops::CorrelationStrategy> & get_correlation_strategy() noexcept
-{
-  static std::unique_ptr<rmw_robotops::CorrelationStrategy> strategy;
-  if (!strategy) {
-    strategy = rmw_robotops::create_correlation_strategy();
-  }
-  return strategy;
-}
-
 }  // anonymous namespace
 
 extern "C"
@@ -244,8 +232,7 @@ rmw_take_with_info(
     return RMW_RET_ERROR;
   }
 
-  // Get correlation strategy and tracing state (lazy init, outside critical path)
-  auto & strategy = get_correlation_strategy();
+  // Get tracing state
   bool tracing_active = is_tracing_enabled();
   char span_id_buf[17] = {0};
 
@@ -271,33 +258,28 @@ rmw_take_with_info(
   // STEP 3: Emit END event (AFTER underlying take, only if message was taken)
   if (ret == RMW_RET_OK && *taken && tracing_active) {
     try {
-      // Extract correlation metadata using strategy
-      TraceContext extracted_context;
+      // Extract correlation metadata directly from message_info
       rmw_robotops::CorrelationMetadata correlation_metadata;
+      if (message_info != nullptr) {
+        correlation_metadata.publisher_gid =
+          rmw_robotops::gid_to_hex_string(message_info->publisher_gid.data);
+        correlation_metadata.source_timestamp_ns = message_info->source_timestamp;
+        correlation_metadata.sequence_number = 0;  // Not used for content hash correlation
+      } else {
+        correlation_metadata.publisher_gid = "";
+        correlation_metadata.source_timestamp_ns = 0;
+        correlation_metadata.sequence_number = 0;
+      }
+      correlation_metadata.content_hash = 0;  // Will be computed below
+      correlation_metadata.correlation_method =
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
 
-      // Pass DDS-specific sample info if available
-      // (rmw_fastrtps stores it in implementation_identifier)
-      // For now, use nullptr - strategy will use message_info for fallback
-      const void * dds_sample_info = nullptr;
-
-      // NOTE: We don't have direct access to the serialized CDR buffer here
-      // because the underlying RMW handles deserialization internally.
-      // Estimate message size based on typical ROS message sizes (1KB average).
-      // True serialized size requires DDS-level interception (ROB-106).
-      size_t estimated_msg_size = 1024;  // Reasonable default for correlation
-
-      bool context_extracted = strategy->extract_context(
-        subscription,
-        message_info,
-        dds_sample_info,
-        ros_message,
-        estimated_msg_size,
-        extracted_context,
-        correlation_metadata);
+      // Attempt to get context from thread-local storage (intra-process only)
+      TraceContext extracted_context = rmw_robotops::get_trace_context();
 
       // Determine trace context for this span
       TraceContext new_context;
-      if (context_extracted && !extracted_context.is_empty()) {
+      if (!extracted_context.is_empty()) {
         // Continue existing trace
         std::memcpy(new_context.trace_id, extracted_context.trace_id,
             sizeof(new_context.trace_id) - 1);
@@ -384,7 +366,7 @@ rmw_take_with_info(
       start_event.msg_ptr = reinterpret_cast<uint64_t>(ros_message);
       start_event.content_hash = content_hash;
       start_event.dds_domain_id = get_dds_domain_id();
-      start_event.correlation_method = strategy->get_correlation_method();
+      start_event.correlation_method = correlation_metadata.correlation_method;
 
       // Correlation metadata from DDS
       size_t gid_len = std::min(correlation_metadata.publisher_gid.length(),

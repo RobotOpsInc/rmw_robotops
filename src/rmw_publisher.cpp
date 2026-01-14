@@ -21,8 +21,6 @@
 #include "rmw/error_handling.h"
 #include "rmw/rmw.h"
 #include "rmw_robotops/config.hpp"
-#include "rmw_robotops/correlation_strategy.hpp"
-#include "rmw_robotops/dds_metadata.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
@@ -155,15 +153,6 @@ void remove_publisher_metadata(const rmw_publisher_t * publisher) noexcept
   }
 }
 
-/// Global correlation strategy (lazy initialized)
-std::unique_ptr<rmw_robotops::CorrelationStrategy> & get_correlation_strategy() noexcept
-{
-  static std::unique_ptr<rmw_robotops::CorrelationStrategy> strategy;
-  if (!strategy) {
-    strategy = rmw_robotops::create_correlation_strategy();
-  }
-  return strategy;
-}
 
 }  // anonymous namespace
 
@@ -232,9 +221,8 @@ rmw_publish(
     return RMW_RET_ERROR;
   }
 
-  // Get trace context and correlation strategy (lazy init, outside critical path)
+  // Get trace context (lazy init, outside critical path)
   TraceContext context;
-  auto & strategy = get_correlation_strategy();
   bool tracing_active = is_tracing_enabled();
   uint64_t content_hash = 0;
   char span_id_buf[17] = {0};
@@ -262,9 +250,6 @@ rmw_publish(
         context.trace_id, span_id_buf, context.parent_span_id,
         content_hash);
       #endif
-
-      // Inject context into DDS metadata (best-effort)
-      strategy->inject_context(publisher, context, ros_message, sizeof(void *));
     } catch (...) {
       record_trace_failure();
       tracing_active = false;  // Disable for this publish
@@ -310,7 +295,8 @@ rmw_publish(
       start_event.msg_ptr = reinterpret_cast<uint64_t>(ros_message);
       start_event.content_hash = content_hash;
       start_event.dds_domain_id = get_dds_domain_id();
-      start_event.correlation_method = strategy->get_correlation_method();
+      start_event.correlation_method =
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
 
       // Collect pending contexts for span links (fan-in scenario)
       TraceContext pending_contexts[rmw_robotops::MAX_SPAN_LINKS];
@@ -394,8 +380,7 @@ rmw_publish_serialized_message(
     return RMW_RET_ERROR;
   }
 
-  // Get correlation strategy and tracing state (lazy init, outside critical path)
-  auto & strategy = get_correlation_strategy();
+  // Get tracing state
   bool tracing_active = is_tracing_enabled();
   char span_id_buf[17] = {0};
 
@@ -473,7 +458,8 @@ rmw_publish_serialized_message(
       start_event.msg_ptr = reinterpret_cast<uint64_t>(serialized_message);
       start_event.content_hash = content_hash;
       start_event.dds_domain_id = get_dds_domain_id();
-      start_event.correlation_method = strategy->get_correlation_method();
+      start_event.correlation_method =
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
 
       // Get publisher metadata
       PublisherMetadata metadata;

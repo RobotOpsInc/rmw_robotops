@@ -41,9 +41,7 @@ add_library(${PROJECT_NAME} SHARED
   src/trace_event_queue.cpp
   src/trace_publisher.cpp
   src/span_id_generator.cpp
-  src/dds_metadata.cpp
   src/config.cpp
-  src/correlation_strategy.cpp
   src/utils.cpp
   src/rmw_stubs.cpp
 )
@@ -175,13 +173,6 @@ if(BUILD_TESTING)
   )
   target_link_libraries(test_service_tracing ${PROJECT_NAME})
   ament_target_dependencies(test_service_tracing rmw rcutils robotops_msgs)
-
-  # Correlation strategy tests
-  ament_add_gtest(test_correlation_strategies
-    test/test_correlation_strategies.cpp
-  )
-  target_link_libraries(test_correlation_strategies ${PROJECT_NAME})
-  ament_target_dependencies(test_correlation_strategies rmw rcutils robotops_msgs)
 
   # Performance benchmarks
   add_executable(benchmark_latency
