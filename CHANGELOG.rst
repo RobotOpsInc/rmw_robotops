@@ -2,6 +2,17 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.4.0 (2026-01-13)
+-------------------
+
+* Added comprehensive integration tests with real RMW pub/sub to validate cross-process correlation
+* Implemented 7 integration tests including ContentHashConsistency and CompleteCorrelationMetadata
+* Fixed RMW lifecycle in tests - added proper rmw_shutdown() call before rmw_context_fini()
+* Cleaned up misleading "fallback" terminology - content-based correlation is now primary/only method
+* Added Documentation Maintenance section to CLAUDE.md for keeping ARCHITECTURE.md in sync
+* Referenced ARCHITECTURE.md in README.md for better documentation discoverability
+* All 214 tests passing (8 unit tests, 5 lint checks)
+
 0.3.0 (2026-01-13)
 -------------------
 

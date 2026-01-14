@@ -2,9 +2,9 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rmw_robotops</name>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
   <description>
-    ROS2 RMW implementation that wraps underlying RMW (FastDDS, CycloneDDS, etc.)
+    ROS2 RMW implementation that wraps underlying RMW (atop various DDS implementations: FastDDS, CycloneDDS, etc.)
     to add distributed tracing capabilities with OpenTelemetry context propagation.
   </description>
 
