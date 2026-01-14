@@ -68,14 +68,6 @@ uint64_t compute_message_hash(
   const void * ros_message,
   const rosidl_typesupport_introspection_c__MessageMembers * members) noexcept;
 
-/// Check if intra-process communication is enabled for this publisher
-/// @param publisher RMW publisher handle
-/// @return true if intra-process is enabled, false otherwise
-///
-/// @note Intra-process messages don't need DDS metadata injection
-/// @note This is a conservative check - returns false if unsure
-bool is_intra_process_enabled(const void * publisher) noexcept;
-
 /// Detect action event type from topic name
 /// @param topic_name ROS topic name
 /// @param is_publisher true for publish, false for subscribe

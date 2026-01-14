@@ -21,45 +21,39 @@
 namespace rmw_robotops
 {
 
-/// Inject trace context into DDS metadata for cross-process propagation
+/// Propagate trace context (intra-process only via thread-local storage)
 ///
-/// @param dds_sample_info Pointer to DDS sample info (FastDDS SampleInfo or equivalent)
-/// @param context Trace context to inject
-/// @return true if injection succeeded, false otherwise
+/// @param dds_sample_info DDS sample info pointer (unused - DDS-agnostic design)
+/// @param context Trace context to propagate
+/// @return true if context is valid, false otherwise
 ///
-/// @note Current implementation is a placeholder using thread-local storage.
-///       Does NOT propagate across processes. See implementation for TODO details.
+/// @note DDS-agnostic design: No injection into DDS metadata
 ///
-/// **Multi-DDS Extension Point:**
-/// The void* parameter is intentionally DDS-agnostic to support multiple DDS implementations.
-/// Future implementations should:
-/// - Cast void* to the appropriate DDS-specific type
-///   (e.g., FastDDS WriteParams, CycloneDDS ddsi_serdata)
-/// - Inject trace context using that DDS's metadata/property mechanism
-/// - Select implementation at runtime based on ROBOTOPS_UNDERLYING_RMW environment variable
-/// - Return false gracefully if the DDS implementation doesn't support metadata injection
+/// **Design rationale:**
+/// - INTRA-PROCESS: Context propagates via thread-local storage (TLS)
+/// - CROSS-PROCESS: Post-hoc correlation using GID + timestamp + content_hash
+/// - Works identically with any DDS implementation (FastDDS, CycloneDDS, Connext)
+/// - Never modifies DDS wire format or message payload (passive observation)
+/// - See src/dds_metadata.cpp for full implementation details
 RMW_ROBOTOPS_PUBLIC
 bool inject_trace_context_to_dds(
   void * dds_sample_info,
   const TraceContext & context) noexcept;
 
-/// Extract trace context from DDS metadata for cross-process propagation
+/// Retrieve trace context (intra-process only via thread-local storage)
 ///
-/// @param dds_sample_info Pointer to DDS sample info (FastDDS SampleInfo or equivalent)
-/// @param[out] context Extracted trace context
-/// @return true if extraction succeeded, false if no context found
+/// @param dds_sample_info DDS sample info pointer (unused - DDS-agnostic design)
+/// @param[out] context Retrieved trace context (empty if not found)
+/// @return true if context found in TLS, false otherwise
 ///
-/// @note Current implementation is a placeholder using thread-local storage.
-///       Does NOT extract across processes. See implementation for TODO details.
+/// @note DDS-agnostic design: No extraction from DDS metadata
 ///
-/// **Multi-DDS Extension Point:**
-/// The void* parameter is intentionally DDS-agnostic to support multiple DDS implementations.
-/// Future implementations should:
-/// - Cast void* to the appropriate DDS-specific type
-///   (e.g., FastDDS SampleInfo, CycloneDDS ddsi_serdata)
-/// - Extract trace context using that DDS's metadata/property mechanism
-/// - Select implementation at runtime based on ROBOTOPS_UNDERLYING_RMW environment variable
-/// - Return false gracefully if no context is found or DDS doesn't support metadata extraction
+/// **Design rationale:**
+/// - INTRA-PROCESS: Retrieves context from thread-local storage if available
+/// - CROSS-PROCESS: Returns false (no context in DDS by design)
+/// - When false returned, caller mints new trace_id for root span
+/// - Cross-process correlation handled by robot_agent using emitted metadata
+/// - See src/dds_metadata.cpp for full implementation details
 RMW_ROBOTOPS_PUBLIC
 bool extract_trace_context_from_dds(
   const void * dds_sample_info,

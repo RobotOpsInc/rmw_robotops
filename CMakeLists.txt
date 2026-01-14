@@ -75,6 +75,7 @@ ament_target_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   yaml-cpp
   robotops-config::robotops-config
+  xxhash
 )
 
 # Platform-specific libraries
