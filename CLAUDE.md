@@ -220,21 +220,34 @@ This is helpful when implementing code that needs to match the exact message sch
 
 ## Architecture Decisions
 
-### DDS Metadata Propagation
+### Trace Correlation Strategy
 
-**Chosen approach**: DDS Property List (Option 4)
+**Chosen approach**: DDS-agnostic content-based correlation
 
-- Primary: FastDDS property list API for trace context
-- Fallback: No-op mode if properties unavailable
-- Rationale: Per-message metadata without payload modification
+rmw_robotops uses only standard RMW APIs - no DDS-specific features required.
 
-See commit history for full analysis of alternatives.
+**Correlation metadata:**
+- Publisher GID (24-byte unique identifier from `rmw_message_info_t`)
+- Source timestamp (nanosecond precision from `rmw_message_info_t`)
+- Content hash (FNV-1a hash of full message structure via introspection)
 
-### Underlying RMW
+**Key design principles:**
+- Works with any DDS implementation (FastDDS, CycloneDDS, Connext, etc.)
+- No payload modification - passive observation only
+- Post-hoc correlation by robot_agent using metadata
+- Intra-process uses thread-local storage (TLS) for direct context propagation
 
-**Primary target**: FastDDS (`rmw_fastrtps_cpp`)
+See commit history (v0.3.0+) for implementation details.
 
-Multi-DDS support (CycloneDDS, etc.) tracked in ROB-105.
+### DDS Independence
+
+rmw_robotops is **fully DDS-agnostic**. It works identically with:
+- FastDDS (`rmw_fastrtps_cpp`) - default on ROS2 Jazzy
+- CycloneDDS (`rmw_cyclonedds_cpp`)
+- Connext DDS (`rmw_connextdds`)
+- Any future RMW implementation
+
+No DDS-specific code paths or feature detection required.
 
 ## Related Issues
 
@@ -289,6 +302,72 @@ Related to ROB-XX
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
+
+## Dependency Tracking
+
+### Regular Monitoring
+
+When working on this codebase, periodically check for upstream changes that may affect compatibility:
+
+1. **FastDDS releases**: https://github.com/eProsima/Fast-DDS/releases
+   - Watch for breaking changes in RTPS APIs we use (WriteParams, SampleIdentity, SampleInfo)
+   - Review migration guides for major version transitions
+
+2. **rmw_fastrtps updates**: https://github.com/ros2/rmw_fastrtps
+   - Track PRs affecting FastDDS version requirements
+   - Monitor Jazzy branch for backports
+
+3. **ROS2 distribution releases**: https://docs.ros.org/en/rolling/Releases.html
+   - Check which FastDDS version ships with each distribution
+   - Plan compatibility work before new distributions release
+
+### Version Boundaries
+
+See `COMPATIBILITY.md` for current supported versions. Key boundaries:
+
+- **FastDDS 2.x → 3.x**: Major breaking change (namespace, headers, some APIs)
+- **Within FastDDS 2.x**: API compatible, may need recompilation
+
+### When to Update
+
+- Before adding support for a new ROS2 distribution
+- When upstream reports security vulnerabilities
+- When users report compatibility issues
+
+## Documentation Maintenance
+
+### Architecture Documentation
+
+**CRITICAL: Keep ARCHITECTURE.md in sync with code changes.**
+
+When making significant changes, update `ARCHITECTURE.md` if they affect:
+
+- **Component responsibilities** - New components or changed roles
+- **Data flows** - Modified publish/subscribe/service paths
+- **Safety guarantees** - Changed safety contracts or implementation
+- **Trace context propagation** - Intra-process or cross-process correlation changes
+- **Thread safety model** - Locking, atomics, or concurrency patterns
+- **Edge cases** - New failure modes or behaviors
+- **Performance characteristics** - Changed overhead or resource usage
+
+**Examples requiring architecture doc updates:**
+- Adding new RMW interception points (e.g., actions, lifecycle)
+- Changing correlation strategy or metadata
+- Modifying queue behavior or background thread
+- Adding/removing safety guarantees
+- Changing thread-local storage usage
+
+**Minor changes NOT requiring updates:**
+- Bug fixes that don't change behavior
+- Performance optimizations within existing design
+- Code refactoring without functional changes
+- Documentation/comment improvements
+
+**Process:**
+1. Make code changes
+2. Update ARCHITECTURE.md if criteria above apply
+3. Include architecture doc changes in the same commit
+4. Reference doc updates in commit message
 
 ## Notes for Future Contributors
 

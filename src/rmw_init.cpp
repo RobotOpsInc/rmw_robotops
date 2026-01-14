@@ -29,6 +29,9 @@ extern "C" {
 // Publisher functions
 rmw_ret_t (* underlying_rmw_publish)(
   const rmw_publisher_t *, const void *, rmw_publisher_allocation_t *) = nullptr;
+rmw_ret_t (* underlying_rmw_publish_serialized_message)(
+  const rmw_publisher_t *, const rmw_serialized_message_t *,
+  rmw_publisher_allocation_t *) = nullptr;
 rmw_publisher_t * (* underlying_rmw_create_publisher)(
   const rmw_node_t *, const rosidl_message_type_support_t *,
   const char *, const rmw_qos_profile_t *, const rmw_publisher_options_t *) = nullptr;
@@ -136,6 +139,10 @@ extern "C" bool load_underlying_rmw() noexcept
   // Load required functions
   bool success = true;
   success &= load_function(underlying_rmw_lib, "rmw_publish", underlying_rmw_publish);
+  success &= load_function(
+    underlying_rmw_lib,
+    "rmw_publish_serialized_message",
+    underlying_rmw_publish_serialized_message);
   success &= load_function(
     underlying_rmw_lib, "rmw_create_publisher", underlying_rmw_create_publisher);
   success &= load_function(

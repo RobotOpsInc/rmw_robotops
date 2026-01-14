@@ -41,9 +41,7 @@ add_library(${PROJECT_NAME} SHARED
   src/trace_event_queue.cpp
   src/trace_publisher.cpp
   src/span_id_generator.cpp
-  src/dds_metadata.cpp
   src/config.cpp
-  src/correlation_strategy.cpp
   src/utils.cpp
   src/rmw_stubs.cpp
 )
@@ -75,6 +73,7 @@ ament_target_dependencies(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
   yaml-cpp
   robotops-config::robotops-config
+  xxhash
 )
 
 # Platform-specific libraries
@@ -104,6 +103,7 @@ install(
 # Testing
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(std_msgs REQUIRED)
 
   # Linting - Manual configuration to exclude ament_copyright
   # Note: ament_copyright doesn't support custom copyright holders like "Robot Ops Inc."
@@ -147,13 +147,20 @@ if(BUILD_TESTING)
   target_link_libraries(test_safety_guarantees ${PROJECT_NAME})
   ament_target_dependencies(test_safety_guarantees rmw rcutils)
 
-  # Integration tests
+  # Integration tests with real pub/sub (requires std_msgs)
   ament_add_gtest(test_context_propagation
     test/test_context_propagation.cpp
     TIMEOUT 60
   )
   target_link_libraries(test_context_propagation ${PROJECT_NAME})
-  ament_target_dependencies(test_context_propagation rmw rcutils)
+  ament_target_dependencies(test_context_propagation
+    rmw
+    rcutils
+    robotops_msgs
+    rosidl_runtime_c
+    rosidl_typesupport_introspection_c
+    std_msgs
+  )
 
   # Metadata extraction test
   ament_add_gtest(test_metadata_extraction
@@ -174,13 +181,6 @@ if(BUILD_TESTING)
   )
   target_link_libraries(test_service_tracing ${PROJECT_NAME})
   ament_target_dependencies(test_service_tracing rmw rcutils robotops_msgs)
-
-  # Correlation strategy tests
-  ament_add_gtest(test_correlation_strategies
-    test/test_correlation_strategies.cpp
-  )
-  target_link_libraries(test_correlation_strategies ${PROJECT_NAME})
-  ament_target_dependencies(test_correlation_strategies rmw rcutils robotops_msgs)
 
   # Performance benchmarks
   add_executable(benchmark_latency

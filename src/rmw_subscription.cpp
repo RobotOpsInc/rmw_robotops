@@ -21,8 +21,6 @@
 #include "rmw/error_handling.h"
 #include "rmw/rmw.h"
 #include "rmw_robotops/config.hpp"
-#include "rmw_robotops/correlation_strategy.hpp"
-#include "rmw_robotops/dds_metadata.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
@@ -63,6 +61,7 @@ struct SubscriptionMetadata
   char node_name[MAX_NODE_NAME_LENGTH];
   char node_namespace[MAX_NODE_NAME_LENGTH];
   char message_type[MAX_MESSAGE_TYPE_LENGTH];
+  const rosidl_typesupport_introspection_c__MessageMembers * members;
 };
 
 /// Cache of subscription metadata (keyed by subscription pointer)
@@ -87,7 +86,8 @@ void store_subscription_metadata(
     std::memcpy(metadata.node_namespace, node->namespace_, ns_len);
     metadata.node_namespace[ns_len] = '\0';
 
-    // Store message type name from type support
+    // Store message type name and introspection members from type support
+    metadata.members = nullptr;
     if (type_support != nullptr && type_support->data != nullptr) {
       const rosidl_message_type_support_t * ts =
         get_message_typesupport_handle(
@@ -104,6 +104,8 @@ void store_subscription_metadata(
             "%s/%s",
             members->message_namespace_,
             members->message_name_);
+          // Cache members pointer for content hashing
+          metadata.members = members;
         }
       }
     }
@@ -145,16 +147,6 @@ void remove_subscription_metadata(const rmw_subscription_t * subscription) noexc
   } catch (...) {
     // Safety guarantee: Never propagate exceptions
   }
-}
-
-/// Global correlation strategy (lazy initialized)
-std::unique_ptr<rmw_robotops::CorrelationStrategy> & get_correlation_strategy() noexcept
-{
-  static std::unique_ptr<rmw_robotops::CorrelationStrategy> strategy;
-  if (!strategy) {
-    strategy = rmw_robotops::create_correlation_strategy();
-  }
-  return strategy;
 }
 
 }  // anonymous namespace
@@ -224,6 +216,7 @@ rmw_take_with_info(
   rmw_subscription_allocation_t * allocation)
 {
   using rmw_robotops::compute_content_hash;
+  using rmw_robotops::compute_message_hash;
   using rmw_robotops::generate_span_id;
   using rmw_robotops::get_dds_domain_id;
   using rmw_robotops::get_trace_event_queue;
@@ -239,8 +232,7 @@ rmw_take_with_info(
     return RMW_RET_ERROR;
   }
 
-  // Get correlation strategy and tracing state (lazy init, outside critical path)
-  auto & strategy = get_correlation_strategy();
+  // Get tracing state
   bool tracing_active = is_tracing_enabled();
   char span_id_buf[17] = {0};
 
@@ -266,33 +258,28 @@ rmw_take_with_info(
   // STEP 3: Emit END event (AFTER underlying take, only if message was taken)
   if (ret == RMW_RET_OK && *taken && tracing_active) {
     try {
-      // Extract correlation metadata using strategy
-      TraceContext extracted_context;
+      // Extract correlation metadata directly from message_info
       rmw_robotops::CorrelationMetadata correlation_metadata;
+      if (message_info != nullptr) {
+        correlation_metadata.publisher_gid =
+          rmw_robotops::gid_to_hex_string(message_info->publisher_gid.data);
+        correlation_metadata.source_timestamp_ns = message_info->source_timestamp;
+        correlation_metadata.sequence_number = 0;  // Not used for content hash correlation
+      } else {
+        correlation_metadata.publisher_gid = "";
+        correlation_metadata.source_timestamp_ns = 0;
+        correlation_metadata.sequence_number = 0;
+      }
+      correlation_metadata.content_hash = 0;  // Will be computed below
+      correlation_metadata.correlation_method =
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
 
-      // Pass DDS-specific sample info if available
-      // (rmw_fastrtps stores it in implementation_identifier)
-      // For now, use nullptr - strategy will use message_info for fallback
-      const void * dds_sample_info = nullptr;
-
-      // NOTE: We don't have direct access to the serialized CDR buffer here
-      // because the underlying RMW handles deserialization internally.
-      // Estimate message size based on typical ROS message sizes (1KB average).
-      // True serialized size requires DDS-level interception (ROB-106).
-      size_t estimated_msg_size = 1024;  // Reasonable default for correlation
-
-      bool context_extracted = strategy->extract_context(
-        subscription,
-        message_info,
-        dds_sample_info,
-        ros_message,
-        estimated_msg_size,
-        extracted_context,
-        correlation_metadata);
+      // Attempt to get context from thread-local storage (intra-process only)
+      TraceContext extracted_context = rmw_robotops::get_trace_context();
 
       // Determine trace context for this span
       TraceContext new_context;
-      if (context_extracted && !extracted_context.is_empty()) {
+      if (!extracted_context.is_empty()) {
         // Continue existing trace
         std::memcpy(new_context.trace_id, extracted_context.trace_id,
             sizeof(new_context.trace_id) - 1);
@@ -330,19 +317,14 @@ rmw_take_with_info(
       // Set trace context for downstream propagation
       set_trace_context(new_context);
 
-      // Compute content hash if needed (for fallback correlation or verification)
+      // Compute content hash using introspection (always computed for correlation)
       uint64_t content_hash = 0;
-      if (!strategy->is_deterministic()) {
-        // NOTE: We don't have direct access to the serialized CDR buffer.
-        // Use message pointer + timestamp from message_info as a proxy.
-        // This matches the publisher-side hashing for correlation.
-        uint64_t timestamp_ns = 0;
-        if (message_info != nullptr) {
-          timestamp_ns = message_info->source_timestamp;
-        }
+      // Get cached introspection members for this subscription
+      SubscriptionMetadata sub_metadata;
+      bool have_metadata = get_subscription_metadata(subscription, sub_metadata);
 
-        uint64_t composite = reinterpret_cast<uintptr_t>(ros_message) ^ timestamp_ns;
-        content_hash = compute_content_hash(&composite, sizeof(composite));
+      if (have_metadata && sub_metadata.members != nullptr) {
+        content_hash = compute_message_hash(ros_message, sub_metadata.members);
       }
 
       // Emit LTTng tracepoint
@@ -384,7 +366,7 @@ rmw_take_with_info(
       start_event.msg_ptr = reinterpret_cast<uint64_t>(ros_message);
       start_event.content_hash = content_hash;
       start_event.dds_domain_id = get_dds_domain_id();
-      start_event.correlation_method = strategy->get_correlation_method();
+      start_event.correlation_method = correlation_metadata.correlation_method;
 
       // Correlation metadata from DDS
       size_t gid_len = std::min(correlation_metadata.publisher_gid.length(),
