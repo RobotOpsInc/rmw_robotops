@@ -60,7 +60,7 @@ inline uint32_t get_dds_domain_id() noexcept
   return static_cast<uint32_t>(domain);
 }
 
-/// Compute xxHash64 of message content for fallback correlation
+/// Compute xxHash64 of message content for correlation
 /// @param data Pointer to serialized message data
 /// @param size Size of data in bytes
 /// @return xxHash64 hash value, or 0 on failure

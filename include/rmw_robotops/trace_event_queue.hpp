@@ -79,11 +79,11 @@ struct TraceEvent
 
   // For correlation (matching publish to subscribe)
   char publisher_gid[MAX_PUBLISHER_GID_LENGTH];   // DDS publisher GUID (hex string)
-  uint64_t sequence_number;                       // Message sequence number
-  int64_t source_timestamp_ns;                    // Publisher's timestamp for fallback
+  uint64_t sequence_number;                       // Message sequence number (DDS-specific)
+  int64_t source_timestamp_ns;                    // Publisher's timestamp
 
-  // Content hash for fallback correlation (non-FastDDS)
-  // xxHash64 of serialized message (0 if not computed)
+  // Content hash for content-based correlation
+  // FNV-1a hash computed via message introspection (0 if not computed)
   uint64_t content_hash;
 
   // Pointer for span reconstruction (correlate with ros2_tracing)
@@ -97,7 +97,9 @@ struct TraceEvent
   uint32_t dds_domain_id;
 
   // Correlation metadata
-  uint8_t correlation_method;  // CORRELATION_FASTDDS_SEQUENCE, CORRELATION_FALLBACK_HASH, etc.
+  // Note: CORRELATION_FALLBACK_HASH is a historical name from robotops_msgs
+  // It's now the primary/only correlation method (content-based via introspection)
+  uint8_t correlation_method;  // From robotops_msgs TraceEvent constants
 
   // Legacy operation field (deprecated, use event_type instead)
   OperationType operation;

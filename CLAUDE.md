@@ -334,6 +334,41 @@ See `COMPATIBILITY.md` for current supported versions. Key boundaries:
 - When upstream reports security vulnerabilities
 - When users report compatibility issues
 
+## Documentation Maintenance
+
+### Architecture Documentation
+
+**CRITICAL: Keep ARCHITECTURE.md in sync with code changes.**
+
+When making significant changes, update `ARCHITECTURE.md` if they affect:
+
+- **Component responsibilities** - New components or changed roles
+- **Data flows** - Modified publish/subscribe/service paths
+- **Safety guarantees** - Changed safety contracts or implementation
+- **Trace context propagation** - Intra-process or cross-process correlation changes
+- **Thread safety model** - Locking, atomics, or concurrency patterns
+- **Edge cases** - New failure modes or behaviors
+- **Performance characteristics** - Changed overhead or resource usage
+
+**Examples requiring architecture doc updates:**
+- Adding new RMW interception points (e.g., actions, lifecycle)
+- Changing correlation strategy or metadata
+- Modifying queue behavior or background thread
+- Adding/removing safety guarantees
+- Changing thread-local storage usage
+
+**Minor changes NOT requiring updates:**
+- Bug fixes that don't change behavior
+- Performance optimizations within existing design
+- Code refactoring without functional changes
+- Documentation/comment improvements
+
+**Process:**
+1. Make code changes
+2. Update ARCHITECTURE.md if criteria above apply
+3. Include architecture doc changes in the same commit
+4. Reference doc updates in commit message
+
 ## Notes for Future Contributors
 
 - This package runs **inside every robot node process** - bugs here can crash robots
