@@ -40,6 +40,8 @@ add_library(${PROJECT_NAME} SHARED
   src/trace_context.cpp
   src/trace_event_queue.cpp
   src/trace_publisher.cpp
+  src/diagnostics_metrics.cpp
+  src/diagnostics_publisher.cpp
   src/span_id_generator.cpp
   src/config.cpp
   src/utils.cpp

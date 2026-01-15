@@ -22,6 +22,7 @@
 #include "rmw/rmw.h"
 #include "rmw/security_options.h"
 #include "rmw_robotops/config.hpp"
+#include "rmw_robotops/diagnostics_publisher.hpp"
 #include "rmw_robotops/trace_publisher.hpp"
 
 // Function pointers to underlying RMW implementation
@@ -225,14 +226,27 @@ rmw_init(const rmw_init_options_t * options, rmw_context_t * context)
     fprintf(stderr, "rmw_robotops: Warning: Failed to start trace publisher\n");
   }
 
+  // Start background diagnostics publisher (only if diagnostics enabled)
+  ret = rmw_robotops::start_diagnostics_publisher(context);
+  if (ret != RMW_RET_OK) {
+    // Non-fatal: diagnostics failed but RMW is initialized
+    fprintf(stderr, "rmw_robotops: Warning: Failed to start diagnostics publisher\n");
+  }
+
   return RMW_RET_OK;
 }
 
 rmw_ret_t
 rmw_shutdown(rmw_context_t * context)
 {
-  // Stop background trace publisher first (drains remaining events)
-  rmw_ret_t ret = rmw_robotops::stop_trace_publisher();
+  // Stop background diagnostics publisher first
+  rmw_ret_t ret = rmw_robotops::stop_diagnostics_publisher();
+  if (ret != RMW_RET_OK) {
+    fprintf(stderr, "rmw_robotops: Warning: Error stopping diagnostics publisher\n");
+  }
+
+  // Then stop trace publisher (drains remaining events)
+  ret = rmw_robotops::stop_trace_publisher();
   if (ret != RMW_RET_OK) {
     fprintf(stderr, "rmw_robotops: Warning: Error stopping trace publisher\n");
   }

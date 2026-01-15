@@ -78,6 +78,18 @@ inline const char * get_underlying_rmw() noexcept
   return get_config().tracing().underlying_rmw().c_str();
 }
 
+/// Check if diagnostics publishing is enabled
+inline bool is_diagnostics_enabled() noexcept
+{
+  return get_config().tracing().diagnostics().enabled();
+}
+
+/// Get diagnostics publishing interval in seconds
+inline int32_t get_diagnostics_interval_secs() noexcept
+{
+  return get_config().tracing().diagnostics().interval_secs();
+}
+
 }  // namespace rmw_robotops
 
 #endif  // RMW_ROBOTOPS__CONFIG_HPP_
