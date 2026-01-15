@@ -2,6 +2,21 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.5.0 (2026-01-15)
+-------------------
+
+* **NEW FEATURE**: Implemented diagnostics publishing to /robotops/diagnostics (ROB-128)
+* Added DiagnosticsPublisher with background thread publishing DiagnosticsReport at configurable intervals (default: 10s)
+* Implemented atomic metrics collection: traces_emitted, traces_dropped, auto_disabled counters
+* Added configuration support: tracing.diagnostics.enabled and tracing.diagnostics.interval_secs
+* Added environment variable overrides: ROBOTOPS_DIAGNOSTICS_ENABLED, ROBOTOPS_DIAGNOSTICS_INTERVAL_SECS
+* Integrated with robot_agent's existing DiagnosticsSubscriber for health monitoring
+* Diagnostics include: trace health, queue utilization, tracing state, RMW implementation
+* Implemented Linux clock sync detection (PTP via ptp4l, NTP via chrony, systemd-timesyncd)
+* Implemented Linux resource monitoring (/proc/self/status for RSS memory, /proc/self/task/{tid}/stat for thread CPU usage)
+* Clock sync info cached for 60 seconds to minimize overhead
+* All tests passing (13/13 including 5 linters)
+
 0.4.0 (2026-01-13)
 -------------------
 
