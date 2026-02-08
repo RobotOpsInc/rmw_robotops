@@ -34,11 +34,9 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin || echo "Warning: just installation failed, but continuing..."
 
 # Configure RobotOps APT repository
-# Add GPG key for package verification
-RUN curl -fsSL "${APT_REPO_URL}/gpg.key" | gpg --dearmor -o /etc/apt/keyrings/robotops.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/robotops.gpg] ${APT_REPO_URL} noble main" \
+RUN curl -fsSL ${APT_REPO_URL}/robotops-public-key.asc | gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] ${APT_REPO_URL} noble main" \
     > /etc/apt/sources.list.d/robotops.list && \
-    # Update package cache to include new repository
     apt-get update
 
 # Add custom rosdep rules for RobotOps packages
