@@ -1,0 +1,173 @@
+name: 'Publish Debian Package to S3'
+description: 'Publishes Debian packages to S3 using Aptly with GPG signing and CloudFront invalidation'
+
+inputs:
+  deb-files:
+    description: 'Path pattern to .deb files to publish'
+    required: true
+  apt-bucket:
+    description: 'S3 bucket name for apt repository'
+    required: true
+  cloudfront-distribution-id:
+    description: 'CloudFront distribution ID for cache invalidation'
+    required: true
+  gpg-private-key:
+    description: 'GPG private key for package signing (armored)'
+    required: true
+  gpg-passphrase:
+    description: 'GPG key passphrase (use empty string if no passphrase)'
+    required: false
+    default: ''
+  aws-region:
+    description: 'AWS region'
+    required: false
+    default: 'us-east-1'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Aptly
+      shell: bash
+      run: |
+        # Add Aptly repository
+        sudo mkdir -p /etc/apt/keyrings
+        wget -qO - https://www.aptly.info/pubkey.txt | gpg --dearmor | sudo tee /etc/apt/keyrings/aptly.gpg > /dev/null
+        echo "deb [signed-by=/etc/apt/keyrings/aptly.gpg] http://repo.aptly.info/ squeeze main" | sudo tee /etc/apt/sources.list.d/aptly.list
+
+        # Install Aptly and dependencies
+        # Note: AWS CLI is pre-installed on GitHub Actions runners
+        sudo apt-get update
+        sudo apt-get install -y aptly gnupg2
+
+    - name: Import GPG Key
+      shell: bash
+      run: |
+        # Import the GPG key
+        echo "${{ inputs.gpg-private-key }}" | gpg --batch --import
+
+        # Get the key ID
+        export GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2 | head -n1)
+        echo "GPG_KEY_ID=$GPG_KEY_ID" >> $GITHUB_ENV
+        echo "Imported GPG key: $GPG_KEY_ID"
+
+    - name: Configure Aptly
+      shell: bash
+      run: |
+        # Create Aptly config
+        mkdir -p ~/.aptly
+        cat > ~/.aptly.conf <<EOF
+        {
+          "rootDir": "$HOME/.aptly",
+          "downloadConcurrency": 4,
+          "downloadSpeedLimit": 0,
+          "architectures": ["amd64", "arm64"],
+          "dependencyFollowSuggests": false,
+          "dependencyFollowRecommends": false,
+          "dependencyFollowAllVariants": false,
+          "dependencyFollowSource": false,
+          "dependencyVerboseResolve": false,
+          "gpgDisableSign": false,
+          "gpgDisableVerify": false,
+          "gpgProvider": "gpg",
+          "downloadSourcePackages": false,
+          "skipLegacyPool": true,
+          "ppaDistributorID": "ubuntu",
+          "ppaCodename": "",
+          "skipContentsPublishing": false,
+          "FileSystemPublishEndpoints": {},
+          "S3PublishEndpoints": {
+            "robotops": {
+              "region": "${{ inputs.aws-region }}",
+              "bucket": "${{ inputs.apt-bucket }}"
+            }
+          },
+          "SwiftPublishEndpoints": {}
+        }
+        EOF
+
+    - name: Sync Existing Repo from S3
+      shell: bash
+      run: |
+        # Check if repo exists in S3 and sync it
+        if aws s3 ls s3://${{ inputs.apt-bucket }}/dists/ 2>/dev/null; then
+          echo "Existing repository found, syncing from S3..."
+          mkdir -p ~/.aptly/public
+          aws s3 sync s3://${{ inputs.apt-bucket }}/ ~/.aptly/public/ || echo "No existing repo to sync"
+        else
+          echo "No existing repository found in S3"
+        fi
+
+    - name: Create or Update Repository
+      shell: bash
+      run: |
+        REPO_NAME="robotops"
+        DISTRIBUTIONS="noble jammy focal"
+
+        # Try to restore from S3 snapshot if it exists
+        if aws s3 ls s3://${{ inputs.apt-bucket }}/.aptly/ 2>/dev/null; then
+          echo "Restoring Aptly database from S3..."
+          mkdir -p ~/.aptly
+          aws s3 sync s3://${{ inputs.apt-bucket }}/.aptly/ ~/.aptly/ || echo "No snapshot to restore"
+        fi
+
+        # Check if repo exists, create if not
+        if ! aptly repo list -raw | grep -q "^${REPO_NAME}$"; then
+          echo "Creating new Aptly repository: ${REPO_NAME}"
+          aptly repo create -distribution=noble -component=main ${REPO_NAME}
+        else
+          echo "Repository ${REPO_NAME} already exists"
+        fi
+
+        # Add all .deb files
+        echo "Adding packages to repository..."
+        for deb in ${{ inputs.deb-files }}; do
+          if [ -f "$deb" ]; then
+            echo "Adding: $deb"
+            aptly repo add ${REPO_NAME} "$deb"
+          fi
+        done
+
+    - name: Publish to S3
+      shell: bash
+      env:
+        GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
+      run: |
+        REPO_NAME="robotops"
+        DISTRIBUTIONS="noble jammy focal"
+
+        # For each distribution
+        for dist in $DISTRIBUTIONS; do
+          # Check if this distribution is already published
+          if aptly publish list -raw | grep -q "^s3:robotops:\. ${dist}$"; then
+            echo "Updating existing publication for ${dist}..."
+            aptly publish update -batch -passphrase="${GPG_PASSPHRASE}" -gpg-key="${GPG_KEY_ID}" ${dist} s3:robotops:
+          else
+            echo "Creating new publication for ${dist}..."
+            aptly publish repo -batch -passphrase="${GPG_PASSPHRASE}" -gpg-key="${GPG_KEY_ID}" -distribution=${dist} -component=main ${REPO_NAME} s3:robotops:
+          fi
+        done
+
+        # Backup Aptly database to S3 for future runs
+        echo "Backing up Aptly database to S3..."
+        aws s3 sync ~/.aptly/ s3://${{ inputs.apt-bucket }}/.aptly/ --exclude "public/*"
+
+    - name: Invalidate CloudFront Cache
+      shell: bash
+      run: |
+        echo "Invalidating CloudFront cache..."
+        aws cloudfront create-invalidation \
+          --distribution-id ${{ inputs.cloudfront-distribution-id }} \
+          --paths "/*" \
+          --region us-east-1
+
+    - name: Summary
+      shell: bash
+      run: |
+        echo "✅ Debian packages published successfully!"
+        echo "Repository: https://${{ inputs.apt-bucket }}.s3.${{ inputs.aws-region }}.amazonaws.com/"
+        echo "Packages published:"
+        for deb in ${{ inputs.deb-files }}; do
+          if [ -f "$deb" ]; then
+            echo "  - $(basename $deb)"
+          fi
+        done

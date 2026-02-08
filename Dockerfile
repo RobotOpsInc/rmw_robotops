@@ -5,13 +5,10 @@
 # ============================================================================
 FROM ros:jazzy-ros-base AS base
 
-# Build arguments for configurable Cloudsmith repository
-# Production
-ARG CLOUDSMITH_REPO=robotops
-# Development
-# ARG CLOUDSMITH_REPO=robotops-development
-ARG CLOUDSMITH_USERNAME
-ARG CLOUDSMITH_API_KEY
+# Build argument for configurable APT repository environment
+# Production: apt.robotops.com
+# Development: apt.development.robotops.com
+ARG APT_REPO_URL=https://apt.robotops.com
 
 # Install core build dependencies and packaging tools
 RUN apt-get update && apt-get install -y \
@@ -30,21 +27,21 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libxxhash-dev \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install just command runner (make installation non-fatal in case of download issues)
 RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin || echo "Warning: just installation failed, but continuing..."
 
-# Configure Cloudsmith APT repositories
-# 1. Development repository (private) - for in-development packages
-# 2. Public repository - for released packages like robotops-config
-RUN echo "deb [trusted=yes] https://${CLOUDSMITH_USERNAME}:${CLOUDSMITH_API_KEY}@dl.cloudsmith.io/basic/robotops/${CLOUDSMITH_REPO}/deb/ubuntu noble main" \
-    > /etc/apt/sources.list.d/robotops-${CLOUDSMITH_REPO}.list && \
-    curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | bash && \
-    # Update package cache to include new repositories
+# Configure RobotOps APT repository
+# Add GPG key for package verification
+RUN curl -fsSL "${APT_REPO_URL}/gpg.key" | gpg --dearmor -o /etc/apt/keyrings/robotops.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/robotops.gpg] ${APT_REPO_URL} noble main" \
+    > /etc/apt/sources.list.d/robotops.list && \
+    # Update package cache to include new repository
     apt-get update
 
-# Add custom rosdep rules for RobotOps packages (from Cloudsmith, not rosdistro)
+# Add custom rosdep rules for RobotOps packages
 RUN mkdir -p /etc/ros/rosdep/sources.list.d && \
     printf '%s\n' \
     'robotops-config:' '  ubuntu:' '    - ros-jazzy-robotops-config' \

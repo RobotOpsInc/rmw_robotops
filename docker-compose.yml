@@ -8,12 +8,9 @@ services:
       dockerfile: Dockerfile
       target: dev
       args:
-        # Production
-        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops}
-        # Development
-        # CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
-        CLOUDSMITH_USERNAME: ${CLOUDSMITH_USERNAME}
-        CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY}
+        # Production: https://apt.robotops.com
+        # Development: https://apt.development.robotops.com
+        APT_REPO_URL: ${APT_REPO_URL:-https://apt.robotops.com}
     image: rmw_robotops:dev
     volumes:
       - .:/workspace/src/rmw_robotops
@@ -40,12 +37,9 @@ services:
       dockerfile: Dockerfile
       target: test
       args:
-        # Production
-        CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops}
-        # Development
-        # CLOUDSMITH_REPO: ${CLOUDSMITH_REPO:-robotops-development}
-        CLOUDSMITH_USERNAME: ${CLOUDSMITH_USERNAME}
-        CLOUDSMITH_API_KEY: ${CLOUDSMITH_API_KEY}
+        # Production: https://apt.robotops.com
+        # Development: https://apt.development.robotops.com
+        APT_REPO_URL: ${APT_REPO_URL:-https://apt.robotops.com}
     image: rmw_robotops:test
     volumes:
       - .:/workspace/src/rmw_robotops

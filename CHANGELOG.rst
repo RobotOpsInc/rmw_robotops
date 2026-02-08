@@ -2,6 +2,21 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.6.0 (2026-02-08)
+-------------------
+
+* **INFRASTRUCTURE**: Migrated from Cloudsmith to AWS S3-based package hosting using Aptly (ROB-127)
+* Replaced Cloudsmith with AWS S3/Aptly for Debian package hosting
+* Updated release.yml and release-dev.yml workflows to publish to S3 via custom GitHub action
+* Removed Cloudsmith authentication requirements from Dockerfile and docker-compose.yml
+* Production APT repository: https://apt.robotops.com
+* Development APT repository: https://apt.development.robotops.com
+* Updated CLAUDE.md documentation to reflect new package hosting infrastructure
+* Cost savings: Reduced hosting costs from $149/month to ~$1-5/month
+* **BREAKING**: Cloudsmith credentials (CLOUDSMITH_USERNAME, CLOUDSMITH_API_KEY) no longer used
+* **BREAKING**: Optional APT_REPO_URL environment variable replaces CLOUDSMITH_REPO
+* No authentication required - all packages are now publicly accessible
+
 0.5.0 (2026-01-15)
 -------------------
 
