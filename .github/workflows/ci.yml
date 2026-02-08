@@ -15,12 +15,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Prepare Cloudsmith credentials
-        run: |
-          # Service account format: service_account_username:api_key
-          mkdir -p ~/.cloudsmith
-          echo "github-actions-bk1d:${{ secrets.CLOUDSMITH_API_KEY }}" > ~/.cloudsmith/key
-
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
@@ -30,10 +24,10 @@ jobs:
           push: false
           load: true
           tags: rmw_robotops:ci
+          build-args: |
+            APT_REPO_URL=https://apt.robotops.com
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          secret-files: |
-            cloudsmith_key=/home/runner/.cloudsmith/key
 
       - name: Run CI suite (lint, build, test)
         run: |

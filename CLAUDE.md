@@ -83,7 +83,7 @@ Each command:
 4. Workflow:
    - Creates git tag `v{version}` (e.g., `v0.1.5`)
    - Builds Debian packages for amd64 and arm64
-   - Publishes to Cloudsmith `robotops` repo
+   - Publishes to AWS S3 via Aptly at https://apt.robotops.com
    - Creates GitHub Release with changelog excerpt
 
 #### Development Release (from `development` branch)
@@ -93,7 +93,7 @@ Each command:
 3. Workflow:
    - Creates git tag `v{version}-development-{sha}` (e.g., `v0.1.5-development-abc123`)
    - Builds Debian packages for amd64 and arm64
-   - Publishes to Cloudsmith `robotops-development` repo
+   - Publishes to AWS S3 via Aptly at https://apt.development.robotops.com
    - Creates GitHub Pre-Release with changelog excerpt
 
 **Both workflows support dry-run mode** for validation before actual release.
@@ -103,7 +103,7 @@ Each command:
 Pull requests to `main` or `development` automatically verify:
 - Version in `package.xml` has been incremented
 - CHANGELOG.rst has an entry for the new version (format: `X.Y.Z (YYYY-MM-DD)`)
-- New version is higher than latest published version in Cloudsmith
+- New version is higher than latest published version in APT repository
 
 If these checks fail, update your version and changelog before merging.
 
@@ -179,27 +179,31 @@ colcon build  # This will fail - ROS2 not installed!
 ### Multi-Stage Dockerfile
 
 Single `Dockerfile` with build stages:
-- `base` - Common dependencies (ROS2, FastDDS, Cloudsmith, robotops_msgs)
+- `base` - Common dependencies (ROS2, FastDDS, APT repository, robotops_msgs)
 - `dev` - Development environment (extends base)
 - `test` - Test environment with sanitizers (extends base)
 
 This keeps the setup DRY and maintainable.
 
-### Cloudsmith Authentication
+### APT Repository Configuration
 
-Private `robotops_msgs` dependency requires Cloudsmith credentials:
+RobotOps packages (`robotops_msgs`, `robotops_config`) are hosted on AWS S3 and served via public APT repositories:
+
+- **Production**: https://apt.robotops.com (default)
+- **Development**: https://apt.development.robotops.com
+
+The production repository is used by default. To use the development repository:
 
 ```bash
 # Copy template and configure
 cp .env.local.template .env.local
-# Edit .env.local with your credentials:
-# CLOUDSMITH_USERNAME=your-username
-# CLOUDSMITH_API_KEY=your-api-key
+# Edit .env.local to use development repository:
+# APT_REPO_URL=https://apt.development.robotops.com
 ```
 
 The `.env.local` file is automatically loaded by `docker-compose` and must **never be committed** (see `.gitignore`).
 
-Each developer uses their own Cloudsmith username and API key.
+No authentication is required - all packages are publicly accessible.
 
 ### Viewing robotops_msgs Schemas
 
