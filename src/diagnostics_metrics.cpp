@@ -11,11 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include <iostream>
-// TODO(robotops): Latency benchmarks to verify <1μs overhead requirement (see ROB-113)
-int main(int argc, char ** argv)
+
+#include "rmw_robotops/diagnostics_metrics.hpp"
+
+namespace rmw_robotops
 {
-  (void)argc; (void)argv;
-  std::cout << "Latency benchmark - placeholder\n";
-  return 0;
+
+DiagnosticsMetrics & get_diagnostics_metrics() noexcept
+{
+  // Thread-safe static initialization (C++11 guarantee)
+  static DiagnosticsMetrics metrics;
+  return metrics;
 }
+
+}  // namespace rmw_robotops

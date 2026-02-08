@@ -21,6 +21,7 @@
 #include "rmw/error_handling.h"
 #include "rmw/rmw.h"
 #include "rmw_robotops/config.hpp"
+#include "rmw_robotops/diagnostics_metrics.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
@@ -347,8 +348,12 @@ rmw_publish(
         !get_trace_event_queue().try_push(end_event))
       {
         record_trace_failure();
+        rmw_robotops::increment_traces_dropped();
+        rmw_robotops::increment_traces_dropped();  // Two events dropped
       } else {
         record_trace_success();
+        rmw_robotops::increment_traces_emitted();
+        rmw_robotops::increment_traces_emitted();  // Two events emitted (start + end)
       }
     } catch (...) {
       record_trace_failure();
@@ -491,8 +496,12 @@ rmw_publish_serialized_message(
         !get_trace_event_queue().try_push(end_event))
       {
         record_trace_failure();
+        rmw_robotops::increment_traces_dropped();
+        rmw_robotops::increment_traces_dropped();  // Two events dropped
       } else {
         record_trace_success();
+        rmw_robotops::increment_traces_emitted();
+        rmw_robotops::increment_traces_emitted();  // Two events emitted (start + end)
       }
     } catch (...) {
       record_trace_failure();

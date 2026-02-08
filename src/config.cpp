@@ -23,6 +23,8 @@
 #include <robotops/config/v1/defaults.hpp>  // NOLINT(build/include_order)
 #include <yaml-cpp/yaml.h>  // NOLINT(build/include_order)
 
+#include "rmw_robotops/diagnostics_metrics.hpp"
+
 namespace rmw_robotops
 {
 
@@ -142,6 +144,21 @@ static void apply_yaml_config(
             perf["failure_threshold"].as<uint32_t>());
         }
       }
+
+      // Diagnostics section
+      if (tracing["diagnostics"]) {
+        const auto & diag = tracing["diagnostics"];
+
+        if (diag["enabled"]) {
+          config.mutable_tracing()->mutable_diagnostics()->set_enabled(
+            diag["enabled"].as<bool>());
+        }
+
+        if (diag["interval_secs"]) {
+          config.mutable_tracing()->mutable_diagnostics()->set_interval_secs(
+            diag["interval_secs"].as<int32_t>());
+        }
+      }
     }
   } catch (const std::exception & e) {
     RCUTILS_LOG_WARN_NAMED(
@@ -171,6 +188,19 @@ static void apply_env_overrides(robotops::config::v1::Config & config) noexcept
     "ROBOTOPS_FAILURE_THRESHOLD",
     config.tracing().performance().failure_threshold());
   config.mutable_tracing()->mutable_performance()->set_failure_threshold(failure_threshold);
+
+  // ROBOTOPS_DIAGNOSTICS_ENABLED: Enable/disable diagnostics publishing
+  bool diag_enabled = get_env_bool(
+    "ROBOTOPS_DIAGNOSTICS_ENABLED",
+    config.tracing().diagnostics().enabled());
+  config.mutable_tracing()->mutable_diagnostics()->set_enabled(diag_enabled);
+
+  // ROBOTOPS_DIAGNOSTICS_INTERVAL_SECS: Diagnostics publishing interval
+  uint32_t diag_interval = get_env_uint32(
+    "ROBOTOPS_DIAGNOSTICS_INTERVAL_SECS",
+    config.tracing().diagnostics().interval_secs());
+  config.mutable_tracing()->mutable_diagnostics()->set_interval_secs(
+    static_cast<int32_t>(diag_interval));
 }
 
 // Load configuration with layered precedence:
@@ -274,6 +304,7 @@ void record_trace_failure() noexcept
   if (failures > state.failure_threshold) {
     // Auto-disable tracing (safety guarantee #7)
     state.enabled.store(false, std::memory_order_relaxed);
+    mark_auto_disabled();  // Track for diagnostics
 
     RCUTILS_LOG_ERROR_NAMED(
       "rmw_robotops",
