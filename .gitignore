@@ -3,6 +3,10 @@ build/
 install/
 log/
 
+# Rust (demo-agent/)
+demo-agent/target/
+demo-agent/Cargo.lock
+
 # IDE
 .vscode/
 .idea/

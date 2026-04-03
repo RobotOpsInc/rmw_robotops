@@ -2,6 +2,18 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.8.0 (2026-04-03)
+-------------------
+
+* **NEW FEATURE**: Add ``robotops-demo-agent`` — lightweight standalone Rust demo agent for local trace evaluation (GH-38)
+* ``demo-agent/`` subdirectory: standalone Cargo project, no colcon required, builds with ``cargo build --release``
+* Subscribes to ``/robotops/trace_events``, ``/robotops/trace_context``, and ``/rosout`` via r2r
+* Span reconstruction (START/END pairing) and cross-process correlation (GID + timestamp + content hash) ported from robot_agent
+* Log-to-trace correlation via ``TraceContextRegistry`` (keyed by ROS2 logger name, matching ``/rosout`` ``Log.name`` format)
+* Default output: DuckDB with OTel-compatible ``otel_traces`` and ``otel_logs`` tables conforming to ROSQL protocol (rosql.org)
+* CDR-compatible message structs with round-trip unit tests for drift detection (no ``robotops-msgs`` C library dependency)
+* Added "Getting started: end-to-end evaluation" section to README; not for production — use robot_agent for production deployments
+
 0.7.0 (2026-04-03)
 -------------------
 
