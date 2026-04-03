@@ -2,6 +2,16 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.0 (2026-04-03)
+-------------------
+
+* **NEW FEATURE**: Implement TraceContextChange publisher for end-to-end log-to-trace correlation (ROB-179)
+* Added ``TraceContextChangePublisher``: background thread publishing to ``/robotops/trace_context`` with 512-slot MPSC ring buffer, best-effort QoS, following existing ``trace_publisher.cpp`` pattern
+* Emit ``CONTEXT_ENTERED`` in ``rmw_take_with_info``, ``rmw_take_request``, ``rmw_take_response`` when thread-local trace context is set after receiving a message
+* Emit ``CONTEXT_EXITED`` in ``rmw_publish`` and ``rmw_send_response`` when the downstream operation completes
+* Fills the gap between ROB-94 (robot_agent subscriber) and ROB-55 (rmw_robotops trace events): ``robot_agent`` can now correlate ``/rosout`` logs with active trace spans
+* Added ``get_current_thread_id()`` utility to ``utils.hpp`` for multi-threaded executor support
+
 0.6.0 (2026-02-08)
 -------------------
 
