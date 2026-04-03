@@ -39,4 +39,4 @@ jobs:
             -w /workspace \
             --entrypoint "" \
             robotops-demo-agent:ci \
-            bash -c "source /opt/ros/jazzy/setup.bash && cargo fmt -- --check && cargo clippy --all-targets -- -D warnings && cargo build --release && cargo test"
+            bash -c "source /opt/ros/jazzy/setup.bash && cargo fmt -- --check && cargo clippy --all-targets -- -D warnings && cargo build && cargo test"

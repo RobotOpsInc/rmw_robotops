@@ -33,6 +33,10 @@ RUN DUCKDB_VER=v1.5.1 && \
     ldconfig && \
     rm -rf /tmp/libduckdb /tmp/libduckdb.zip
 
+# Tell libduckdb-sys where to find the system library at link time
+ENV DUCKDB_LIB_DIR=/usr/local/lib
+ENV DUCKDB_INCLUDE_DIR=/usr/local/include
+
 # Configure RobotOps APT repository and install robotops-msgs
 # (r2r needs the message type support libraries at build and runtime)
 RUN curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
