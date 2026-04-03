@@ -8,7 +8,33 @@ Subscribes to `/robotops/trace_events`, `/robotops/trace_context`, and `/rosout`
 
 ---
 
-## Prerequisites
+## Pre-compiled binaries
+
+Pre-compiled Linux binaries (amd64 and arm64) are attached to each
+[GitHub Release](https://github.com/RobotOpsInc/rmw_robotops/releases):
+
+```bash
+# amd64
+curl -fsSL -o robotops-demo-agent \
+  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-amd64
+chmod +x robotops-demo-agent
+./robotops-demo-agent --help
+```
+
+```bash
+# arm64 (e.g. Raspberry Pi 5, Jetson running Ubuntu 24.04)
+curl -fsSL -o robotops-demo-agent \
+  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-arm64
+chmod +x robotops-demo-agent
+./robotops-demo-agent --help
+```
+
+> **Note:** The binary requires ROS2 Jazzy runtime libraries and `ros-jazzy-robotops-msgs`
+> to be installed. Source `/opt/ros/jazzy/setup.bash` before running.
+
+---
+
+## Prerequisites (build from source)
 
 - **ROS2 Jazzy** installed (see [ROS2 installation](https://docs.ros.org/en/jazzy/Installation.html))
 - **Rust stable** toolchain (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)

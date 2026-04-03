@@ -5,6 +5,7 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[command(
     name = "robotops-demo-agent",
+    version,
     about = "Lightweight demo agent for evaluating rmw_robotops observability locally",
     long_about = "Subscribes to /robotops/trace_events, /robotops/trace_context, and /rosout,\n\
                   reconstructs distributed trace spans, and writes OTel-compatible Parquet files\n\
