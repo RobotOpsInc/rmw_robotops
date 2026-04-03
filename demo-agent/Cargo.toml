@@ -43,36 +43,21 @@ chrono = "0.4"
 # Pin to Cargo-1.82-compatible release (same reason as robot_agent)
 home = "=0.5.11"
 
-# DuckDB (default output; links against system libduckdb in CI,
-# use --features duckdb-output/bundled for standalone release builds)
-[dependencies.duckdb]
-version = "1"
-optional = true
+# Parquet output (pure Rust, no C++ compilation)
+arrow = { version = "58", default-features = false, features = ["ipc"] }
+parquet = { version = "58", features = ["arrow", "snap"] }
 
-# PostgreSQL (optional output)
-[dependencies.tokio-postgres]
-version = "0.7"
-optional = true
+# Unified object store: local filesystem + S3-compatible storage
+object_store = { version = "0.11", features = ["aws"] }
 
-# OTLP gRPC (optional output)
-[dependencies.tonic]
-version = "0.14"
-optional = true
+# URL parsing for s3:// URIs
+url = "2"
 
-[dependencies.prost]
-version = "0.14"
-optional = true
+# In-memory byte buffer for Parquet serialisation
+bytes = "1"
 
-[dependencies.opentelemetry-proto]
-version = "0.31"
-features = ["gen-tonic", "logs", "trace"]
-optional = true
-
-[features]
-default = ["duckdb-output"]
-duckdb-output = ["dep:duckdb"]
-postgres = ["dep:tokio-postgres"]
-otlp = ["dep:tonic", "dep:prost", "dep:opentelemetry-proto"]
+[dev-dependencies]
+tempfile = "3"
 
 [profile.release]
 opt-level = "z"

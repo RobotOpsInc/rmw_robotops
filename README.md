@@ -24,69 +24,22 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 
 ## Getting started: end-to-end evaluation
 
-The quickest way to see rmw_robotops + ROSQL in action is to run the `robotops-demo-agent` locally. This is a lightweight demo tool — not for production. For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [Robot Ops](https://robotops.com).
-
-### 1. Install rmw_robotops
+The quickest way to see rmw_robotops + ROSQL in action is to run the `robotops-demo-agent` locally.
 
 ```bash
-# Add RobotOps APT repository (one-time setup)
-echo "deb [signed-by=/usr/share/keyrings/robotops.gpg] https://apt.robotops.com jazzy main" \
-  | sudo tee /etc/apt/sources.list.d/robotops.list
-curl -fsSL https://apt.robotops.com/robotops.gpg | sudo tee /usr/share/keyrings/robotops.gpg > /dev/null
+# Build
+source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
 
-# Install
-sudo apt update
-sudo apt install ros-jazzy-rmw-robotops
+# Run (writes Parquet to ./telemetry/)
+./target/release/robotops-demo-agent
+
+# Query with DuckDB
+duckdb -c "SELECT count(*) FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')"
 ```
 
-### 2. Build the demo agent
+For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
 
-```bash
-cd demo-agent
-cargo build --release
-```
-
-### 3. Install ROSQL
-
-```bash
-cargo install rosql --features server,duckdb
-```
-
-### 4. Start your ROS2 system with tracing enabled
-
-```bash
-export RMW_IMPLEMENTATION=rmw_robotops
-export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
-ros2 launch my_robot my_launch.py
-```
-
-### 5. Run the demo agent
-
-```bash
-./target/release/robotops-demo-agent --output duckdb:///telemetry.db
-```
-
-### 6. Query with ROSQL
-
-```bash
-# Find recent errors
-rosql query "FROM traces WHERE status = 'ERROR' SINCE 5 min ago" \
-  --backend duckdb --url duckdb:///telemetry.db
-
-# Trace message causality for a specific trace
-rosql query "MESSAGE JOURNEY FOR TRACE 'abc123'" \
-  --backend duckdb --url duckdb:///telemetry.db
-
-# Cross-signal correlation: errors during low battery
-rosql query "FROM traces WHERE status = 'ERROR' DURING(FROM topics WHERE topic_name = '/battery_state' AND fields['percentage'] < 15) SINCE 1 hour ago" \
-  --backend duckdb --url duckdb:///telemetry.db
-
-# Log-to-trace correlation (requires TraceContextChange subscriber)
-rosql query "FROM logs WHERE trace_id = 'abc123'" \
-  --backend duckdb --url duckdb:///telemetry.db
-```
-
-> **Note:** `robotops-demo-agent` outputs data conforming to the OTel schema documented at [rosql.org](https://rosql.org). This makes it straightforward to validate the protocol and build your own tooling on top.
+> `robotops-demo-agent` is a demo/evaluation tool. For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
 
 ---
 

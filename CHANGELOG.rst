@@ -2,6 +2,17 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.0 (2026-04-03)
+-------------------
+
+* **BREAKING**: Replace DuckDB output with pure-Rust Parquet export in ``demo-agent`` — eliminates 5-10 min C++ compilation on first build
+* ``demo-agent``: write OTel-compatible Parquet files to ``<output>/robotops_demo_agent/<yyyymmdd-hhmmss>/traces/`` and ``logs/`` (queryable with ``SELECT * FROM read_parquet('...')`` in DuckDB/ROSQL)
+* ``demo-agent``: add S3/S3-compatible output via ``-o s3://bucket/prefix`` (reads ``AWS_PROFILE``, ``AWS_REGION``, ``AWS_ENDPOINT_URL``, ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``)
+* ``demo-agent``: add ``--limit-mb`` flag (default 200) for graceful shutdown when storage limit is reached
+* ``demo-agent``: startup greeting now prints session path, storage limit, and version
+* ``demo-agent``: simplified Dockerfile — removed DuckDB system library install block
+* Remove ``duckdb``, ``postgres``, and ``otlp`` feature flags from demo-agent (single portable output format)
+
 0.8.0 (2026-04-03)
 -------------------
 

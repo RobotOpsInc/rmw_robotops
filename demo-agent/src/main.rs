@@ -5,8 +5,7 @@
 //!   - `/robotops/trace_context`  → log-to-trace correlation context
 //!   - `/rosout`                  → log capture with trace enrichment
 //!
-//! Exports OTel-compatible records to DuckDB (default), PostgreSQL, or OTLP gRPC,
-//! conforming to the schema expected by ROSQL (see rosql.org).
+//! Writes OTel-compatible Parquet files conforming to the ROSQL schema (see rosql.org).
 //!
 //! **This is a demo/evaluation tool — not for production.** For production deployments
 //! with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet
@@ -21,7 +20,8 @@ mod ros2;
 mod subscribers;
 
 use crate::cli::Cli;
-use crate::export::create_exporter;
+use crate::error::BridgeError;
+use crate::export::parquet::ParquetExporter;
 use crate::pipeline::correlation_engine::{CorrelationConfig, CorrelationEngine};
 use crate::pipeline::otel_builder::ExportRecord;
 use crate::pipeline::span_reconstructor::SpanReconstructor;
@@ -36,11 +36,13 @@ use tokio::sync::mpsc;
 use tokio::time;
 use tracing::{error, info};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Initialise logging
+    // Initialise structured logging (RUST_LOG controls level; default: info)
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -48,13 +50,29 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    info!(output = %cli.output, "robotops-demo-agent starting");
+    // Create exporter — get session path before boxing so we can show it in the greeting
+    let parquet = ParquetExporter::new(&cli.output, cli.batch_size, cli.limit_mb)
+        .map_err(|e| anyhow::anyhow!("Failed to initialise output: {}", e))?;
+    let session_display = format!(
+        "{}/{}",
+        cli.output.trim_end_matches('/'),
+        parquet.session_path()
+    );
+    let mut exporter: Box<dyn export::SpanExporter> = Box::new(parquet);
 
-    // Create exporter
-    let mut exporter = create_exporter(&cli.output)
-        .map_err(|e| anyhow::anyhow!("Failed to create exporter: {}", e))?;
-
-    info!("Exporter initialised: {}", cli.output);
+    // Startup greeting — always printed to stdout regardless of log level
+    println!();
+    println!("robotops-demo-agent v{VERSION}");
+    println!("Writing to:    {session_display}");
+    println!("Storage limit: {} MB", cli.limit_mb);
+    println!();
+    println!("Subscribing to /robotops/trace_events, /robotops/trace_context, /rosout...");
+    println!("Press Ctrl-C to stop.");
+    println!();
+    println!("For production-grade telemetry with fleet management, MCAP recording,");
+    println!("and offline buffering, visit https://robotops.com");
+    println!("Questions? hello@robotops.com");
+    println!();
 
     // Shared pipeline components
     let registry = Arc::new(TraceContextRegistry::new());
@@ -66,7 +84,7 @@ async fn main() -> anyhow::Result<()> {
     };
     let correlation = Arc::new(Mutex::new(CorrelationEngine::new(correlation_config)));
 
-    // Export channel — subscribers → exporter task
+    // Export channel — subscribers → main loop
     let (export_tx, mut export_rx) = mpsc::unbounded_channel::<ExportRecord>();
 
     // ROS2 context (creates shared node + spin thread)
@@ -76,7 +94,6 @@ async fn main() -> anyhow::Result<()> {
 
     info!("ROS2 node created, subscribing to topics...");
 
-    // Start all three subscribers
     subscribers::trace_subscriber::spawn(
         node.clone(),
         reconstructor.clone(),
@@ -88,10 +105,9 @@ async fn main() -> anyhow::Result<()> {
 
     subscribers::rosout_subscriber::spawn(node.clone(), registry.clone(), export_tx.clone())?;
 
-    info!("Subscribed to /robotops/trace_events, /robotops/trace_context, /rosout");
-    info!("Bridge running — press Ctrl-C to stop");
+    info!("All subscribers active");
 
-    // Periodic cleanup task for the correlation window
+    // Periodic cleanup of the correlation window
     let correlation_cleanup = correlation.clone();
     tokio::spawn(async move {
         let mut interval = time::interval(Duration::from_secs(10));
@@ -101,48 +117,64 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
-    // Periodic flush + drain export channel
     let batch_size = cli.batch_size;
     let flush_interval = Duration::from_millis(cli.flush_interval_ms);
 
-    // Main export loop with ctrl-c shutdown
     let mut flush_timer = time::interval(flush_interval);
-    // Don't fire immediately on first tick
     flush_timer.set_missed_tick_behavior(time::MissedTickBehavior::Skip);
-    flush_timer.tick().await;
+    flush_timer.tick().await; // Don't fire immediately
+
+    let mut limit_reached = false;
 
     loop {
         tokio::select! {
-            // Ctrl-C / SIGTERM
             _ = signal::ctrl_c() => {
                 info!("Shutdown signal received, flushing...");
                 break;
             }
 
-            // Periodic flush
             _ = flush_timer.tick() => {
                 drain_channel(&mut export_rx, &mut *exporter, batch_size);
-                if let Err(e) = exporter.flush() {
-                    error!("Flush error: {}", e);
+                match exporter.flush() {
+                    Ok(()) => {}
+                    Err(BridgeError::StorageLimitReached) => {
+                        println!(
+                            "\nStorage limit of {} MB reached — flushing and shutting down.",
+                            cli.limit_mb
+                        );
+                        limit_reached = true;
+                        break;
+                    }
+                    Err(e) => error!("Flush error: {}", e),
                 }
             }
 
-            // New records available
             Some(record) = export_rx.recv() => {
-                write_record(&mut *exporter, record);
-                // Drain any additional records that arrived together
+                match write_record(&mut *exporter, record) {
+                    Ok(()) => {}
+                    Err(BridgeError::StorageLimitReached) => {
+                        println!(
+                            "\nStorage limit of {} MB reached — flushing and shutting down.",
+                            cli.limit_mb
+                        );
+                        limit_reached = true;
+                        break;
+                    }
+                    Err(e) => tracing::warn!("Export error: {}", e),
+                }
                 drain_channel(&mut export_rx, &mut *exporter, batch_size.saturating_sub(1));
             }
         }
     }
 
-    // Final flush
+    // Final flush — best-effort, storage limit on shutdown is acceptable
     drop(export_tx);
     while let Ok(record) = export_rx.try_recv() {
-        write_record(&mut *exporter, record);
+        let _ = write_record(&mut *exporter, record);
     }
-    if let Err(e) = exporter.flush() {
-        error!("Final flush error: {}", e);
+    match exporter.flush() {
+        Ok(()) | Err(BridgeError::StorageLimitReached) => {}
+        Err(e) => error!("Final flush error: {}", e),
     }
 
     let (pub_pending, take_pending, action_pending, svc_pending) =
@@ -153,15 +185,17 @@ async fn main() -> anyhow::Result<()> {
             subscribe = take_pending,
             actions = action_pending,
             services = svc_pending,
-            "Shutdown with unmatched START events (spans will be incomplete)"
+            "Shutdown with unmatched START events (some spans will be incomplete)"
         );
     }
 
+    if limit_reached {
+        println!("Data written to: {session_display}");
+    }
     info!("robotops-demo-agent stopped cleanly");
     Ok(())
 }
 
-/// Drain up to `max` records from the channel without blocking.
 fn drain_channel(
     rx: &mut mpsc::UnboundedReceiver<ExportRecord>,
     exporter: &mut dyn export::SpanExporter,
@@ -169,23 +203,20 @@ fn drain_channel(
 ) {
     for _ in 0..max {
         match rx.try_recv() {
-            Ok(record) => write_record(exporter, record),
+            Ok(record) => {
+                let _ = write_record(exporter, record);
+            }
             Err(_) => break,
         }
     }
 }
 
-fn write_record(exporter: &mut dyn export::SpanExporter, record: ExportRecord) {
+fn write_record(
+    exporter: &mut dyn export::SpanExporter,
+    record: ExportRecord,
+) -> crate::error::Result<()> {
     match record {
-        ExportRecord::Span(span) => {
-            if let Err(e) = exporter.export_span(&span) {
-                tracing::warn!("Failed to export span: {}", e);
-            }
-        }
-        ExportRecord::Log(log) => {
-            if let Err(e) = exporter.export_log(&log) {
-                tracing::warn!("Failed to export log: {}", e);
-            }
-        }
+        ExportRecord::Span(span) => exporter.export_span(&span),
+        ExportRecord::Log(log) => exporter.export_log(&log),
     }
 }
