@@ -2,6 +2,29 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.0 (2026-04-03)
+-------------------
+
+* **BREAKING**: Replace DuckDB output with pure-Rust Parquet export in ``demo-agent`` — eliminates 5-10 min C++ compilation on first build
+* ``demo-agent``: write OTel-compatible Parquet files to ``<output>/robotops_demo_agent/<yyyymmdd-hhmmss>/traces/`` and ``logs/`` (queryable with ``SELECT * FROM read_parquet('...')`` in DuckDB/ROSQL)
+* ``demo-agent``: add S3/S3-compatible output via ``-o s3://bucket/prefix`` (reads ``AWS_PROFILE``, ``AWS_REGION``, ``AWS_ENDPOINT_URL``, ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``)
+* ``demo-agent``: add ``--limit-mb`` flag (default 200) for graceful shutdown when storage limit is reached
+* ``demo-agent``: startup greeting now prints session path, storage limit, and version
+* ``demo-agent``: simplified Dockerfile — removed DuckDB system library install block
+* Remove ``duckdb``, ``postgres``, and ``otlp`` feature flags from demo-agent (single portable output format)
+
+0.8.0 (2026-04-03)
+-------------------
+
+* **NEW FEATURE**: Add ``robotops-demo-agent`` — lightweight standalone Rust demo agent for local trace evaluation (GH-38)
+* ``demo-agent/`` subdirectory: standalone Cargo project, no colcon required, builds with ``cargo build --release``
+* Subscribes to ``/robotops/trace_events``, ``/robotops/trace_context``, and ``/rosout`` via r2r
+* Span reconstruction (START/END pairing) and cross-process correlation (GID + timestamp + content hash) ported from robot_agent
+* Log-to-trace correlation via ``TraceContextRegistry`` (keyed by ROS2 logger name, matching ``/rosout`` ``Log.name`` format)
+* Default output: DuckDB with OTel-compatible ``otel_traces`` and ``otel_logs`` tables conforming to ROSQL protocol (rosql.org)
+* CDR-compatible message structs with round-trip unit tests for drift detection (no ``robotops-msgs`` C library dependency)
+* Added "Getting started: end-to-end evaluation" section to README; not for production — use robot_agent for production deployments
+
 0.7.0 (2026-04-03)
 -------------------
 

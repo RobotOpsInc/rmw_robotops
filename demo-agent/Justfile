@@ -1,0 +1,68 @@
+# Justfile for robotops-demo-agent
+# All commands that require ROS2 or cargo run inside Docker.
+# Usage: just <target>
+
+IMAGE := "robotops-demo-agent:ci"
+
+# Build the Docker image
+build-image:
+    docker build -t {{IMAGE}} .
+
+# Drop into an interactive dev shell
+dev: build-image
+    docker run --rm -it \
+        -v $PWD:/workspace \
+        -w /workspace \
+        {{IMAGE}} \
+        bash
+
+# Build the Rust binary (release)
+build: build-image
+    docker run --rm \
+        -v $PWD:/workspace \
+        -v demo-agent-cargo-registry:/root/.cargo/registry \
+        -v demo-agent-cargo-git:/root/.cargo/git \
+        -v demo-agent-target:/workspace/target \
+        -w /workspace \
+        --entrypoint "" \
+        {{IMAGE}} \
+        bash -c "source /opt/ros/jazzy/setup.bash && cargo build --release"
+
+# Run all tests
+test: build-image
+    docker run --rm \
+        -v $PWD:/workspace \
+        -v demo-agent-cargo-registry:/root/.cargo/registry \
+        -v demo-agent-cargo-git:/root/.cargo/git \
+        -v demo-agent-target:/workspace/target \
+        -w /workspace \
+        --entrypoint "" \
+        {{IMAGE}} \
+        bash -c "source /opt/ros/jazzy/setup.bash && cargo test"
+
+# Run the full CI suite locally (mirrors GitHub Actions)
+ci: build-image
+    docker run --rm \
+        -v $PWD:/workspace \
+        -v demo-agent-cargo-registry:/root/.cargo/registry \
+        -v demo-agent-cargo-git:/root/.cargo/git \
+        -v demo-agent-target:/workspace/target \
+        -w /workspace \
+        --entrypoint "" \
+        {{IMAGE}} \
+        bash -c "source /opt/ros/jazzy/setup.bash && just ci-inner"
+
+# CI entrypoint — runs inside the container (called by GitHub Actions and `just ci`)
+ci-inner:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source /opt/ros/jazzy/setup.bash
+    echo "--- fmt ---"
+    cargo fmt -- --check
+    echo "--- clippy ---"
+    cargo clippy --all-targets -- -D warnings
+    echo "--- build ---"
+    cargo build
+    echo "--- test ---"
+    cargo test
+    echo "--- done ---"

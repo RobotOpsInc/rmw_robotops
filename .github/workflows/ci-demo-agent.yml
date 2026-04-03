@@ -1,0 +1,42 @@
+name: CI (demo-agent)
+
+on:
+  push:
+    branches: ['feature/**', 'task/**', 'fix/**', 'chore/**', '[0-9]*']
+    paths:
+      - 'demo-agent/**'
+      - '.github/workflows/ci-demo-agent.yml'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: demo-agent
+          file: demo-agent/Dockerfile
+          push: false
+          load: true
+          tags: robotops-demo-agent:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run CI suite (fmt, clippy, build, test)
+        run: |
+          docker run --rm \
+            -v $PWD/demo-agent:/workspace \
+            -v demo-agent-cargo-registry:/root/.cargo/registry \
+            -v demo-agent-cargo-git:/root/.cargo/git \
+            -v demo-agent-target:/workspace/target \
+            -w /workspace \
+            --entrypoint "" \
+            robotops-demo-agent:ci \
+            bash -c "source /opt/ros/jazzy/setup.bash && cargo fmt -- --check && cargo clippy --all-targets -- -D warnings && cargo build && cargo test"

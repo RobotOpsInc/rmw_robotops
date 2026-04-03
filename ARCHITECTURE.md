@@ -826,15 +826,16 @@ rmw_shutdown() {
 
 ### Latency Overhead
 
-| Operation | Without Tracing | With Tracing | Overhead |
-|-----------|----------------|--------------|----------|
-| `rmw_publish()` | ~500ns | ~550ns | ~50ns (10%) |
-| `rmw_take()` | ~300ns | ~330ns | ~30ns (10%) |
+| Operation | Overhead Target |
+|-----------|----------------|
+| `rmw_publish()` | < 1µs (median) |
+| `rmw_take()` | < 1µs (median) |
 
 **Notes:**
 - Overhead primarily from: span ID generation, content hashing
 - xxHash64 is extremely fast (~33ns per 1KB message)
 - Queue push is lock-free, typically <10ns
+- Benchmarks are in progress — see [#41](https://github.com/RobotOpsInc/rmw_robotops/issues/41) for measured results
 
 ### Memory Overhead
 

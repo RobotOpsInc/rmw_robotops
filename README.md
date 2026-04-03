@@ -22,13 +22,73 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 7. **Auto-disable on failures** - Self-protecting circuit breaker
 8. **Background thread for publishing** - Non-blocking queue from robot threads
 
+## Getting started: end-to-end evaluation
+
+The quickest way to see rmw_robotops + ROSQL in action is to run the `robotops-demo-agent` locally.
+
+```bash
+# Build
+source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
+
+# Run (writes Parquet to ./telemetry/)
+./target/release/robotops-demo-agent
+
+# Query with DuckDB
+duckdb -c "SELECT count(*) FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')"
+```
+
+For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
+
+> `robotops-demo-agent` is a demo/evaluation tool. For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
+
+---
+
+## FAQ
+
+**Is this ready for production use?**
+Yes. rmw_robotops is designed as a safety-critical middleware layer with 8 safety guarantees. It is used in production robotics deployments.
+
+**Does rmw_robotops add latency to my messages?**
+Tracing adds minimal overhead (target: <1µs median per message). Real message delivery always completes first — tracing is secondary and cannot block or delay it. The queue push is lock-free and non-blocking. See [Benchmarks](#benchmarks) for measured results as they become available.
+
+**Can tracing crash my robot?**
+No. All tracing code is wrapped in `catch(...)` blocks. Exceptions are swallowed and logged. If consecutive tracing failures exceed the configured threshold, tracing auto-disables, leaving the underlying RMW running cleanly.
+
+**Does it modify my DDS messages?**
+No. rmw_robotops is purely passive and observational. It does not modify message payloads, QoS settings, or the DDS wire format in any way.
+
+**Which DDS implementations are supported?**
+All of them — FastDDS, CycloneDDS, Connext DDS, and any future RMW implementation. rmw_robotops is fully DDS-agnostic and delegates to whatever you specify via `ROBOTOPS_UNDERLYING_RMW`.
+
+**Can I disable tracing at runtime?**
+Yes. Set `ROBOTOPS_TRACING_ENABLED=false` to reduce overhead to a single boolean check per operation — no queue, no background thread, pure passthrough.
+
+---
+
+## Benchmarks
+
+> **Coming soon** — see [#41](https://github.com/RobotOpsInc/rmw_robotops/issues/41)
+
+The benchmark implementation is in progress. Performance targets:
+
+| Metric | Target |
+|--------|--------|
+| Added latency (median) | < 1µs per message |
+| CPU overhead | < 5% vs underlying RMW |
+| Hot-path allocations | Zero |
+
+---
+
 ## Installation
 
 ### Option 1: Binary Package
 
 ```bash
-# Add Cloudsmith repository (one-time setup)
-curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
+# Add RobotOps APT repository (one-time setup)
+curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
+  | sudo tee /etc/apt/sources.list.d/robotops.list
 
 # Install pre-built binary
 sudo apt update
@@ -42,10 +102,13 @@ Building from source ensures maximum ABI compatibility with your exact environme
 **Setup:**
 
 ```bash
-# Add Cloudsmith repository (one-time setup)
-curl -1sLf 'https://dl.cloudsmith.io/public/robotops/robotops/setup.deb.sh' | sudo bash
+# Add RobotOps APT repository (one-time setup)
+curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
+  | sudo tee /etc/apt/sources.list.d/robotops.list
 
-# Configure rosdep to find RobotOps packages from Cloudsmith
+# Configure rosdep to find RobotOps packages
 mkdir -p /etc/ros/rosdep/sources.list.d
 sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
 robotops-config:
@@ -78,7 +141,7 @@ rosdep install --from-paths src --ignore-src -y
 colcon build
 ```
 
-`rosdep` automatically fetches the source packages from Cloudsmith, and `colcon` builds them all together in your environment.
+`rosdep` automatically fetches the source packages from `apt.robotops.com`, and `colcon` builds them all together in your environment.
 
 ### From Source (For Development)
 
@@ -86,14 +149,13 @@ See the Development section below for building in Docker with interactive develo
 
 ## Prerequisites (Development Only)
 
-**Batteries included!** Only 2 things needed on your host machine:
+**Batteries included!** Only one thing needed on your host machine:
 
-1. **Docker** with buildx support (for secrets)
+1. **Docker** with buildx support
    - macOS: Docker Desktop (buildx included by default)
    - Linux: `docker buildx install`
-2. **Cloudsmith API key** (for private `robotops_msgs` dependency)
 
-Everything else runs in containers - no ROS2, no Ubuntu required on host!
+Everything else runs in containers — no ROS2, no Ubuntu required on host! RobotOps packages are fetched from the public APT repository (`apt.robotops.com`) — no credentials required.
 
 ## Quick Start
 
@@ -107,36 +169,13 @@ brew install just
 curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
 ```
 
-### 2. Configure Cloudsmith Credentials
-
-Create a `.env.local` file in the project root with your Cloudsmith credentials:
-
-```bash
-# Copy the template
-cp .env.local.template .env.local
-
-# Edit with your credentials
-# CLOUDSMITH_USERNAME=your-cloudsmith-username
-# CLOUDSMITH_API_KEY=your-cloudsmith-api-key
-```
-
-The `.env.local` file is automatically loaded by `docker-compose` and `.gitignore`'d to keep credentials secure.
-
-### 3. Build and develop
+### 2. Build and develop
 
 ```bash
 # See all available commands
 just
 
-# Build development image (uses defaults: robotops repo)
-just build
-
-# Build with different Cloudsmith repo or version
-just build robotops-production 0.2.0-0noble
-
-# Or set via environment variables
-export CLOUDSMITH_REPO=robotops-production
-export ROBOTOPS_MSGS_VERSION=0.2.0-0noble
+# Build development image
 just build
 
 # Start interactive shell
@@ -146,26 +185,6 @@ just dev
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install
 ```
-
-### Advanced: Cloudsmith Configuration
-
-The Docker build can pull `robotops_msgs` from different Cloudsmith repositories and versions:
-
-**Via Justfile parameters:**
-```bash
-just build <repo> <version>
-just build robotops-production 0.2.0-0noble
-```
-
-**Via environment variables:**
-```bash
-export CLOUDSMITH_REPO=robotops-staging
-export ROBOTOPS_MSGS_VERSION=0.1.8-0noble
-just build
-```
-
-**Defaults:**
-- Repository: `robotops`
 
 ## Versioning
 
@@ -449,17 +468,17 @@ just ci
 1. Merge changes from `development` to `main`
 2. Navigate to **Actions** → **Release** in GitHub
 3. Click "Run workflow" on `main` branch
-4. Packages published to `robotops` Cloudsmith repo
+4. Packages published to `https://apt.robotops.com`
 
 **Development Release** (from `development` branch):
 1. Navigate to **Actions** → **Release Development** in GitHub
 2. Click "Run workflow" on `development` branch
-3. Packages published to `robotops-development` Cloudsmith repo
+3. Packages published to `https://apt.development.robotops.com`
 
 Both workflows:
 - Create git tags (`v0.1.5` for production, `v0.1.5-development-abc123` for dev)
 - Build for amd64 and arm64 architectures
-- Publish source Debian packages to Cloudsmith
+- Publish Debian packages to the APT repository
 - Extract release notes from CHANGELOG.rst
 
 **Dry Run:** Both workflows support dry-run mode to validate before creating releases.
@@ -474,7 +493,7 @@ just fmt          # Format code
 ### Setup Verification
 
 ```bash
-just check-setup  # Verify Docker, Cloudsmith, and build setup
+just check-setup  # Verify Docker and build setup
 ```
 
 ## Architecture
@@ -578,28 +597,14 @@ just test     # Test with sanitizers
 ### Quick Diagnosis
 
 ```bash
-just check-setup  # Checks Docker, API key, and build
-```
-
-### Cloudsmith Authentication Failed
-
-```bash
-# Verify your credentials in .env.local
-cat .env.local
-
-# Should contain:
-# CLOUDSMITH_USERNAME=your-username
-# CLOUDSMITH_API_KEY=your-api-key
-
-# Rebuild without cache
-just rebuild
+just check-setup  # Checks Docker and build
 ```
 
 ### Build Fails with Missing robotops_msgs
 
-The package depends on `robotops_msgs` from Cloudsmith. Run `just check-setup` to diagnose:
-1. API key configured correctly
-2. Docker buildx available
+The package depends on `robotops_msgs` from `apt.robotops.com`. Run `just check-setup` to diagnose:
+1. Docker buildx available
+2. Network access to `apt.robotops.com`
 3. Build succeeds
 
 ### Tests Fail with AddressSanitizer
