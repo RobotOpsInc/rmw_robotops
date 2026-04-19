@@ -67,9 +67,13 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Create exporter — get session path before boxing so we can show it in the greeting
-    let parquet =
-        ParquetExporter::new(&cli.output, cli.batch_size, cli.limit_mb, resource_attrs_json)
-            .map_err(|e| anyhow::anyhow!("Failed to initialise output: {}", e))?;
+    let parquet = ParquetExporter::new(
+        &cli.output,
+        cli.batch_size,
+        cli.limit_mb,
+        resource_attrs_json,
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to initialise output: {}", e))?;
     let session_display = format!(
         "{}/{}",
         cli.output.trim_end_matches('/'),

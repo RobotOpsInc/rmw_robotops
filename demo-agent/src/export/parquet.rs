@@ -14,7 +14,10 @@
 use crate::error::{BridgeError, Result};
 use crate::export::SpanExporter;
 use crate::pipeline::otel_builder::{OtelLog, OtelSpan};
-use arrow::array::{ArrayRef, Int32Array, Int64Array, StringArray, TimestampMicrosecondArray, UInt32Array, UInt64Array, UInt8Array};
+use arrow::array::{
+    ArrayRef, Int32Array, Int64Array, StringArray, TimestampMicrosecondArray, UInt32Array,
+    UInt64Array, UInt8Array,
+};
 use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
 use arrow::record_batch::RecordBatch;
 use chrono::Utc;
@@ -366,9 +369,11 @@ fn spans_to_record_batch(spans: &[OtelSpan], resource_attrs_json: &str) -> Resul
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.span_id.as_str()),
         )),
-        Arc::new(StringArray::from_iter_values(spans.iter().map(|s| {
-            s.parent_span_id.as_deref().unwrap_or("")
-        }))),
+        Arc::new(StringArray::from_iter_values(
+            spans
+                .iter()
+                .map(|s| s.parent_span_id.as_deref().unwrap_or("")),
+        )),
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.span_name.as_str()),
         )),
@@ -384,10 +389,13 @@ fn spans_to_record_batch(spans: &[OtelSpan], resource_attrs_json: &str) -> Resul
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.status_code.as_str()),
         )),
-        Arc::new(StringArray::from_iter_values(span_attrs.iter().map(|s| s.as_str()))),
         Arc::new(StringArray::from_iter_values(
-            std::iter::repeat_n(resource_attrs_json, spans.len()),
+            span_attrs.iter().map(|s| s.as_str()),
         )),
+        Arc::new(StringArray::from_iter_values(std::iter::repeat_n(
+            resource_attrs_json,
+            spans.len(),
+        ))),
         // ── ROS2-specific extras ────────────────────────────────────────
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.operation.as_str()),
@@ -470,10 +478,8 @@ fn logs_to_record_batch(logs: &[OtelLog], resource_attrs_json: &str) -> Result<R
     let arrays: Vec<ArrayRef> = vec![
         // ── OtelPostgres core ──────────────────────────────────────────
         Arc::new(
-            TimestampMicrosecondArray::from_iter_values(
-                logs.iter().map(|l| l.timestamp_ns / 1000),
-            )
-            .with_timezone("UTC"),
+            TimestampMicrosecondArray::from_iter_values(logs.iter().map(|l| l.timestamp_ns / 1000))
+                .with_timezone("UTC"),
         ),
         Arc::new(StringArray::from_iter_values(
             logs.iter().map(|l| l.trace_id.as_deref().unwrap_or("")),
@@ -493,9 +499,10 @@ fn logs_to_record_batch(logs: &[OtelLog], resource_attrs_json: &str) -> Result<R
         Arc::new(StringArray::from_iter_values(
             logs.iter().map(|l| l.body.as_str()),
         )),
-        Arc::new(StringArray::from_iter_values(
-            std::iter::repeat_n(resource_attrs_json, logs.len()),
-        )),
+        Arc::new(StringArray::from_iter_values(std::iter::repeat_n(
+            resource_attrs_json,
+            logs.len(),
+        ))),
         Arc::new(StringArray::from_iter_values(
             log_attrs.iter().map(|s| s.as_str()),
         )),
