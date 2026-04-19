@@ -106,10 +106,10 @@ source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
 # Run (the session path is printed on startup)
 ./target/release/robotops-demo-agent
 
-# Query with ROSQL
+# Query with ROSQL — replace 20260403-141530 with your session path
 rosql query "FROM traces SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/20260403-141530/  # path printed on startup
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 ```
 
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
