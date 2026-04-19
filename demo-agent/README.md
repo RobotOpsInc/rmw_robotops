@@ -1,10 +1,10 @@
 # robotops-demo-agent
 
-Lightweight standalone demo tool for evaluating `rmw_robotops` observability locally.
+Lightweight local evaluation companion for `rmw_robotops`.
 
 Subscribes to `/robotops/trace_events`, `/robotops/trace_context`, and `/rosout`, reconstructs distributed trace spans, and writes OTel-compatible Parquet files you can query with ROSQL.
 
-**This is a demo/evaluation tool — not for production.** For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
+`rmw_robotops` is production-ready middleware. This demo agent is a local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [robotops.com](https://robotops.com).
 
 ---
 
@@ -283,7 +283,7 @@ troubleshooting.
 
 ## Limitations
 
-- **Not for production.** No system metrics, TF monitoring, MCAP recording, offline buffering, or fleet management. For production use, see [robotops.com](https://robotops.com).
+- **Demo agent only.** `rmw_robotops` is production-ready, but this agent is a local evaluation tool — no system metrics, TF monitoring, MCAP recording, offline buffering, or fleet management. For production use, see [robotops.com](https://robotops.com).
 - S3 writes are synchronous (blocking) — not suitable for high-throughput environments.
 - Span reconstruction requires matched START/END events. Spans in-flight at shutdown will be incomplete.
 - The correlation window (`--correlation-window-secs`) limits how far back publish events are retained for cross-process matching.

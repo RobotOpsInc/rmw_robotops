@@ -29,39 +29,6 @@ This document describes the internal architecture of `rmw_robotops`, a ROS2 midd
 4. **Lock-free Hot Path**: No locks during message interception
 5. **Zero Robot Impact**: Tracing failures never crash or block robot operation
 
-### High-Level Flow
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        User Application                          │
-│                     (rclcpp/rclpy nodes)                         │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                         │ ROS2 RMW API (rmw.h)
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│                      rmw_robotops                                │
-│                                                                  │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
-│  │ Interceptor  │───▶│ Underlying   │───▶│   Tracer     │     │
-│  │  (thin)      │    │    RMW       │    │ (background) │     │
-│  └──────────────┘    └──────────────┘    └──────────────┘     │
-│         │                    │                    │             │
-│         │                    │                    │             │
-│         ▼                    ▼                    ▼             │
-│  Trace Context        DDS Messages        TraceEvent Queue     │
-│  (thread-local)       (unchanged)         (lock-free)          │
-└─────────────────────────────────────────────┬───────────────────┘
-                                              │
-                                              │ Published every 10ms
-                                              │
-                                    ┌─────────▼──────────┐
-                                    │ /robotops/trace_   │
-                                    │      events        │
-                                    │   (TraceEvent)     │
-                                    └────────────────────┘
-```
-
 ---
 
 ## Component Architecture

@@ -22,18 +22,91 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 7. **Auto-disable on failures** - Self-protecting circuit breaker
 8. **Background thread for publishing** - Non-blocking queue from robot threads
 
-## Getting started: end-to-end evaluation
+### Architecture
 
-The quickest way to see rmw_robotops + ROSQL in action is to run the `robotops-demo-agent` locally.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Robot Node Process                       │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │              rmw_robotops                           │   │
+│   │                                                     │   │
+│   │   rmw_publish() → [Real Message First]              │   │
+│   │                 → [Best-Effort Trace Event]         │   │
+│   │                                                     │   │
+│   │   rmw_take()    → [Extract Context from DDS]        │   │
+│   │                 → [Set Thread-Local Context]        │   │
+│   │                                                     │   │
+│   │   Background Thread → [/robotops/trace_events]      │   │
+│   └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │         Underlying RMW (FastDDS/CycloneDDS)         │   │
+│   └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+For a deep dive into component responsibilities, data flows, safety guarantees, trace context propagation, thread safety, and edge cases, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
+---
+
+## Installation
+
+Building from source ensures ABI compatibility with your exact environment — compiler version, glibc, FastDDS version, etc. Dependencies are fetched from the public RobotOps APT repository (no credentials required).
+
+**1. Add the RobotOps APT repository**
+
+```bash
+curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
+  | sudo tee /etc/apt/sources.list.d/robotops.list
+sudo apt update
+```
+
+**2. Configure rosdep to resolve RobotOps packages**
+
+```bash
+sudo mkdir -p /etc/ros/rosdep/sources.list.d
+sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
+robotops-config:
+  ubuntu:
+    - ros-jazzy-robotops-config
+
+robotops_msgs:
+  ubuntu:
+    - ros-jazzy-robotops-msgs
+EOF
+
+rosdep update
+```
+
+**3. Declare the dependency in your ROS2 package's `package.xml`**
+
+```xml
+<depend>rmw_robotops</depend>
+```
+
+**4. Install dependencies and build**
+
+```bash
+cd ~/your_ros2_workspace
+rosdep install --from-paths src --ignore-src -y
+colcon build
+```
+
+### Try it out with the demo agent
+
+`robotops-demo-agent` is a lightweight local tool that subscribes to trace events, reconstructs spans, and writes Parquet files you can query with ROSQL — a quick way to see rmw_robotops in action end-to-end.
 
 ```bash
 # Build
 source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
 
-# Run (writes Parquet to ./telemetry/ — note the session path printed on startup)
+# Run (the session path is printed on startup)
 ./target/release/robotops-demo-agent
 
-# Query with ROSQL (replace <session> with the timestamp directory printed on startup)
+# Query with ROSQL
 rosql query "FROM traces SINCE 1h" \
   --backend parquet \
   --url ./telemetry/robotops_demo_agent/<session>/
@@ -41,14 +114,14 @@ rosql query "FROM traces SINCE 1h" \
 
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
 
-> `robotops-demo-agent` is a demo/evaluation tool. For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
+> `rmw_robotops` is production-ready middleware. `robotops-demo-agent` is a lightweight local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [robotops.com](https://robotops.com).
 
 ---
 
 ## FAQ
 
-**Is this ready for production use?**
-Yes. rmw_robotops is designed as a safety-critical middleware layer with 8 safety guarantees. It is used in production robotics deployments.
+**Is rmw_robotops ready for production use?**
+`rmw_robotops` is in **production beta**. The safety architecture is fully implemented and validated — the 8 safety guarantees are enforced by design. Performance benchmarking is underway (see [#41](https://github.com/RobotOpsInc/rmw_robotops/issues/41)). Early adopters are running it in production today; we recommend monitoring the benchmark results before deploying on latency-sensitive workloads.
 
 **Does rmw_robotops add latency to my messages?**
 Tracing adds minimal overhead (target: <1µs median per message). Real message delivery always completes first — tracing is secondary and cannot block or delay it. The queue push is lock-free and non-blocking. See [Benchmarks](#benchmarks) for measured results as they become available.
@@ -80,70 +153,6 @@ The benchmark implementation is in progress. Performance targets:
 | Hot-path allocations | Zero |
 
 ---
-
-## Installation
-
-### Option 1: Binary Package
-
-```bash
-# Add RobotOps APT repository (one-time setup)
-curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
-  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
-  | sudo tee /etc/apt/sources.list.d/robotops.list
-
-# Install pre-built binary
-sudo apt update
-sudo apt install ros-jazzy-rmw-robotops
-```
-
-### Option 2: Build from Source (Recommended for Maximum Compatibility)
-
-Building from source ensures maximum ABI compatibility with your exact environment (compiler version, dependency versions, glibc, etc.). All dependencies (`robotops_msgs`, `robotops-config`) compile together in your environment for perfect ABI alignment.
-
-**Setup:**
-
-```bash
-# Add RobotOps APT repository (one-time setup)
-curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
-  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
-  | sudo tee /etc/apt/sources.list.d/robotops.list
-
-# Configure rosdep to find RobotOps packages
-mkdir -p /etc/ros/rosdep/sources.list.d
-sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
-robotops-config:
-  ubuntu:
-    - ros-jazzy-robotops-config
-
-robotops_msgs:
-  ubuntu:
-    - ros-jazzy-robotops-msgs
-
-rmw_robotops:
-  ubuntu:
-    - ros-jazzy-rmw-robotops
-EOF
-
-rosdep update
-```
-
-**In your ROS2 package's `package.xml`:**
-
-```xml
-<depend>rmw_robotops</depend>
-```
-
-**Build:**
-
-```bash
-cd ~/your_ros2_workspace
-rosdep install --from-paths src --ignore-src -y
-colcon build
-```
-
-`rosdep` automatically fetches the source packages from `apt.robotops.com`, and `colcon` builds them all together in your environment.
 
 ## Usage
 
@@ -322,44 +331,6 @@ robotops_msgs v1.0.0
 ```
 
 **Recommendation:** Always reference a specific version tag in production deployments for stability.
-
----
-
-## Architecture
-
-**For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).**
-
-This document covers:
-- Component architecture and responsibilities
-- Detailed data flows (publish, subscribe, services)
-- Safety guarantees and implementation
-- Trace context propagation (intra-process and cross-process)
-- Thread safety model
-- Edge cases and performance characteristics
-
-**High-level overview:**
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Robot Node Process                       │
-│                                                             │
-│   ┌─────────────────────────────────────────────────────┐   │
-│   │              rmw_robotops                           │   │
-│   │                                                     │   │
-│   │   rmw_publish() → [Real Message First]              │   │
-│   │                 → [Best-Effort Trace Event]         │   │
-│   │                                                     │   │
-│   │   rmw_take()    → [Extract Context from DDS]        │   │
-│   │                 → [Set Thread-Local Context]        │   │
-│   │                                                     │   │
-│   │   Background Thread → [/robotops/trace_events]      │   │
-│   └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│   ┌─────────────────────────────────────────────────────┐   │
-│   │         Underlying RMW (FastDDS/CycloneDDS)         │   │
-│   └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
 
 ## Package Structure
 
