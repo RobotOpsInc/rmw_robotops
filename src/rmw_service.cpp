@@ -329,16 +329,18 @@ rmw_send_response(
   char span_id_buf[17] = {0};
   uint64_t start_timestamp_ns = 0;
 
-  // STEP 1: Emit START event (BEFORE underlying send)
+  // STEP 1: Capture trace context and record send timestamp (BEFORE underlying send)
+  // Reads the thread-local context written by rmw_take_request on the same thread.
+  // Reusing context.span_id pairs this RESPONSE event with the earlier REQUEST event
+  // so span_reconstructor can merge them into a single SERVER span.
+  // Note: We do NOT inject into DDS metadata for services —
+  // related_sample_identity is reserved for DDS-RPC request-response correlation.
   if (tracing_active) {
     try {
       context = get_or_mint_trace_context();
-      generate_span_id(span_id_buf);
+      std::memcpy(span_id_buf, context.span_id, sizeof(span_id_buf));
       start_timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
-
-      // Note: We do NOT inject into DDS metadata for services
-      // The related_sample_identity is reserved for DDS-RPC request-response correlation
 
       #ifdef ROS_TRACING_ENABLED
       tracepoint(
@@ -354,7 +356,7 @@ rmw_send_response(
   // STEP 2: REAL RESPONSE FIRST (Safety guarantee)
   rmw_ret_t ret = underlying_rmw_send_response(service, request_header, ros_response);
 
-  // STEP 3: Emit END event
+  // STEP 3: Emit SERVICE_RESPONSE event (paired with SERVICE_REQUEST by shared span_id)
   if (ret == RMW_RET_OK && tracing_active) {
     try {
       #ifdef ROS_TRACING_ENABLED

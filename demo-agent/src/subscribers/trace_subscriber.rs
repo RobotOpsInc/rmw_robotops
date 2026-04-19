@@ -38,7 +38,8 @@ pub fn spawn(
             .subscribe_raw(
                 TRACE_EVENTS_TOPIC,
                 TRACE_EVENTS_MSG_TYPE,
-                r2r::QosProfile::default(),
+                // trace publisher uses BEST_EFFORT; subscriber must match or DDS won't deliver
+                r2r::QosProfile::default().best_effort(),
             )
             .map_err(|e| anyhow::anyhow!("Failed to subscribe to {}: {}", TRACE_EVENTS_TOPIC, e))?
     };

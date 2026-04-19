@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1.4
+# Query container: installs rosql CLI and Python for the assertion harness.
+# rosql requires GLIBC >= 2.38; Ubuntu 24.04 ships with glibc 2.39
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    python3 \
+    python3-yaml \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install rosql via the official one-liner (Linux x86_64 and arm64)
+RUN curl -fsSL https://rosql.org/install.sh | sh
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+CMD ["/bin/bash"]

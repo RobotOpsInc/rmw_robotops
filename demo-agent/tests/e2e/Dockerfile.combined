@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.4
+# Combined container: turtlesim publisher + robotops-demo-agent running together.
+# Both processes share loopback DDS so discovery is guaranteed regardless of
+# Docker Desktop networking limitations with inter-container multicast.
+#
+# Stage 1 compiles the demo-agent binary using the CI image (has Rust + ROS2).
+# Stage 2 extends rmw_robotops:dev (has turtlesim, rclpy, the colcon overlay
+# mechanism) and adds the compiled binary.
+
+# ── Stage 1: compile demo-agent ──────────────────────────────────────────────
+FROM robotops-demo-agent:ci AS agent-builder
+
+WORKDIR /build
+COPY demo-agent/ .
+RUN bash -c "source /opt/ros/jazzy/setup.bash && cargo build --release"
+
+# ── Stage 2: runtime ─────────────────────────────────────────────────────────
+FROM rmw_robotops:dev
+
+RUN apt-get update && apt-get install -y \
+    ros-jazzy-turtlesim \
+    ros-jazzy-rclpy \
+    ros-jazzy-geometry-msgs \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=agent-builder /build/target/release/robotops-demo-agent /usr/local/bin/robotops-demo-agent
+
+COPY demo-agent/tests/e2e/scripts /tests/scripts
+RUN chmod +x /tests/scripts/*.sh
+
+ENTRYPOINT ["/tests/scripts/combined_entrypoint.sh"]

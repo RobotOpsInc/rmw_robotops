@@ -108,7 +108,6 @@ pub struct ParquetExporter {
     bytes_written: u64,
     limit_bytes: u64,
     resource_attrs_json: String,
-    rt: tokio::runtime::Runtime,
 }
 
 impl ParquetExporter {
@@ -119,11 +118,6 @@ impl ParquetExporter {
         limit_mb: u64,
         resource_attrs_json: String,
     ) -> Result<Self> {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(|e| BridgeError::Storage(e.to_string()))?;
-
         let session_ts = Utc::now().format("%Y%m%d-%H%M%S").to_string();
         let session_path = format!("robotops_demo_agent/{}", session_ts);
 
@@ -149,7 +143,6 @@ impl ParquetExporter {
             bytes_written: 0,
             limit_bytes: limit_mb * 1024 * 1024,
             resource_attrs_json,
-            rt,
         })
     }
 
@@ -173,9 +166,10 @@ impl ParquetExporter {
             self.session_path, self.trace_part
         ));
 
-        self.rt
-            .block_on(self.store.put(&path, bytes.into()))
-            .map_err(BridgeError::from)?;
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(self.store.put(&path, bytes.into()))
+        })
+        .map_err(BridgeError::from)?;
 
         self.bytes_written += n_bytes;
         debug!(
@@ -203,9 +197,10 @@ impl ParquetExporter {
             self.session_path, self.log_part
         ));
 
-        self.rt
-            .block_on(self.store.put(&path, bytes.into()))
-            .map_err(BridgeError::from)?;
+        tokio::task::block_in_place(|| {
+            tokio::runtime::Handle::current().block_on(self.store.put(&path, bytes.into()))
+        })
+        .map_err(BridgeError::from)?;
 
         self.bytes_written += n_bytes;
         debug!(
@@ -700,8 +695,8 @@ mod tests {
         assert!(bytes.len() > 100);
     }
 
-    #[test]
-    fn test_parquet_exporter_local() {
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_parquet_exporter_local() {
         let dir = tempfile::tempdir().unwrap();
         let mut exporter =
             ParquetExporter::new(dir.path().to_str().unwrap(), 10, 200, "{}".into()).unwrap();
@@ -717,8 +712,8 @@ mod tests {
         assert!(logs_dir.join("part-0001.parquet").exists());
     }
 
-    #[test]
-    fn test_storage_limit() {
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_storage_limit() {
         let dir = tempfile::tempdir().unwrap();
         // batch_size > 1 so auto-flush doesn't trigger; limit of 0 MB triggers on explicit flush
         let mut exporter =

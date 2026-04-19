@@ -279,6 +279,21 @@ docker run --rm \
 
 ---
 
+## E2E test rig
+
+An end-to-end Docker-based test verifies that `demo-agent` Parquet output is
+queryable by `rosql` against a live ROS2 turtlesim scenario. It runs manually
+(not part of regular PR CI):
+
+```bash
+just e2e
+```
+
+See [`tests/e2e/README.md`](tests/e2e/README.md) for full details, options, and
+troubleshooting.
+
+---
+
 ## Limitations
 
 - **Not for production.** No system metrics, TF monitoring, MCAP recording, offline buffering, or fleet management. For production use, see [robotops.com](https://robotops.com).

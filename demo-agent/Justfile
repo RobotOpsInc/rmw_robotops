@@ -52,6 +52,11 @@ ci: build-image
         {{IMAGE}} \
         bash -c "source /opt/ros/jazzy/setup.bash && just ci-inner"
 
+# Run the Docker-based e2e test: turtlesim scenario → Parquet → rosql assertions
+# Accepts the same env vars as tests/e2e/scripts/run.sh (E2E_SETTLE_SECS, etc.)
+e2e:
+    bash {{justfile_directory()}}/tests/e2e/scripts/run.sh
+
 # CI entrypoint — runs inside the container (called by GitHub Actions and `just ci`)
 ci-inner:
     #!/usr/bin/env bash

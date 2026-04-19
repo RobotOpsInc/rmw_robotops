@@ -27,7 +27,8 @@ pub fn spawn(
             .subscribe_raw(
                 TRACE_CONTEXT_TOPIC,
                 TRACE_CONTEXT_MSG_TYPE,
-                r2r::QosProfile::default(),
+                // context publisher uses BEST_EFFORT; subscriber must match
+                r2r::QosProfile::default().best_effort(),
             )
             .map_err(|e| anyhow::anyhow!("Failed to subscribe to {}: {}", TRACE_CONTEXT_TOPIC, e))?
     };
