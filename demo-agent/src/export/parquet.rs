@@ -167,8 +167,7 @@ impl ParquetExporter {
         ));
 
         tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current()
-                .block_on(self.store.put(&path, bytes.into()))
+            tokio::runtime::Handle::current().block_on(self.store.put(&path, bytes.into()))
         })
         .map_err(BridgeError::from)?;
 
@@ -199,8 +198,7 @@ impl ParquetExporter {
         ));
 
         tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current()
-                .block_on(self.store.put(&path, bytes.into()))
+            tokio::runtime::Handle::current().block_on(self.store.put(&path, bytes.into()))
         })
         .map_err(BridgeError::from)?;
 
