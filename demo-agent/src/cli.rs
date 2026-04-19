@@ -65,4 +65,14 @@ pub struct Cli {
     /// ROS2 domain ID. Defaults to ROS_DOMAIN_ID environment variable, or 0.
     #[arg(long, env = "ROS_DOMAIN_ID")]
     pub domain_id: Option<u32>,
+
+    /// Robot identifier written to resource_attributes["robot.id"] in Parquet.
+    /// Used by ROSQL `WHERE robot_id = '...'` filters.
+    #[arg(long, default_value = "", env = "ROBOTOPS_ROBOT_ID")]
+    pub robot_id: String,
+
+    /// Organization identifier written to resource_attributes["organization.id"].
+    /// Used by ROSQL `WHERE org_id = '...'` filters.
+    #[arg(long, default_value = "", env = "ROBOTOPS_ORG_ID")]
+    pub organization_id: String,
 }

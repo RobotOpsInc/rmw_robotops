@@ -140,7 +140,7 @@ LIMIT 20"
 duckdb -c "
 SELECT trace_id, span_id, severity_text, body
 FROM read_parquet('./telemetry/robotops_demo_agent/*/logs/*.parquet')
-ORDER BY observed_time_ns DESC
+ORDER BY timestamp DESC
 LIMIT 20"
 
 # Join traces and logs for a specific trace
@@ -173,6 +173,8 @@ rosql query "FROM traces WHERE status = 'ERROR' SINCE 5 min ago" \
 | `--correlation-window-secs` | `30` | `ROBOTOPS_DEMO_CORRELATION_WINDOW_SECS` | How long to keep unmatched publish events |
 | `--correlation-tolerance-ns` | `10000000` | `ROBOTOPS_DEMO_CORRELATION_TOLERANCE_NS` | Timestamp tolerance for cross-process correlation (ns) |
 | `--domain-id` | `0` | `ROS_DOMAIN_ID` | ROS2 domain ID |
+| `--robot-id` | _(empty)_ | `ROBOTOPS_ROBOT_ID` | Robot identifier written to `resource_attributes["robot.id"]` (used by ROSQL `WHERE robot_id = '...'`) |
+| `--organization-id` | _(empty)_ | `ROBOTOPS_ORG_ID` | Organization identifier written to `resource_attributes["organization.id"]` |
 
 ### S3 environment variables
 
@@ -203,50 +205,59 @@ Files are written under:
 
 Each file is write-once. New files are created on each flush when the buffer is non-empty. Use glob patterns to query across all files in a session or across sessions.
 
-### Traces schema (24 columns, OTel-compatible)
+### Traces schema — ROSQL OtelPostgres-compatible
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `trace_id` | String | 16-byte hex trace ID |
-| `span_id` | String | 8-byte hex span ID |
-| `parent_span_id` | String (nullable) | Parent span ID |
-| `span_name` | String | Operation name (topic or service) |
-| `span_kind` | String | `PRODUCER`, `CONSUMER`, `CLIENT`, `SERVER`, `INTERNAL` |
-| `start_time_ns` | Int64 | Span start (Unix nanoseconds) |
-| `end_time_ns` | Int64 | Span end (Unix nanoseconds) |
-| `duration_ns` | Int64 | `end_time_ns - start_time_ns` |
+The schema is a **superset** of the [ROSQL OtelPostgres profile](https://rosql.org). The core columns come first (used by ROSQL queries), followed by ROS2-specific extras that ROSQL ignores.
+
+**Core columns (ROSQL OtelPostgres profile)**
+
+| Column | Arrow type | Description |
+|--------|-----------|-------------|
+| `timestamp` | `Timestamp(Microsecond, UTC)` | Span start time — used by ROSQL `SINCE`/`UNTIL` |
+| `trace_id` | String | Hex trace ID |
+| `span_id` | String | Hex span ID |
+| `parent_span_id` | String | Parent span ID (`""` when none; subscribe spans get the cross-process publish span as parent) |
+| `span_name` | String | e.g. `publish /chatter` |
+| `span_kind` | String | `PRODUCER`, `CONSUMER`, `SERVER`, `INTERNAL` |
+| `service_name` | String | Derived from ROS2 node: `/{namespace}/{node_name}` |
+| `duration` | Int64 | Span duration in nanoseconds |
 | `status_code` | String | `OK`, `ERROR`, `UNSET` |
-| `status_message` | String (nullable) | Error message |
-| `node_name` | String | ROS2 node name |
-| `node_namespace` | String | ROS2 node namespace |
-| `topic_name` | String | Topic or service name |
-| `publisher_gid` | String (nullable) | Publisher GID (hex) |
-| `content_hash` | UInt64 (nullable) | FNV-1a content hash for correlation |
-| `rmw_implementation` | String | Underlying RMW (e.g. `rmw_fastrtps_cpp`) |
-| `host_name` | String (nullable) | Hostname |
-| `process_id` | UInt32 (nullable) | PID |
-| `span_links` | String (nullable) | JSON array of linked span IDs |
-| `service_name` | String | OTel service name |
-| `resource_attributes` | String (nullable) | JSON resource attributes |
-| `span_attributes` | String (nullable) | JSON span attributes |
-| `events` | String (nullable) | JSON span events |
-| `observed_time_ns` | Int64 | When the agent recorded this span |
+| `span_attributes` | String (JSON) | ROS2 attributes: `ros.node`, `ros.topic`, `ros.message_type`, `ros.publisher_gid`, `ros.content_hash`, `ros.sequence_number`, `ros.source_timestamp_ns`, `ros.message_size_bytes`, `ros.dds.domain_id`, `ros.correlation_method`, `ros.correlation.publish_span_id` |
+| `resource_attributes` | String (JSON) | `robot.id`, `organization.id` (set via `--robot-id` / `--organization-id`) |
 
-### Logs schema (11 columns, OTel-compatible)
+**Extra columns (ROS2-specific, not used by ROSQL)**
 
-| Column | Type | Description |
-|--------|------|-------------|
-| `trace_id` | String (nullable) | Correlated trace ID |
-| `span_id` | String (nullable) | Correlated span ID |
-| `severity_number` | UInt8 | OTel severity number (1–24) |
+`operation`, `start_time_ns`, `end_time_ns`, `ros_topic`, `ros_node_name`, `ros_node_namespace`, `ros_message_type`, `ros_publisher_gid`, `ros_content_hash`, `ros_sequence_number`, `ros_source_timestamp_ns`, `ros_message_size_bytes`, `ros_dds_domain_id`, `ros_correlation_method`, `correlated_publish_span_id`, `span_links`, `written_at_ns`.
+
+**Example ROSQL queries:**
+
+```bash
+# Filter by topic using span_attributes JSON extraction
+rosql "FROM traces WHERE topic = '/chatter' SINCE 5m" --backend parquet --url ./telemetry/robotops_demo_agent/<session>
+
+# Filter by robot
+rosql "FROM traces WHERE robot_id = 'my-robot-01' SINCE 1h" --backend parquet --url ./telemetry/...
+
+# Raw DuckDB
+duckdb -c "SELECT service_name, span_name, span_attributes->>'ros.topic' AS topic
+           FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')
+           WHERE timestamp > NOW() - INTERVAL 5 MINUTE"
+```
+
+### Logs schema — ROSQL OtelPostgres-compatible
+
+| Column | Arrow type | Description |
+|--------|-----------|-------------|
+| `timestamp` | `Timestamp(Microsecond, UTC)` | Log emit time |
+| `trace_id` | String | Correlated trace ID (`""` when absent) |
+| `span_id` | String | Correlated span ID (`""` when absent) |
 | `severity_text` | String | `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` |
+| `severity_number` | Int32 | OTel severity number (1–24) |
+| `service_name` | String | ROS2 logger name (proxy for service) |
 | `body` | String | Log message text |
-| `logger_name` | String | ROS2 logger name |
-| `node_name` | String | ROS2 node name |
-| `code_function` | String (nullable) | Source function name |
-| `code_lineno` | Int32 (nullable) | Source line number |
-| `service_name` | String | OTel service name |
-| `observed_time_ns` | Int64 | When the agent recorded this log |
+| `resource_attributes` | String (JSON) | Same as traces (`robot.id`, `organization.id`) |
+| `log_attributes` | String (JSON) | `logger.name`, `code.filepath`, `code.function`, `code.lineno` |
+| `written_at_ns` | Int64 | When the agent wrote this record (debug) |
 
 ---
 

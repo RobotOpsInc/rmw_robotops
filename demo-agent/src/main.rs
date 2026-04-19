@@ -50,9 +50,26 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
+    // Build resource_attributes JSON from optional CLI flags.
+    let resource_attrs_json = {
+        let mut attrs = serde_json::Map::new();
+        if !cli.robot_id.is_empty() {
+            attrs.insert("robot.id".into(), cli.robot_id.clone().into());
+        }
+        if !cli.organization_id.is_empty() {
+            attrs.insert("organization.id".into(), cli.organization_id.clone().into());
+        }
+        if attrs.is_empty() {
+            "{}".to_string()
+        } else {
+            serde_json::to_string(&attrs).unwrap_or_else(|_| "{}".to_string())
+        }
+    };
+
     // Create exporter — get session path before boxing so we can show it in the greeting
-    let parquet = ParquetExporter::new(&cli.output, cli.batch_size, cli.limit_mb)
-        .map_err(|e| anyhow::anyhow!("Failed to initialise output: {}", e))?;
+    let parquet =
+        ParquetExporter::new(&cli.output, cli.batch_size, cli.limit_mb, resource_attrs_json)
+            .map_err(|e| anyhow::anyhow!("Failed to initialise output: {}", e))?;
     let session_display = format!(
         "{}/{}",
         cli.output.trim_end_matches('/'),

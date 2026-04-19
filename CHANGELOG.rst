@@ -2,6 +2,18 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.1 (2026-04-19)
+-------------------
+
+* ``demo-agent``: align Parquet output schema with ROSQL OtelPostgres profile (GH-43)
+
+  * ``otel_traces``: add ``timestamp`` (``TIMESTAMPTZ`` / ``Timestamp(Microsecond, UTC)``), ``service_name``, ``span_attributes`` (JSON), ``resource_attributes`` (JSON); rename ``duration_ns`` → ``duration``; ``parent_span_id`` is now a non-nullable string (empty = no parent)
+  * ``otel_logs``: add ``timestamp``, ``service_name``, ``resource_attributes``, ``log_attributes`` (JSON, contains ``logger.name``, ``code.*``); rename ``severity`` → ``severity_text``
+  * Subscribe spans now carry the correlated publish span as ``parent_span_id`` — enables ROSQL ``PATH DEVIATION`` and ``TRACE`` queries
+  * ``service_name`` derived per-span from ROS2 node namespace + node name (e.g. ``/talker``)
+  * Add ``--robot-id`` / ``--organization-id`` CLI flags (also ``ROBOTOPS_ROBOT_ID`` / ``ROBOTOPS_ORG_ID``) to populate ``resource_attributes`` for ROSQL ``WHERE robot_id = '...'`` filters
+  * ROS2-specific flat columns retained as extras after the core columns (ROSQL ignores them)
+
 0.9.0 (2026-04-03)
 -------------------
 

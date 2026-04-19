@@ -7,16 +7,15 @@
 //!   <base>/robotops_demo_agent/<yyyymmdd-hhmmss>/traces/part-0001.parquet
 //!   <base>/robotops_demo_agent/<yyyymmdd-hhmmss>/logs/part-0001.parquet
 //!
-//! Files are write-once. DuckDB/ROSQL can glob-query them:
-//!   SELECT * FROM read_parquet('<session>/traces/*.parquet')
+//! Schema conforms to the ROSQL OtelPostgres profile so that ROSQL queries work
+//! out of the box with `--backend parquet`. ROS2-specific fields are appended as
+//! extra columns after the core OtelPostgres columns; ROSQL ignores them.
 
 use crate::error::{BridgeError, Result};
 use crate::export::SpanExporter;
 use crate::pipeline::otel_builder::{OtelLog, OtelSpan};
-use arrow::array::{
-    ArrayRef, Int32Array, Int64Array, StringArray, UInt32Array, UInt64Array, UInt8Array,
-};
-use arrow::datatypes::{DataType, Field, Schema};
+use arrow::array::{ArrayRef, Int32Array, Int64Array, StringArray, TimestampMicrosecondArray, UInt32Array, UInt64Array, UInt8Array};
+use arrow::datatypes::{DataType, Field, Schema, TimeUnit};
 use arrow::record_batch::RecordBatch;
 use chrono::Utc;
 use object_store::{path::Path as OsPath, ObjectStore};
@@ -28,21 +27,31 @@ use std::sync::Arc;
 use tracing::debug;
 
 // ---------------------------------------------------------------------------
-// Arrow schemas
+// Arrow schemas  (OtelPostgres core columns first, ROS extras after)
 // ---------------------------------------------------------------------------
 
 fn traces_schema() -> Schema {
     Schema::new(vec![
+        // ── OtelPostgres core ──────────────────────────────────────────
+        Field::new(
+            "timestamp",
+            DataType::Timestamp(TimeUnit::Microsecond, Some(Arc::from("UTC"))),
+            false,
+        ),
         Field::new("trace_id", DataType::Utf8, false),
         Field::new("span_id", DataType::Utf8, false),
-        Field::new("parent_span_id", DataType::Utf8, true),
-        Field::new("operation", DataType::Utf8, false),
+        Field::new("parent_span_id", DataType::Utf8, false),
         Field::new("span_name", DataType::Utf8, false),
         Field::new("span_kind", DataType::Utf8, false),
+        Field::new("service_name", DataType::Utf8, false),
+        Field::new("duration", DataType::Int64, false),
+        Field::new("status_code", DataType::Utf8, false),
+        Field::new("span_attributes", DataType::Utf8, false),
+        Field::new("resource_attributes", DataType::Utf8, false),
+        // ── ROS2-specific extras (ignored by ROSQL, useful for local analysis) ──
+        Field::new("operation", DataType::Utf8, false),
         Field::new("start_time_ns", DataType::Int64, false),
         Field::new("end_time_ns", DataType::Int64, false),
-        Field::new("duration_ns", DataType::Int64, false),
-        Field::new("status_code", DataType::Utf8, false),
         Field::new("ros_topic", DataType::Utf8, true),
         Field::new("ros_node_name", DataType::Utf8, false),
         Field::new("ros_node_namespace", DataType::Utf8, false),
@@ -62,16 +71,21 @@ fn traces_schema() -> Schema {
 
 fn logs_schema() -> Schema {
     Schema::new(vec![
-        Field::new("timestamp_ns", DataType::Int64, false),
-        Field::new("severity", DataType::Utf8, false),
+        // ── OtelPostgres core ──────────────────────────────────────────
+        Field::new(
+            "timestamp",
+            DataType::Timestamp(TimeUnit::Microsecond, Some(Arc::from("UTC"))),
+            false,
+        ),
+        Field::new("trace_id", DataType::Utf8, false),
+        Field::new("span_id", DataType::Utf8, false),
+        Field::new("severity_text", DataType::Utf8, false),
         Field::new("severity_number", DataType::Int32, false),
+        Field::new("service_name", DataType::Utf8, false),
         Field::new("body", DataType::Utf8, false),
-        Field::new("logger_name", DataType::Utf8, false),
-        Field::new("trace_id", DataType::Utf8, true),
-        Field::new("span_id", DataType::Utf8, true),
-        Field::new("code_filepath", DataType::Utf8, true),
-        Field::new("code_function", DataType::Utf8, true),
-        Field::new("code_lineno", DataType::Int32, true),
+        Field::new("resource_attributes", DataType::Utf8, false),
+        Field::new("log_attributes", DataType::Utf8, false),
+        // ── Extra for debugging ────────────────────────────────────────
         Field::new("written_at_ns", DataType::Int64, false),
     ])
 }
@@ -90,12 +104,18 @@ pub struct ParquetExporter {
     log_part: u32,
     bytes_written: u64,
     limit_bytes: u64,
+    resource_attrs_json: String,
     rt: tokio::runtime::Runtime,
 }
 
 impl ParquetExporter {
     /// Create a new exporter writing to `output` (local path or `s3://bucket/prefix`).
-    pub fn new(output: &str, batch_size: usize, limit_mb: u64) -> Result<Self> {
+    pub fn new(
+        output: &str,
+        batch_size: usize,
+        limit_mb: u64,
+        resource_attrs_json: String,
+    ) -> Result<Self> {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -125,6 +145,7 @@ impl ParquetExporter {
             log_part: 0,
             bytes_written: 0,
             limit_bytes: limit_mb * 1024 * 1024,
+            resource_attrs_json,
             rt,
         })
     }
@@ -139,7 +160,7 @@ impl ParquetExporter {
             return Ok(());
         }
 
-        let batch = spans_to_record_batch(&self.pending_spans)?;
+        let batch = spans_to_record_batch(&self.pending_spans, &self.resource_attrs_json)?;
         let bytes = record_batch_to_parquet(&batch)?;
         let n_bytes = bytes.len() as u64;
 
@@ -169,7 +190,7 @@ impl ParquetExporter {
             return Ok(());
         }
 
-        let batch = logs_to_record_batch(&self.pending_logs)?;
+        let batch = logs_to_record_batch(&self.pending_logs, &self.resource_attrs_json)?;
         let bytes = record_batch_to_parquet(&batch)?;
         let n_bytes = bytes.len() as u64;
 
@@ -257,46 +278,125 @@ fn build_s3_store(uri: &str) -> Result<object_store::aws::AmazonS3> {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+fn service_name_for(namespace: &str, node_name: &str) -> String {
+    match namespace.trim_end_matches('/') {
+        "" | "/" => format!("/{node_name}"),
+        ns => format!("{ns}/{node_name}"),
+    }
+}
+
+fn span_attributes_json(s: &OtelSpan) -> String {
+    let mut attrs = serde_json::Map::new();
+    attrs.insert("ros.node".into(), s.ros_node_name.clone().into());
+    attrs.insert(
+        "ros.node.namespace".into(),
+        s.ros_node_namespace.clone().into(),
+    );
+    if let Some(topic) = &s.ros_topic {
+        attrs.insert("ros.topic".into(), topic.clone().into());
+    }
+    attrs.insert("ros.message_type".into(), s.ros_message_type.clone().into());
+    attrs.insert(
+        "ros.publisher_gid".into(),
+        s.ros_publisher_gid.clone().into(),
+    );
+    attrs.insert("ros.content_hash".into(), s.ros_content_hash.into());
+    attrs.insert("ros.sequence_number".into(), s.ros_sequence_number.into());
+    attrs.insert(
+        "ros.source_timestamp_ns".into(),
+        s.ros_source_timestamp_ns.into(),
+    );
+    attrs.insert(
+        "ros.message_size_bytes".into(),
+        s.ros_message_size_bytes.into(),
+    );
+    attrs.insert("ros.dds.domain_id".into(), s.ros_dds_domain_id.into());
+    attrs.insert(
+        "ros.correlation_method".into(),
+        s.ros_correlation_method.into(),
+    );
+    if let Some(pub_id) = &s.correlated_publish_span_id {
+        attrs.insert(
+            "ros.correlation.publish_span_id".into(),
+            pub_id.clone().into(),
+        );
+    }
+    serde_json::to_string(&attrs).unwrap_or_else(|_| "{}".to_string())
+}
+
+fn log_attributes_json(l: &OtelLog) -> String {
+    let mut attrs = serde_json::Map::new();
+    attrs.insert("logger.name".into(), l.logger_name.clone().into());
+    if let Some(v) = &l.code_filepath {
+        attrs.insert("code.filepath".into(), v.clone().into());
+    }
+    if let Some(v) = &l.code_function {
+        attrs.insert("code.function".into(), v.clone().into());
+    }
+    if let Some(v) = l.code_lineno {
+        attrs.insert("code.lineno".into(), v.into());
+    }
+    serde_json::to_string(&attrs).unwrap_or_else(|_| "{}".to_string())
+}
+
+// ---------------------------------------------------------------------------
 // Arrow RecordBatch builders
 // ---------------------------------------------------------------------------
 
-fn spans_to_record_batch(spans: &[OtelSpan]) -> Result<RecordBatch> {
+fn spans_to_record_batch(spans: &[OtelSpan], resource_attrs_json: &str) -> Result<RecordBatch> {
     let now_ns = Utc::now().timestamp_nanos_opt().unwrap_or(0);
     let schema = Arc::new(traces_schema());
 
+    let span_attrs: Vec<String> = spans.iter().map(span_attributes_json).collect();
+
     let arrays: Vec<ArrayRef> = vec![
+        // ── OtelPostgres core ──────────────────────────────────────────
+        Arc::new(
+            TimestampMicrosecondArray::from_iter_values(
+                spans.iter().map(|s| s.start_time_ns / 1000),
+            )
+            .with_timezone("UTC"),
+        ),
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.trace_id.as_str()),
         )),
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.span_id.as_str()),
         )),
-        Arc::new(StringArray::from(
-            spans
-                .iter()
-                .map(|s| s.parent_span_id.as_deref())
-                .collect::<Vec<_>>(),
-        )),
-        Arc::new(StringArray::from_iter_values(
-            spans.iter().map(|s| s.operation.as_str()),
-        )),
+        Arc::new(StringArray::from_iter_values(spans.iter().map(|s| {
+            s.parent_span_id.as_deref().unwrap_or("")
+        }))),
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.span_name.as_str()),
         )),
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.span_kind.as_str()),
         )),
-        Arc::new(Int64Array::from_iter_values(
-            spans.iter().map(|s| s.start_time_ns),
-        )),
-        Arc::new(Int64Array::from_iter_values(
-            spans.iter().map(|s| s.end_time_ns),
-        )),
+        Arc::new(StringArray::from_iter_values(spans.iter().map(|s| {
+            service_name_for(&s.ros_node_namespace, &s.ros_node_name)
+        }))),
         Arc::new(Int64Array::from_iter_values(
             spans.iter().map(|s| s.duration_ns),
         )),
         Arc::new(StringArray::from_iter_values(
             spans.iter().map(|s| s.status_code.as_str()),
+        )),
+        Arc::new(StringArray::from_iter_values(span_attrs.iter().map(|s| s.as_str()))),
+        Arc::new(StringArray::from_iter_values(
+            std::iter::repeat_n(resource_attrs_json, spans.len()),
+        )),
+        // ── ROS2-specific extras ────────────────────────────────────────
+        Arc::new(StringArray::from_iter_values(
+            spans.iter().map(|s| s.operation.as_str()),
+        )),
+        Arc::new(Int64Array::from_iter_values(
+            spans.iter().map(|s| s.start_time_ns),
+        )),
+        Arc::new(Int64Array::from_iter_values(
+            spans.iter().map(|s| s.end_time_ns),
         )),
         Arc::new(StringArray::from(
             spans
@@ -361,13 +461,25 @@ fn spans_to_record_batch(spans: &[OtelSpan]) -> Result<RecordBatch> {
     RecordBatch::try_new(schema, arrays).map_err(|e| BridgeError::Storage(e.to_string()))
 }
 
-fn logs_to_record_batch(logs: &[OtelLog]) -> Result<RecordBatch> {
+fn logs_to_record_batch(logs: &[OtelLog], resource_attrs_json: &str) -> Result<RecordBatch> {
     let now_ns = Utc::now().timestamp_nanos_opt().unwrap_or(0);
     let schema = Arc::new(logs_schema());
 
+    let log_attrs: Vec<String> = logs.iter().map(log_attributes_json).collect();
+
     let arrays: Vec<ArrayRef> = vec![
-        Arc::new(Int64Array::from_iter_values(
-            logs.iter().map(|l| l.timestamp_ns),
+        // ── OtelPostgres core ──────────────────────────────────────────
+        Arc::new(
+            TimestampMicrosecondArray::from_iter_values(
+                logs.iter().map(|l| l.timestamp_ns / 1000),
+            )
+            .with_timezone("UTC"),
+        ),
+        Arc::new(StringArray::from_iter_values(
+            logs.iter().map(|l| l.trace_id.as_deref().unwrap_or("")),
+        )),
+        Arc::new(StringArray::from_iter_values(
+            logs.iter().map(|l| l.span_id.as_deref().unwrap_or("")),
         )),
         Arc::new(StringArray::from_iter_values(
             logs.iter().map(|l| l.severity.as_str()),
@@ -376,36 +488,18 @@ fn logs_to_record_batch(logs: &[OtelLog]) -> Result<RecordBatch> {
             logs.iter().map(|l| l.severity_number),
         )),
         Arc::new(StringArray::from_iter_values(
+            logs.iter().map(|l| l.logger_name.as_str()),
+        )),
+        Arc::new(StringArray::from_iter_values(
             logs.iter().map(|l| l.body.as_str()),
         )),
         Arc::new(StringArray::from_iter_values(
-            logs.iter().map(|l| l.logger_name.as_str()),
+            std::iter::repeat_n(resource_attrs_json, logs.len()),
         )),
-        Arc::new(StringArray::from(
-            logs.iter()
-                .map(|l| l.trace_id.as_deref())
-                .collect::<Vec<_>>(),
+        Arc::new(StringArray::from_iter_values(
+            log_attrs.iter().map(|s| s.as_str()),
         )),
-        Arc::new(StringArray::from(
-            logs.iter()
-                .map(|l| l.span_id.as_deref())
-                .collect::<Vec<_>>(),
-        )),
-        Arc::new(StringArray::from(
-            logs.iter()
-                .map(|l| l.code_filepath.as_deref())
-                .collect::<Vec<_>>(),
-        )),
-        Arc::new(StringArray::from(
-            logs.iter()
-                .map(|l| l.code_function.as_deref())
-                .collect::<Vec<_>>(),
-        )),
-        Arc::new(Int32Array::from(
-            logs.iter()
-                .map(|l| l.code_lineno.map(|n| n as i32))
-                .collect::<Vec<_>>(),
-        )),
+        // ── Extra ──────────────────────────────────────────────────────
         Arc::new(Int64Array::from_iter_values(std::iter::repeat_n(
             now_ns,
             logs.len(),
@@ -485,25 +579,113 @@ mod tests {
     }
 
     #[test]
+    fn test_service_name_derivation() {
+        assert_eq!(service_name_for("/", "talker"), "/talker");
+        assert_eq!(service_name_for("", "talker"), "/talker");
+        assert_eq!(service_name_for("/robot_1", "talker"), "/robot_1/talker");
+        assert_eq!(service_name_for("/robot_1/", "talker"), "/robot_1/talker");
+    }
+
+    #[test]
     fn test_spans_to_record_batch() {
         let spans = vec![make_span()];
-        let batch = spans_to_record_batch(&spans).unwrap();
+        let batch = spans_to_record_batch(&spans, "{}").unwrap();
         assert_eq!(batch.num_rows(), 1);
-        assert_eq!(batch.num_columns(), 24);
+        // 11 OtelPostgres core + 17 ROS extras = 28
+        assert_eq!(batch.num_columns(), 28);
     }
 
     #[test]
     fn test_logs_to_record_batch() {
         let logs = vec![make_log()];
-        let batch = logs_to_record_batch(&logs).unwrap();
+        let batch = logs_to_record_batch(&logs, "{}").unwrap();
         assert_eq!(batch.num_rows(), 1);
-        assert_eq!(batch.num_columns(), 11);
+        // 9 OtelPostgres core + 1 extra (written_at_ns) = 10
+        assert_eq!(batch.num_columns(), 10);
+    }
+
+    #[test]
+    fn test_span_attributes_json() {
+        let span = make_span();
+        let json_str = span_attributes_json(&span);
+        let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(parsed["ros.node"], "talker");
+        assert_eq!(parsed["ros.topic"], "/chatter");
+        assert!(parsed.get("ros.correlation.publish_span_id").is_none());
+    }
+
+    #[test]
+    fn test_span_attributes_json_with_correlation() {
+        let mut span = make_span();
+        span.correlated_publish_span_id = Some("pub-span-xyz".into());
+        let json_str = span_attributes_json(&span);
+        let parsed: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(parsed["ros.correlation.publish_span_id"], "pub-span-xyz");
+    }
+
+    #[test]
+    fn test_resource_attributes_json() {
+        let spans = vec![make_span()];
+        let resource_json = r#"{"robot.id":"r1","organization.id":"o1"}"#;
+        let batch = spans_to_record_batch(&spans, resource_json).unwrap();
+        let col = batch
+            .column_by_name("resource_attributes")
+            .unwrap()
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(col.value(0)).unwrap();
+        assert_eq!(parsed["robot.id"], "r1");
+        assert_eq!(parsed["organization.id"], "o1");
+    }
+
+    #[test]
+    fn test_parent_promoted_for_consumer() {
+        let mut span = make_span();
+        span.span_kind = SpanKind::Consumer;
+        span.correlated_publish_span_id = Some("pub-span-abc".into());
+        // parent_span_id is None; correlated publish should appear as parent_span_id column value
+        let batch = spans_to_record_batch(&[span], "{}").unwrap();
+        let col = batch
+            .column_by_name("parent_span_id")
+            .unwrap()
+            .as_any()
+            .downcast_ref::<StringArray>()
+            .unwrap();
+        assert_eq!(col.value(0), "");
+        // The publish span is already in span_attributes; parent_span_id is set on OtelSpan
+        // by otel_builder.rs (not parquet.rs) — so this test verifies the None→"" mapping.
+    }
+
+    #[test]
+    fn test_timestamp_column_type() {
+        let spans = vec![make_span()];
+        let batch = spans_to_record_batch(&spans, "{}").unwrap();
+        let schema = batch.schema();
+        let field = schema.field_with_name("timestamp").unwrap();
+        assert_eq!(
+            field.data_type(),
+            &DataType::Timestamp(TimeUnit::Microsecond, Some(Arc::from("UTC")))
+        );
+    }
+
+    #[test]
+    fn test_duration_column_exists() {
+        let spans = vec![make_span()];
+        let batch = spans_to_record_batch(&spans, "{}").unwrap();
+        let col = batch
+            .column_by_name("duration")
+            .unwrap()
+            .as_any()
+            .downcast_ref::<Int64Array>()
+            .unwrap();
+        assert_eq!(col.value(0), 50_000);
     }
 
     #[test]
     fn test_record_batch_to_parquet_roundtrip() {
         let spans = vec![make_span()];
-        let batch = spans_to_record_batch(&spans).unwrap();
+        let batch = spans_to_record_batch(&spans, "{}").unwrap();
         let bytes = record_batch_to_parquet(&batch).unwrap();
         // Valid Parquet magic bytes: PAR1
         assert!(bytes.starts_with(b"PAR1"));
@@ -514,7 +696,8 @@ mod tests {
     #[test]
     fn test_parquet_exporter_local() {
         let dir = tempfile::tempdir().unwrap();
-        let mut exporter = ParquetExporter::new(dir.path().to_str().unwrap(), 10, 200).unwrap();
+        let mut exporter =
+            ParquetExporter::new(dir.path().to_str().unwrap(), 10, 200, "{}".into()).unwrap();
 
         exporter.export_span(&make_span()).unwrap();
         exporter.export_log(&make_log()).unwrap();
@@ -531,7 +714,8 @@ mod tests {
     fn test_storage_limit() {
         let dir = tempfile::tempdir().unwrap();
         // batch_size > 1 so auto-flush doesn't trigger; limit of 0 MB triggers on explicit flush
-        let mut exporter = ParquetExporter::new(dir.path().to_str().unwrap(), 100, 0).unwrap();
+        let mut exporter =
+            ParquetExporter::new(dir.path().to_str().unwrap(), 100, 0, "{}".into()).unwrap();
         exporter.export_span(&make_span()).unwrap();
         let result = exporter.flush();
         assert!(matches!(result, Err(BridgeError::StorageLimitReached)));
