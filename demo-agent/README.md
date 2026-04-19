@@ -1,44 +1,20 @@
 # robotops-demo-agent
 
-Lightweight standalone demo tool for evaluating `rmw_robotops` observability locally.
+Lightweight local evaluation companion for `rmw_robotops`.
 
-Subscribes to `/robotops/trace_events`, `/robotops/trace_context`, and `/rosout`, reconstructs distributed trace spans, and writes OTel-compatible Parquet files you can query with DuckDB or ROSQL.
+Subscribes to `/robotops/trace_events`, `/robotops/trace_context`, and `/rosout`, reconstructs distributed trace spans, and writes OTel-compatible Parquet files you can query with ROSQL.
 
-**This is a demo/evaluation tool — not for production.** For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
-
----
-
-## Pre-compiled binaries
-
-Pre-compiled Linux binaries (amd64 and arm64) are attached to each
-[GitHub Release](https://github.com/RobotOpsInc/rmw_robotops/releases):
-
-```bash
-# amd64
-curl -fsSL -o robotops-demo-agent \
-  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-amd64
-chmod +x robotops-demo-agent
-./robotops-demo-agent --help
-```
-
-```bash
-# arm64 (e.g. Raspberry Pi 5, Jetson running Ubuntu 24.04)
-curl -fsSL -o robotops-demo-agent \
-  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-arm64
-chmod +x robotops-demo-agent
-./robotops-demo-agent --help
-```
-
-> **Note:** The binary requires ROS2 Jazzy runtime libraries and `ros-jazzy-robotops-msgs`
-> to be installed. Source `/opt/ros/jazzy/setup.bash` before running.
+`rmw_robotops` is production-ready middleware. This demo agent is a local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [robotops.com](https://robotops.com).
 
 ---
 
-## Prerequisites (build from source)
+## Requirements
 
-- **ROS2 Jazzy** installed (see [ROS2 installation](https://docs.ros.org/en/jazzy/Installation.html))
-- **Rust stable** toolchain (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-- **libclang** for r2r's bindgen step: `sudo apt install libclang-dev clang`
+- **Ubuntu 24.04 (Noble)**, amd64 or arm64
+- **ROS2 Jazzy** installed and sourced
+- **`ros-jazzy-robotops-msgs`** package (installed in step 1)
+
+> Currently supported: ROS2 Jazzy on Ubuntu 24.04 (amd64 / arm64). For other configurations, see [Build from source](#build-from-source).
 
 ---
 
@@ -57,17 +33,21 @@ sudo apt install ros-jazzy-rmw-robotops ros-jazzy-robotops-msgs
 
 ---
 
-## 2. Build the demo agent
+## 2. Download the demo agent
 
 ```bash
-source /opt/ros/jazzy/setup.bash
-cd demo-agent
-cargo build --release
+# amd64
+curl -fsSL -o robotops-demo-agent \
+  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-amd64
+chmod +x robotops-demo-agent
 ```
 
-The first build downloads and compiles dependencies (pure Rust — no C++ compilation). Subsequent builds are incremental.
-
-The binary is at `target/release/robotops-demo-agent`.
+```bash
+# arm64 (e.g. Raspberry Pi 5, Jetson running Ubuntu 24.04)
+curl -fsSL -o robotops-demo-agent \
+  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-arm64
+chmod +x robotops-demo-agent
+```
 
 ---
 
@@ -86,18 +66,20 @@ ros2 launch my_robot my_launch.py
 ## 4. Run the demo agent
 
 ```bash
+source /opt/ros/jazzy/setup.bash
+
 # Local output (default)
-./target/release/robotops-demo-agent
+./robotops-demo-agent
 
 # Custom output directory
-./target/release/robotops-demo-agent -o /data/robot-traces
+./robotops-demo-agent -o /data/robot-traces
 
 # S3 output
-./target/release/robotops-demo-agent -o s3://my-bucket/robot-01
+./robotops-demo-agent -o s3://my-bucket/robot-01
 
 # S3-compatible (MinIO, Ceph, etc.)
 AWS_ENDPOINT_URL=http://minio:9000 \
-  ./target/release/robotops-demo-agent -o s3://traces/robot-01
+  ./robotops-demo-agent -o s3://traces/robot-01
 ```
 
 On startup you will see:
@@ -119,43 +101,44 @@ Press **Ctrl-C** to flush and exit cleanly.
 
 ---
 
-## 5. Query with DuckDB or ROSQL
+## 5. Install ROSQL
 
 ```bash
-# Install DuckDB CLI
-curl -fsSL https://install.duckdb.org | sh
-
-# Count spans collected
-duckdb -c "SELECT count(*) FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')"
-
-# Recent errors
-duckdb -c "
-SELECT trace_id, span_name, status_code, start_time_ns
-FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')
-WHERE status_code = 'ERROR'
-ORDER BY start_time_ns DESC
-LIMIT 20"
-
-# Log messages with trace correlation
-duckdb -c "
-SELECT trace_id, span_id, severity_text, body
-FROM read_parquet('./telemetry/robotops_demo_agent/*/logs/*.parquet')
-ORDER BY timestamp DESC
-LIMIT 20"
-
-# Join traces and logs for a specific trace
-duckdb -c "
-SELECT t.span_name, l.body, l.severity_text
-FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet') t
-JOIN read_parquet('./telemetry/robotops_demo_agent/*/logs/*.parquet') l
-  ON t.trace_id = l.trace_id
-WHERE t.trace_id = 'your-trace-id-here'"
+# More installation options at https://rosql.org
+curl -fsSL https://rosql.org/install.sh | sh
 ```
 
-With ROSQL:
+---
+
+## 6. Query with ROSQL
+
+The session path is printed on startup (e.g. `./telemetry/robotops_demo_agent/20260403-141530/`) — substitute your own when running these queries.
 
 ```bash
-rosql query "FROM traces WHERE status = 'ERROR' SINCE 5 min ago" \
+# Replace 20260403-141530 with the session path printed on startup
+
+# All spans from the last hour
+rosql query "FROM traces SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
+
+# Publish spans only
+rosql query "FROM traces WHERE span_kind = 'PRODUCER' SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
+
+# Errors
+rosql query "FROM traces WHERE status_code = 'ERROR' SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
+
+# Log messages
+rosql query "FROM logs SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
+
+# Logs correlated to a trace
+rosql query "FROM logs WHERE trace_id != '' SINCE 1h" \
   --backend parquet \
   --url ./telemetry/robotops_demo_agent/20260403-141530/
 ```
@@ -232,16 +215,15 @@ The schema is a **superset** of the [ROSQL OtelPostgres profile](https://rosql.o
 **Example ROSQL queries:**
 
 ```bash
-# Filter by topic using span_attributes JSON extraction
-rosql "FROM traces WHERE topic = '/chatter' SINCE 5m" --backend parquet --url ./telemetry/robotops_demo_agent/<session>
+# Replace 20260403-141530 with the session path printed on startup
+
+# Filter by topic
+rosql query "FROM traces WHERE span_name LIKE 'publish /chatter%' SINCE 5m" \
+  --backend parquet --url ./telemetry/robotops_demo_agent/20260403-141530/
 
 # Filter by robot
-rosql "FROM traces WHERE robot_id = 'my-robot-01' SINCE 1h" --backend parquet --url ./telemetry/...
-
-# Raw DuckDB
-duckdb -c "SELECT service_name, span_name, span_attributes->>'ros.topic' AS topic
-           FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')
-           WHERE timestamp > NOW() - INTERVAL 5 MINUTE"
+rosql query "FROM traces WHERE robot_id = 'my-robot-01' SINCE 1h" \
+  --backend parquet --url ./telemetry/robotops_demo_agent/20260403-141530/
 ```
 
 ### Logs schema — ROSQL OtelPostgres-compatible
@@ -261,9 +243,27 @@ duckdb -c "SELECT service_name, span_name, span_attributes->>'ros.topic' AS topi
 
 ---
 
-## Docker (optional)
+## Build from source
 
-A `Dockerfile` is provided for building in an isolated environment:
+For configurations other than Ubuntu 24.04 with ROS2 Jazzy, you can build from source.
+
+**Prerequisites:**
+
+- **ROS2 Jazzy** installed (see [ROS2 installation](https://docs.ros.org/en/jazzy/Installation.html))
+- **Rust stable** toolchain (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
+- **libclang** for r2r's bindgen step: `sudo apt install libclang-dev clang`
+
+```bash
+source /opt/ros/jazzy/setup.bash
+cd demo-agent
+cargo build --release
+```
+
+The first build downloads and compiles dependencies (pure Rust — no C++ compilation). Subsequent builds are incremental.
+
+The binary is at `target/release/robotops-demo-agent`.
+
+Alternatively, build in an isolated Docker environment:
 
 ```bash
 # Build the image (includes ROS2 Jazzy + Rust + robotops-msgs)
@@ -296,7 +296,7 @@ troubleshooting.
 
 ## Limitations
 
-- **Not for production.** No system metrics, TF monitoring, MCAP recording, offline buffering, or fleet management. For production use, see [robotops.com](https://robotops.com).
+- **Demo agent only.** `rmw_robotops` is production-ready, but this agent is a local evaluation tool — no system metrics, TF monitoring, MCAP recording, offline buffering, or fleet management. For production use, see [robotops.com](https://robotops.com).
 - S3 writes are synchronous (blocking) — not suitable for high-throughput environments.
 - Span reconstruction requires matched START/END events. Spans in-flight at shutdown will be incomplete.
 - The correlation window (`--correlation-window-secs`) limits how far back publish events are retained for cross-process matching.

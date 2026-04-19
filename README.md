@@ -22,31 +22,114 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 7. **Auto-disable on failures** - Self-protecting circuit breaker
 8. **Background thread for publishing** - Non-blocking queue from robot threads
 
-## Getting started: end-to-end evaluation
+### Architecture
 
-The quickest way to see rmw_robotops + ROSQL in action is to run the `robotops-demo-agent` locally.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Robot Node Process                       │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │              rmw_robotops                           │   │
+│   │                                                     │   │
+│   │   rmw_publish() → [Real Message First]              │   │
+│   │                 → [Best-Effort Trace Event]         │   │
+│   │                                                     │   │
+│   │   rmw_take()    → [Extract Context from DDS]        │   │
+│   │                 → [Set Thread-Local Context]        │   │
+│   │                                                     │   │
+│   │   Background Thread → [/robotops/trace_events]      │   │
+│   └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│   ┌─────────────────────────────────────────────────────┐   │
+│   │         Underlying RMW (FastDDS/CycloneDDS)         │   │
+│   └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+For a deep dive into component responsibilities, data flows, safety guarantees, trace context propagation, thread safety, and edge cases, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
+---
+
+## Installation
+
+Building from source ensures ABI compatibility with your exact environment — compiler version, glibc, FastDDS version, etc. Dependencies are fetched from the public RobotOps APT repository (no credentials required).
+
+**1. Add the RobotOps APT repository**
 
 ```bash
-# Build
-source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
+curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
+  | sudo tee /etc/apt/sources.list.d/robotops.list
+sudo apt update
+```
 
-# Run (writes Parquet to ./telemetry/)
-./target/release/robotops-demo-agent
+**2. Configure rosdep to resolve RobotOps packages**
 
-# Query with DuckDB
-duckdb -c "SELECT count(*) FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')"
+```bash
+sudo mkdir -p /etc/ros/rosdep/sources.list.d
+sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
+robotops-config:
+  ubuntu:
+    - ros-jazzy-robotops-config
+
+robotops_msgs:
+  ubuntu:
+    - ros-jazzy-robotops-msgs
+EOF
+
+rosdep update
+```
+
+**3. Declare the dependency in your ROS2 package's `package.xml`**
+
+```xml
+<depend>rmw_robotops</depend>
+```
+
+**4. Install dependencies and build**
+
+```bash
+cd ~/your_ros2_workspace
+rosdep install --from-paths src --ignore-src -y
+colcon build
+```
+
+### Try it out with the demo agent
+
+`robotops-demo-agent` is a lightweight local tool that subscribes to trace events, reconstructs spans, and writes Parquet files you can query with ROSQL — a quick way to see rmw_robotops in action end-to-end.
+
+Pre-built binaries are available for Ubuntu 24.04 (amd64 and arm64):
+
+```bash
+# Install ROSQL (more options at https://rosql.org)
+curl -fsSL https://rosql.org/install.sh | sh
+
+# Download the demo agent (amd64 — swap linux-amd64 → linux-arm64 for arm64)
+curl -fsSL -o robotops-demo-agent \
+  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-amd64
+chmod +x robotops-demo-agent
+
+# Run (the session path is printed on startup)
+source /opt/ros/jazzy/setup.bash
+./robotops-demo-agent
+
+# Query with ROSQL — replace 20260403-141530 with your session path
+rosql query "FROM traces SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 ```
 
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
 
-> `robotops-demo-agent` is a demo/evaluation tool. For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
+> `rmw_robotops` is production-ready middleware. `robotops-demo-agent` is a lightweight local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [robotops.com](https://robotops.com).
 
 ---
 
 ## FAQ
 
-**Is this ready for production use?**
-Yes. rmw_robotops is designed as a safety-critical middleware layer with 8 safety guarantees. It is used in production robotics deployments.
+**Is rmw_robotops ready for production use?**
+`rmw_robotops` is in **production beta**. The safety architecture is fully implemented and validated — the 8 safety guarantees are enforced by design. Performance benchmarking is underway (see [#41](https://github.com/RobotOpsInc/rmw_robotops/issues/41)). Early adopters are running it in production today; we recommend monitoring the benchmark results before deploying on latency-sensitive workloads.
 
 **Does rmw_robotops add latency to my messages?**
 Tracing adds minimal overhead (target: <1µs median per message). Real message delivery always completes first — tracing is secondary and cannot block or delay it. The queue push is lock-free and non-blocking. See [Benchmarks](#benchmarks) for measured results as they become available.
@@ -78,151 +161,6 @@ The benchmark implementation is in progress. Performance targets:
 | Hot-path allocations | Zero |
 
 ---
-
-## Installation
-
-### Option 1: Binary Package
-
-```bash
-# Add RobotOps APT repository (one-time setup)
-curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
-  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
-  | sudo tee /etc/apt/sources.list.d/robotops.list
-
-# Install pre-built binary
-sudo apt update
-sudo apt install ros-jazzy-rmw-robotops
-```
-
-### Option 2: Build from Source (Recommended for Maximum Compatibility)
-
-Building from source ensures maximum ABI compatibility with your exact environment (compiler version, dependency versions, glibc, etc.). All dependencies (`robotops_msgs`, `robotops-config`) compile together in your environment for perfect ABI alignment.
-
-**Setup:**
-
-```bash
-# Add RobotOps APT repository (one-time setup)
-curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
-  | sudo gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://apt.robotops.com noble main" \
-  | sudo tee /etc/apt/sources.list.d/robotops.list
-
-# Configure rosdep to find RobotOps packages
-mkdir -p /etc/ros/rosdep/sources.list.d
-sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
-robotops-config:
-  ubuntu:
-    - ros-jazzy-robotops-config
-
-robotops_msgs:
-  ubuntu:
-    - ros-jazzy-robotops-msgs
-
-rmw_robotops:
-  ubuntu:
-    - ros-jazzy-rmw-robotops
-EOF
-
-rosdep update
-```
-
-**In your ROS2 package's `package.xml`:**
-
-```xml
-<depend>rmw_robotops</depend>
-```
-
-**Build:**
-
-```bash
-cd ~/your_ros2_workspace
-rosdep install --from-paths src --ignore-src -y
-colcon build
-```
-
-`rosdep` automatically fetches the source packages from `apt.robotops.com`, and `colcon` builds them all together in your environment.
-
-### From Source (For Development)
-
-See the Development section below for building in Docker with interactive development tools.
-
-## Prerequisites (Development Only)
-
-**Batteries included!** Only one thing needed on your host machine:
-
-1. **Docker** with buildx support
-   - macOS: Docker Desktop (buildx included by default)
-   - Linux: `docker buildx install`
-
-Everything else runs in containers — no ROS2, no Ubuntu required on host! RobotOps packages are fetched from the public APT repository (`apt.robotops.com`) — no credentials required.
-
-## Quick Start
-
-### 1. Install just (task runner)
-
-```bash
-# macOS
-brew install just
-
-# Linux
-curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
-```
-
-### 2. Build and develop
-
-```bash
-# See all available commands
-just
-
-# Build development image
-just build
-
-# Start interactive shell
-just dev
-
-# Inside container, build the package:
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install
-```
-
-## Versioning
-
-This repository uses **semantic versioning** expressed in `package.xml` and enforced via git tags (e.g., `v0.1.4`, `v0.2.0`).
-
-### Lockstep Major Versions
-
-**Major versions** move in lockstep across the entire RobotOps ecosystem:
-
-- `robotops_config`
-- `robotops_msgs`
-- `rmw_robotops` (this repository)
-- `robot_agent`
-
-When any component introduces a breaking change, all components bump to the next major version together (e.g., all move from `v1.x.x` to `v2.0.0`).
-
-### Independent Minor and Patch Versions
-
-Between major version boundaries, each component evolves independently:
-
-- **Minor versions** (e.g., `v0.1.0` → `v0.2.0`) add backward-compatible features
-- **Patch versions** (e.g., `v0.1.4` → `v0.1.5`) fix bugs without breaking compatibility
-
-**Backward compatibility is maintained by design** for all minor and patch releases within the same major version.
-
-### Examples
-
-```
-robotops_config v0.4.14   ← May be ahead (added new config section)
-robotops_msgs v0.3.2      ← May be behind (stable, no changes needed)
-rmw_robotops v0.1.5       ← Independent evolution
-
-rmw_robotops v1.0.0       ← Breaking change: all components bump major version
-robotops_config v1.0.0
-robotops_msgs v1.0.0
-```
-
-**Recommendation:** Always reference a specific version tag in production deployments for stability.
 
 ## Usage
 
@@ -364,173 +302,43 @@ If a custom config path is specified but invalid:
 [WARN] [rmw_robotops]: ROBOTOPS_CONFIG_PATH=/invalid/path.yaml specified but file not found or invalid
 ```
 
-## Common Tasks
+## Versioning
 
-All tasks use `just` commands for simplicity. Run `just` to see all available commands.
+This repository uses **semantic versioning** expressed in `package.xml` and enforced via git tags (e.g., `v0.1.4`, `v0.2.0`).
 
-### Development 
+### Lockstep Major Versions
 
-```bash
-just dev          # Interactive development shell
-just compile      # Build the package
-just clean        # Remove build artifacts
-just rebuild      # Clean + rebuild from scratch
-```
+**Major versions** move in lockstep across the entire RobotOps ecosystem:
 
-### Testing
+- `robotops_config`
+- `robotops_msgs`
+- `rmw_robotops` (this repository)
+- `robot_agent`
 
-```bash
-just test         # Run all tests with sanitizers
-just test-safety  # Run safety tests (MUST pass before deployment)
-just benchmark    # Performance benchmarks
-just stress       # Stress test (10,000 msg/sec)
-just logs         # Show logs from last test run
-```
+When any component introduces a breaking change, all components bump to the next major version together (e.g., all move from `v1.x.x` to `v2.0.0`).
 
-**Performance Requirements:**
-- Median latency: < 1µs added overhead
-- CPU overhead: < 5% vs underlying RMW
-- Memory: Zero allocations in hot path
+### Independent Minor and Patch Versions
 
-### CI/CD
+Between major version boundaries, each component evolves independently:
 
-**Reproducing GitHub Actions CI locally:**
+- **Minor versions** (e.g., `v0.1.0` → `v0.2.0`) add backward-compatible features
+- **Patch versions** (e.g., `v0.1.4` → `v0.1.5`) fix bugs without breaking compatibility
 
-```bash
-# Run the exact same CI suite that runs in GitHub Actions
-just ci
+**Backward compatibility is maintained by design** for all minor and patch releases within the same major version.
 
-# This executes:
-# 1. just ci-lint - All lint checks (copyright, cpplint, uncrustify, etc.)
-# 2. just ci-test - All tests with AddressSanitizer and UBSan
-# Both steps run even if one fails, matching GitHub Actions behavior
-
-# Expected results (as of 2026-01-05):
-# - 141 tests total (32 lint + 109 functional/performance)
-# - 29 tests skipped
-# - 0 functional failures ✅
-# - 4-5 performance test failures (need tuning for CI environment)
-#
-# Note: CI currently fails due to performance tests. These need threshold
-# adjustments to pass in containerized CI environments.
-```
-
-**IMPORTANT:** Always run `just ci` before pushing to catch issues early!
-
-## Development Workflow
-
-### Making Changes
-
-1. **Create a feature branch** from `development`:
-   ```bash
-   git checkout development
-   git pull origin development
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes** and ensure tests pass:
-   ```bash
-   just ci  # Run full CI suite locally
-   ```
-
-3. **Bump the version** (if needed):
-   ```bash
-   # For bug fixes (0.1.4 → 0.1.5)
-   just bump-version patch
-
-   # For new features (0.1.4 → 0.2.0)
-   just bump-version minor
-
-   # For breaking changes (0.1.4 → 1.0.0) - coordinate with team!
-   just bump-version major
-   ```
-
-4. **Edit CHANGELOG.rst** with your changes:
-   ```rst
-   0.1.5 (2026-01-12)
-   ------------------
-
-   * Fixed memory leak in trace context cleanup
-   * Added support for custom trace sampling rates
-   ```
-
-5. **Create a pull request** to `development`:
-   ```bash
-   git add .
-   git commit -m "feat: your changes"
-   git push origin feature/your-feature-name
-   gh pr create --base development
-   ```
-
-### Creating Releases
-
-**Production Release** (from `main` branch):
-1. Merge changes from `development` to `main`
-2. Navigate to **Actions** → **Release** in GitHub
-3. Click "Run workflow" on `main` branch
-4. Packages published to `https://apt.robotops.com`
-
-**Development Release** (from `development` branch):
-1. Navigate to **Actions** → **Release Development** in GitHub
-2. Click "Run workflow" on `development` branch
-3. Packages published to `https://apt.development.robotops.com`
-
-Both workflows:
-- Create git tags (`v0.1.5` for production, `v0.1.5-development-abc123` for dev)
-- Build for amd64 and arm64 architectures
-- Publish Debian packages to the APT repository
-- Extract release notes from CHANGELOG.rst
-
-**Dry Run:** Both workflows support dry-run mode to validate before creating releases.
-
-### Code Quality
-
-```bash
-just lint         # Run linters
-just fmt          # Format code
-```
-
-### Setup Verification
-
-```bash
-just check-setup  # Verify Docker and build setup
-```
-
-## Architecture
-
-**For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).**
-
-This document covers:
-- Component architecture and responsibilities
-- Detailed data flows (publish, subscribe, services)
-- Safety guarantees and implementation
-- Trace context propagation (intra-process and cross-process)
-- Thread safety model
-- Edge cases and performance characteristics
-
-**High-level overview:**
+### Examples
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Robot Node Process                       │
-│                                                             │
-│   ┌─────────────────────────────────────────────────────┐   │
-│   │              rmw_robotops                           │   │
-│   │                                                     │   │
-│   │   rmw_publish() → [Real Message First]            │   │
-│   │                 → [Best-Effort Trace Event]        │   │
-│   │                                                     │   │
-│   │   rmw_take()    → [Extract Context from DDS]       │   │
-│   │                 → [Set Thread-Local Context]       │   │
-│   │                                                     │   │
-│   │   Background Thread → [/robotops/trace_events]     │   │
-│   └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│   ┌─────────────────────────────────────────────────────┐   │
-│   │         Underlying RMW (FastDDS/CycloneDDS)         │   │
-│   └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+robotops_config v0.4.14   ← May be ahead (added new config section)
+robotops_msgs v0.3.2      ← May be behind (stable, no changes needed)
+rmw_robotops v0.1.5       ← Independent evolution
+
+rmw_robotops v1.0.0       ← Breaking change: all components bump major version
+robotops_config v1.0.0
+robotops_msgs v1.0.0
 ```
+
+**Recommendation:** Always reference a specific version tag in production deployments for stability.
 
 ## Package Structure
 
@@ -565,63 +373,9 @@ rmw_robotops/
     └── benchmark_latency.cpp
 ```
 
-## Development Workflow
+## Development
 
-### Local Development (Mac)
-
-All development happens in Docker containers since ROS2 Jazzy doesn't run natively on macOS.
-
-```bash
-# Start dev container
-just dev
-
-# Inside container: make changes, rebuild
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Debug
-
-# Run tests
-colcon test --event-handlers console_direct+
-
-# Or from outside container
-just compile  # Build
-just test     # Test with sanitizers
-```
-
-### Adding New Tests
-
-1. Create test file in `test/`
-2. Add to `CMakeLists.txt` using `ament_add_gtest()`
-3. Run: `just test`
-
-## Troubleshooting
-
-### Quick Diagnosis
-
-```bash
-just check-setup  # Checks Docker and build
-```
-
-### Build Fails with Missing robotops_msgs
-
-The package depends on `robotops_msgs` from `apt.robotops.com`. Run `just check-setup` to diagnose:
-1. Docker buildx available
-2. Network access to `apt.robotops.com`
-3. Build succeeds
-
-### Tests Fail with AddressSanitizer
-
-This is expected during development. Safety tests with ASan are designed to catch memory issues early.
-
-```bash
-just test  # Runs with detailed sanitizer output
-```
-
-## Related Issues
-
-- **ROB-55**: This implementation (rmw_robotops)
-- **ROB-54**: robotops_msgs package (TraceEvent.msg)
-- **ROB-56**: Robot Agent span buffer and export
-- **ROB-33**: Distributed Tracing epic (parent)
-- **ROB-105**: Multi-DDS testing (CycloneDDS, etc.)
+For development setup, workflow, testing, and contribution guidelines, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## License
 
