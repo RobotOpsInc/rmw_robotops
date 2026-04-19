@@ -100,7 +100,10 @@ colcon build
 `robotops-demo-agent` is a lightweight local tool that subscribes to trace events, reconstructs spans, and writes Parquet files you can query with ROSQL — a quick way to see rmw_robotops in action end-to-end.
 
 ```bash
-# Build
+# Install ROSQL (more options at https://rosql.org)
+curl -fsSL https://rosql.org/install.sh | sh
+
+# Build the demo agent
 source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
 
 # Run (the session path is printed on startup)

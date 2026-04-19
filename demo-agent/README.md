@@ -119,7 +119,16 @@ Press **Ctrl-C** to flush and exit cleanly.
 
 ---
 
-## 5. Query with ROSQL
+## 5. Install ROSQL
+
+```bash
+# More installation options at https://rosql.org
+curl -fsSL https://rosql.org/install.sh | sh
+```
+
+---
+
+## 6. Query with ROSQL
 
 The session path is printed on startup (e.g. `./telemetry/robotops_demo_agent/20260403-141530/`) — substitute your own when running these queries.
 
