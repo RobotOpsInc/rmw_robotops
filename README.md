@@ -99,15 +99,20 @@ colcon build
 
 `robotops-demo-agent` is a lightweight local tool that subscribes to trace events, reconstructs spans, and writes Parquet files you can query with ROSQL — a quick way to see rmw_robotops in action end-to-end.
 
+Pre-built binaries are available for Ubuntu 24.04 (amd64 and arm64):
+
 ```bash
 # Install ROSQL (more options at https://rosql.org)
 curl -fsSL https://rosql.org/install.sh | sh
 
-# Build the demo agent
-source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
+# Download the demo agent (amd64 — swap linux-amd64 → linux-arm64 for arm64)
+curl -fsSL -o robotops-demo-agent \
+  https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-amd64
+chmod +x robotops-demo-agent
 
 # Run (the session path is printed on startup)
-./target/release/robotops-demo-agent
+source /opt/ros/jazzy/setup.bash
+./robotops-demo-agent
 
 # Query with ROSQL — replace 20260403-141530 with your session path
 rosql query "FROM traces SINCE 1h" \
