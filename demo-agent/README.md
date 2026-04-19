@@ -2,7 +2,7 @@
 
 Lightweight standalone demo tool for evaluating `rmw_robotops` observability locally.
 
-Subscribes to `/robotops/trace_events`, `/robotops/trace_context`, and `/rosout`, reconstructs distributed trace spans, and writes OTel-compatible Parquet files you can query with DuckDB or ROSQL.
+Subscribes to `/robotops/trace_events`, `/robotops/trace_context`, and `/rosout`, reconstructs distributed trace spans, and writes OTel-compatible Parquet files you can query with ROSQL.
 
 **This is a demo/evaluation tool — not for production.** For production deployments with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet management, see [robotops.com](https://robotops.com).
 
@@ -119,45 +119,35 @@ Press **Ctrl-C** to flush and exit cleanly.
 
 ---
 
-## 5. Query with DuckDB or ROSQL
+## 5. Query with ROSQL
+
+The session path is printed on startup — use it as `--url` in every query.
 
 ```bash
-# Install DuckDB CLI
-curl -fsSL https://install.duckdb.org | sh
-
-# Count spans collected
-duckdb -c "SELECT count(*) FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')"
-
-# Recent errors
-duckdb -c "
-SELECT trace_id, span_name, status_code, start_time_ns
-FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')
-WHERE status_code = 'ERROR'
-ORDER BY start_time_ns DESC
-LIMIT 20"
-
-# Log messages with trace correlation
-duckdb -c "
-SELECT trace_id, span_id, severity_text, body
-FROM read_parquet('./telemetry/robotops_demo_agent/*/logs/*.parquet')
-ORDER BY timestamp DESC
-LIMIT 20"
-
-# Join traces and logs for a specific trace
-duckdb -c "
-SELECT t.span_name, l.body, l.severity_text
-FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet') t
-JOIN read_parquet('./telemetry/robotops_demo_agent/*/logs/*.parquet') l
-  ON t.trace_id = l.trace_id
-WHERE t.trace_id = 'your-trace-id-here'"
-```
-
-With ROSQL:
-
-```bash
-rosql query "FROM traces WHERE status = 'ERROR' SINCE 5 min ago" \
+# All spans from the last hour
+rosql query "FROM traces SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/20260403-141530/
+  --url ./telemetry/robotops_demo_agent/<session>/
+
+# Publish spans only
+rosql query "FROM traces WHERE span_kind = 'PRODUCER' SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/<session>/
+
+# Errors
+rosql query "FROM traces WHERE status_code = 'ERROR' SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/<session>/
+
+# Log messages
+rosql query "FROM logs SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/<session>/
+
+# Logs correlated to a trace
+rosql query "FROM logs WHERE trace_id != '' SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/<session>/
 ```
 
 ---
@@ -232,16 +222,13 @@ The schema is a **superset** of the [ROSQL OtelPostgres profile](https://rosql.o
 **Example ROSQL queries:**
 
 ```bash
-# Filter by topic using span_attributes JSON extraction
-rosql "FROM traces WHERE topic = '/chatter' SINCE 5m" --backend parquet --url ./telemetry/robotops_demo_agent/<session>
+# Filter by topic
+rosql query "FROM traces WHERE span_name LIKE 'publish /chatter%' SINCE 5m" \
+  --backend parquet --url ./telemetry/robotops_demo_agent/<session>/
 
 # Filter by robot
-rosql "FROM traces WHERE robot_id = 'my-robot-01' SINCE 1h" --backend parquet --url ./telemetry/...
-
-# Raw DuckDB
-duckdb -c "SELECT service_name, span_name, span_attributes->>'ros.topic' AS topic
-           FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')
-           WHERE timestamp > NOW() - INTERVAL 5 MINUTE"
+rosql query "FROM traces WHERE robot_id = 'my-robot-01' SINCE 1h" \
+  --backend parquet --url ./telemetry/robotops_demo_agent/<session>/
 ```
 
 ### Logs schema — ROSQL OtelPostgres-compatible

@@ -30,11 +30,13 @@ The quickest way to see rmw_robotops + ROSQL in action is to run the `robotops-d
 # Build
 source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
 
-# Run (writes Parquet to ./telemetry/)
+# Run (writes Parquet to ./telemetry/ — note the session path printed on startup)
 ./target/release/robotops-demo-agent
 
-# Query with DuckDB
-duckdb -c "SELECT count(*) FROM read_parquet('./telemetry/robotops_demo_agent/*/traces/*.parquet')"
+# Query with ROSQL (replace <session> with the timestamp directory printed on startup)
+rosql query "FROM traces SINCE 1h" \
+  --backend parquet \
+  --url ./telemetry/robotops_demo_agent/<session>/
 ```
 
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
@@ -142,87 +144,6 @@ colcon build
 ```
 
 `rosdep` automatically fetches the source packages from `apt.robotops.com`, and `colcon` builds them all together in your environment.
-
-### From Source (For Development)
-
-See the Development section below for building in Docker with interactive development tools.
-
-## Prerequisites (Development Only)
-
-**Batteries included!** Only one thing needed on your host machine:
-
-1. **Docker** with buildx support
-   - macOS: Docker Desktop (buildx included by default)
-   - Linux: `docker buildx install`
-
-Everything else runs in containers — no ROS2, no Ubuntu required on host! RobotOps packages are fetched from the public APT repository (`apt.robotops.com`) — no credentials required.
-
-## Quick Start
-
-### 1. Install just (task runner)
-
-```bash
-# macOS
-brew install just
-
-# Linux
-curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
-```
-
-### 2. Build and develop
-
-```bash
-# See all available commands
-just
-
-# Build development image
-just build
-
-# Start interactive shell
-just dev
-
-# Inside container, build the package:
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install
-```
-
-## Versioning
-
-This repository uses **semantic versioning** expressed in `package.xml` and enforced via git tags (e.g., `v0.1.4`, `v0.2.0`).
-
-### Lockstep Major Versions
-
-**Major versions** move in lockstep across the entire RobotOps ecosystem:
-
-- `robotops_config`
-- `robotops_msgs`
-- `rmw_robotops` (this repository)
-- `robot_agent`
-
-When any component introduces a breaking change, all components bump to the next major version together (e.g., all move from `v1.x.x` to `v2.0.0`).
-
-### Independent Minor and Patch Versions
-
-Between major version boundaries, each component evolves independently:
-
-- **Minor versions** (e.g., `v0.1.0` → `v0.2.0`) add backward-compatible features
-- **Patch versions** (e.g., `v0.1.4` → `v0.1.5`) fix bugs without breaking compatibility
-
-**Backward compatibility is maintained by design** for all minor and patch releases within the same major version.
-
-### Examples
-
-```
-robotops_config v0.4.14   ← May be ahead (added new config section)
-robotops_msgs v0.3.2      ← May be behind (stable, no changes needed)
-rmw_robotops v0.1.5       ← Independent evolution
-
-rmw_robotops v1.0.0       ← Breaking change: all components bump major version
-robotops_config v1.0.0
-robotops_msgs v1.0.0
-```
-
-**Recommendation:** Always reference a specific version tag in production deployments for stability.
 
 ## Usage
 
@@ -364,137 +285,45 @@ If a custom config path is specified but invalid:
 [WARN] [rmw_robotops]: ROBOTOPS_CONFIG_PATH=/invalid/path.yaml specified but file not found or invalid
 ```
 
-## Common Tasks
+## Versioning
 
-All tasks use `just` commands for simplicity. Run `just` to see all available commands.
+This repository uses **semantic versioning** expressed in `package.xml` and enforced via git tags (e.g., `v0.1.4`, `v0.2.0`).
 
-### Development 
+### Lockstep Major Versions
 
-```bash
-just dev          # Interactive development shell
-just compile      # Build the package
-just clean        # Remove build artifacts
-just rebuild      # Clean + rebuild from scratch
+**Major versions** move in lockstep across the entire RobotOps ecosystem:
+
+- `robotops_config`
+- `robotops_msgs`
+- `rmw_robotops` (this repository)
+- `robot_agent`
+
+When any component introduces a breaking change, all components bump to the next major version together (e.g., all move from `v1.x.x` to `v2.0.0`).
+
+### Independent Minor and Patch Versions
+
+Between major version boundaries, each component evolves independently:
+
+- **Minor versions** (e.g., `v0.1.0` → `v0.2.0`) add backward-compatible features
+- **Patch versions** (e.g., `v0.1.4` → `v0.1.5`) fix bugs without breaking compatibility
+
+**Backward compatibility is maintained by design** for all minor and patch releases within the same major version.
+
+### Examples
+
+```
+robotops_config v0.4.14   ← May be ahead (added new config section)
+robotops_msgs v0.3.2      ← May be behind (stable, no changes needed)
+rmw_robotops v0.1.5       ← Independent evolution
+
+rmw_robotops v1.0.0       ← Breaking change: all components bump major version
+robotops_config v1.0.0
+robotops_msgs v1.0.0
 ```
 
-### Testing
+**Recommendation:** Always reference a specific version tag in production deployments for stability.
 
-```bash
-just test         # Run all tests with sanitizers
-just test-safety  # Run safety tests (MUST pass before deployment)
-just benchmark    # Performance benchmarks
-just stress       # Stress test (10,000 msg/sec)
-just logs         # Show logs from last test run
-```
-
-**Performance Requirements:**
-- Median latency: < 1µs added overhead
-- CPU overhead: < 5% vs underlying RMW
-- Memory: Zero allocations in hot path
-
-### CI/CD
-
-**Reproducing GitHub Actions CI locally:**
-
-```bash
-# Run the exact same CI suite that runs in GitHub Actions
-just ci
-
-# This executes:
-# 1. just ci-lint - All lint checks (copyright, cpplint, uncrustify, etc.)
-# 2. just ci-test - All tests with AddressSanitizer and UBSan
-# Both steps run even if one fails, matching GitHub Actions behavior
-
-# Expected results (as of 2026-01-05):
-# - 141 tests total (32 lint + 109 functional/performance)
-# - 29 tests skipped
-# - 0 functional failures ✅
-# - 4-5 performance test failures (need tuning for CI environment)
-#
-# Note: CI currently fails due to performance tests. These need threshold
-# adjustments to pass in containerized CI environments.
-```
-
-**IMPORTANT:** Always run `just ci` before pushing to catch issues early!
-
-## Development Workflow
-
-### Making Changes
-
-1. **Create a feature branch** from `development`:
-   ```bash
-   git checkout development
-   git pull origin development
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make your changes** and ensure tests pass:
-   ```bash
-   just ci  # Run full CI suite locally
-   ```
-
-3. **Bump the version** (if needed):
-   ```bash
-   # For bug fixes (0.1.4 → 0.1.5)
-   just bump-version patch
-
-   # For new features (0.1.4 → 0.2.0)
-   just bump-version minor
-
-   # For breaking changes (0.1.4 → 1.0.0) - coordinate with team!
-   just bump-version major
-   ```
-
-4. **Edit CHANGELOG.rst** with your changes:
-   ```rst
-   0.1.5 (2026-01-12)
-   ------------------
-
-   * Fixed memory leak in trace context cleanup
-   * Added support for custom trace sampling rates
-   ```
-
-5. **Create a pull request** to `development`:
-   ```bash
-   git add .
-   git commit -m "feat: your changes"
-   git push origin feature/your-feature-name
-   gh pr create --base development
-   ```
-
-### Creating Releases
-
-**Production Release** (from `main` branch):
-1. Merge changes from `development` to `main`
-2. Navigate to **Actions** → **Release** in GitHub
-3. Click "Run workflow" on `main` branch
-4. Packages published to `https://apt.robotops.com`
-
-**Development Release** (from `development` branch):
-1. Navigate to **Actions** → **Release Development** in GitHub
-2. Click "Run workflow" on `development` branch
-3. Packages published to `https://apt.development.robotops.com`
-
-Both workflows:
-- Create git tags (`v0.1.5` for production, `v0.1.5-development-abc123` for dev)
-- Build for amd64 and arm64 architectures
-- Publish Debian packages to the APT repository
-- Extract release notes from CHANGELOG.rst
-
-**Dry Run:** Both workflows support dry-run mode to validate before creating releases.
-
-### Code Quality
-
-```bash
-just lint         # Run linters
-just fmt          # Format code
-```
-
-### Setup Verification
-
-```bash
-just check-setup  # Verify Docker and build setup
-```
+---
 
 ## Architecture
 
@@ -565,55 +394,9 @@ rmw_robotops/
     └── benchmark_latency.cpp
 ```
 
-## Development Workflow
+## Development
 
-### Local Development (Mac)
-
-All development happens in Docker containers since ROS2 Jazzy doesn't run natively on macOS.
-
-```bash
-# Start dev container
-just dev
-
-# Inside container: make changes, rebuild
-colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Debug
-
-# Run tests
-colcon test --event-handlers console_direct+
-
-# Or from outside container
-just compile  # Build
-just test     # Test with sanitizers
-```
-
-### Adding New Tests
-
-1. Create test file in `test/`
-2. Add to `CMakeLists.txt` using `ament_add_gtest()`
-3. Run: `just test`
-
-## Troubleshooting
-
-### Quick Diagnosis
-
-```bash
-just check-setup  # Checks Docker and build
-```
-
-### Build Fails with Missing robotops_msgs
-
-The package depends on `robotops_msgs` from `apt.robotops.com`. Run `just check-setup` to diagnose:
-1. Docker buildx available
-2. Network access to `apt.robotops.com`
-3. Build succeeds
-
-### Tests Fail with AddressSanitizer
-
-This is expected during development. Safety tests with ASan are designed to catch memory issues early.
-
-```bash
-just test  # Runs with detailed sanitizer output
-```
+For development setup, workflow, testing, and contribution guidelines, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## Related Issues
 
