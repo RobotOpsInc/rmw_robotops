@@ -13,6 +13,7 @@ import glob
 import os
 import subprocess
 import sys
+
 import yaml
 
 
@@ -21,7 +22,8 @@ def find_session_dir(data_dir: str) -> str:
     sessions = sorted(glob.glob(pattern))
     if not sessions:
         print(f'[ERROR] No demo-agent session found under {data_dir}/robotops_demo_agent/')
-        print(f'        Files present: {glob.glob(os.path.join(data_dir, "**"), recursive=True)[:20]}')
+        found = glob.glob(os.path.join(data_dir, '**'), recursive=True)[:20]
+        print(f'        Files present: {found}')
         sys.exit(1)
     return sessions[-1]
 
