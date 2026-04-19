@@ -121,33 +121,35 @@ Press **Ctrl-C** to flush and exit cleanly.
 
 ## 5. Query with ROSQL
 
-The session path is printed on startup — use it as `--url` in every query.
+The session path is printed on startup (e.g. `./telemetry/robotops_demo_agent/20260403-141530/`) — substitute your own when running these queries.
 
 ```bash
+# Replace 20260403-141530 with the session path printed on startup
+
 # All spans from the last hour
 rosql query "FROM traces SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/<session>/
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 
 # Publish spans only
 rosql query "FROM traces WHERE span_kind = 'PRODUCER' SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/<session>/
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 
 # Errors
 rosql query "FROM traces WHERE status_code = 'ERROR' SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/<session>/
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 
 # Log messages
 rosql query "FROM logs SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/<session>/
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 
 # Logs correlated to a trace
 rosql query "FROM logs WHERE trace_id != '' SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/<session>/
+  --url ./telemetry/robotops_demo_agent/20260403-141530/
 ```
 
 ---
@@ -222,13 +224,15 @@ The schema is a **superset** of the [ROSQL OtelPostgres profile](https://rosql.o
 **Example ROSQL queries:**
 
 ```bash
+# Replace 20260403-141530 with the session path printed on startup
+
 # Filter by topic
 rosql query "FROM traces WHERE span_name LIKE 'publish /chatter%' SINCE 5m" \
-  --backend parquet --url ./telemetry/robotops_demo_agent/<session>/
+  --backend parquet --url ./telemetry/robotops_demo_agent/20260403-141530/
 
 # Filter by robot
 rosql query "FROM traces WHERE robot_id = 'my-robot-01' SINCE 1h" \
-  --backend parquet --url ./telemetry/robotops_demo_agent/<session>/
+  --backend parquet --url ./telemetry/robotops_demo_agent/20260403-141530/
 ```
 
 ### Logs schema — ROSQL OtelPostgres-compatible

@@ -109,7 +109,7 @@ source /opt/ros/jazzy/setup.bash && cd demo-agent && cargo build --release
 # Query with ROSQL
 rosql query "FROM traces SINCE 1h" \
   --backend parquet \
-  --url ./telemetry/robotops_demo_agent/<session>/
+  --url ./telemetry/robotops_demo_agent/20260403-141530/  # path printed on startup
 ```
 
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
