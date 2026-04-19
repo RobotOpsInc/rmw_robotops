@@ -29,39 +29,6 @@ This document describes the internal architecture of `rmw_robotops`, a ROS2 midd
 4. **Lock-free Hot Path**: No locks during message interception
 5. **Zero Robot Impact**: Tracing failures never crash or block robot operation
 
-### High-Level Flow
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        User Application                          │
-│                     (rclcpp/rclpy nodes)                         │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-                         │ ROS2 RMW API (rmw.h)
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│                      rmw_robotops                                │
-│                                                                  │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐     │
-│  │ Interceptor  │───▶│ Underlying   │───▶│   Tracer     │     │
-│  │  (thin)      │    │    RMW       │    │ (background) │     │
-│  └──────────────┘    └──────────────┘    └──────────────┘     │
-│         │                    │                    │             │
-│         │                    │                    │             │
-│         ▼                    ▼                    ▼             │
-│  Trace Context        DDS Messages        TraceEvent Queue     │
-│  (thread-local)       (unchanged)         (lock-free)          │
-└─────────────────────────────────────────────┬───────────────────┘
-                                              │
-                                              │ Published every 10ms
-                                              │
-                                    ┌─────────▼──────────┐
-                                    │ /robotops/trace_   │
-                                    │      events        │
-                                    │   (TraceEvent)     │
-                                    └────────────────────┘
-```
-
 ---
 
 ## Component Architecture
@@ -144,42 +111,42 @@ User calls rmw_publish(publisher, message)
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 1: Emit START Event (BEFORE real publish)        │
+│ STEP 1: Emit START Event (BEFORE real publish)         │
 │                                                        │
-│ 1. Get/mint trace context from TLS                    │
-│ 2. Generate new span_id for this operation            │
-│ 3. Compute content_hash via message introspection     │
-│ 4. Emit LTTng tracepoint (if enabled)                 │
-│ 5. Push TraceEvent to lock-free queue                 │
+│ 1. Get/mint trace context from TLS                     │
+│ 2. Generate new span_id for this operation             │
+│ 3. Compute content_hash via message introspection      │
+│ 4. Emit LTTng tracepoint (if enabled)                  │
+│ 5. Push TraceEvent to lock-free queue                  │
 │                                                        │
-│ Safety: If any step fails, disable tracing for this   │
-│         operation but continue with real publish      │
+│ Safety: If any step fails, disable tracing for this    │
+│         operation but continue with real publish       │
 └────────────────────────────────────────────────────────┘
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 2: REAL MESSAGE (Safety Guarantee #3)            │
+│ STEP 2: REAL MESSAGE (Safety Guarantee #3)             │
 │                                                        │
 │ ret = underlying_rmw_publish(publisher, message)       │
 │                                                        │
-│ This ALWAYS happens, regardless of tracing failures   │
+│ This ALWAYS happens, regardless of tracing failures    │
 └────────────────────────────────────────────────────────┘
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 3: Emit END Event (AFTER real publish)           │
+│ STEP 3: Emit END Event (AFTER real publish)            │
 │                                                        │
-│ Only if ret == RMW_RET_OK and tracing still active:   │
-│ 1. Emit LTTng tracepoint (if enabled)                 │
-│ 2. Create TraceEvent with:                            │
-│    - trace_id, span_id, parent_span_id                │
-│    - topic_name, node_name                            │
-│    - content_hash (already computed)                  │
-│    - correlation_method (content-based)               │
-│    - span_links (if fan-in detected)                  │
-│ 3. Push TraceEvent to queue                           │
+│ Only if ret == RMW_RET_OK and tracing still active:    │
+│ 1. Emit LTTng tracepoint (if enabled)                  │
+│ 2. Create TraceEvent with:                             │
+│    - trace_id, span_id, parent_span_id                 │
+│    - topic_name, node_name                             │
+│    - content_hash (already computed)                   │
+│    - correlation_method (content-based)                │
+│    - span_links (if fan-in detected)                   │
+│ 3. Push TraceEvent to queue                            │
 │                                                        │
-│ Safety: Failures logged, never propagate              │
+│ Safety: Failures logged, never propagate               │
 └────────────────────────────────────────────────────────┘
          │
          ▼
@@ -198,55 +165,55 @@ User calls rmw_take_with_info(subscription, message, taken, message_info)
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 1: Emit START Event (BEFORE real take)           │
+│ STEP 1: Emit START Event (BEFORE real take)            │
 │                                                        │
-│ 1. Generate span_id for this operation                │
-│ 2. Emit LTTng tracepoint (if enabled)                 │
+│ 1. Generate span_id for this operation                 │
+│ 2. Emit LTTng tracepoint (if enabled)                  │
 │                                                        │
-│ Note: No correlation extraction yet - message not     │
-│       received until STEP 2                           │
+│ Note: No correlation extraction yet - message not      │
+│       received until STEP 2                            │
 └────────────────────────────────────────────────────────┘
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 2: REAL MESSAGE (Safety Guarantee #3)            │
+│ STEP 2: REAL MESSAGE (Safety Guarantee #3)             │
 │                                                        │
-│ ret = underlying_rmw_take_with_info(                  │
+│ ret = underlying_rmw_take_with_info(                   │
 │         subscription, message, taken, message_info)    │
 │                                                        │
-│ This ALWAYS happens, regardless of tracing failures   │
+│ This ALWAYS happens, regardless of tracing failures    │
 └────────────────────────────────────────────────────────┘
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ STEP 3: Emit END Event (AFTER real take)              │
+│ STEP 3: Emit END Event (AFTER real take)               │
 │                                                        │
-│ Only if ret == OK, *taken == true, tracing active:    │
+│ Only if ret == OK, *taken == true, tracing active:     │
 │                                                        │
-│ 1. Extract correlation metadata from message_info:    │
-│    - publisher_gid (24 bytes)                         │
-│    - source_timestamp_ns                              │
-│    - Convert GID to hex string                        │
+│ 1. Extract correlation metadata from message_info:     │
+│    - publisher_gid (24 bytes)                          │
+│    - source_timestamp_ns                               │
+│    - Convert GID to hex string                         │
 │                                                        │
-│ 2. Attempt to get trace context from TLS:             │
-│    - If found: Continue existing trace (intra-proc)   │
-│    - If not found: Mint new trace_id (cross-proc)     │
+│ 2. Attempt to get trace context from TLS:              │
+│    - If found: Continue existing trace (intra-proc)    │
+│    - If not found: Mint new trace_id (cross-proc)      │
 │                                                        │
-│ 3. Compute content_hash via message introspection     │
+│ 3. Compute content_hash via message introspection      │
 │                                                        │
-│ 4. Check for fan-in:                                  │
-│    - If current TLS context != new context:           │
-│      Save current as pending for span links           │
+│ 4. Check for fan-in:                                   │
+│    - If current TLS context != new context:            │
+│      Save current as pending for span links            │
 │                                                        │
-│ 5. Set new trace context in TLS for downstream        │
+│ 5. Set new trace context in TLS for downstream         │
 │                                                        │
-│ 6. Emit LTTng tracepoint + TraceEvent with:           │
-│    - trace_id, span_id, parent_span_id                │
-│    - publisher_gid, source_timestamp_ns               │
-│    - content_hash                                     │
-│    - correlation_method (content-based)               │
+│ 6. Emit LTTng tracepoint + TraceEvent with:            │
+│    - trace_id, span_id, parent_span_id                 │
+│    - publisher_gid, source_timestamp_ns                │
+│    - content_hash                                      │
+│    - correlation_method (content-based)                │
 │                                                        │
-│ Safety: Failures logged, never propagate              │
+│ Safety: Failures logged, never propagate               │
 └────────────────────────────────────────────────────────┘
          │
          ▼
@@ -271,23 +238,23 @@ Background thread (started in rmw_init)
 ┌────────────────────────────────────────────────────────┐
 │ Drain TraceEvent Queue                                 │
 │                                                        │
-│ while (!queue.empty()) {                              │
-│   TraceEvent event = queue.pop();                     │
-│   events_to_publish.push_back(event);                 │
+│ while (!queue.empty()) {                               │
+│   TraceEvent event = queue.pop();                      │
+│   events_to_publish.push_back(event);                  │
 │ }                                                      │
 └────────────────────────────────────────────────────────┘
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
-│ Batch Publish to /robotops/trace_events               │
+│ Batch Publish to /robotops/trace_events                │
 │                                                        │
-│ for (auto& event : events_to_publish) {               │
-│   underlying_rmw_publish(                             │
-│     trace_publisher,                                  │
-│     &event);                                          │
+│ for (auto& event : events_to_publish) {                │
+│   underlying_rmw_publish(                              │
+│     trace_publisher,                                   │
+│     &event);                                           │
 │ }                                                      │
 │                                                        │
-│ Safety: Publish failures logged but don't crash       │
+│ Safety: Publish failures logged but don't crash        │
 └────────────────────────────────────────────────────────┘
          │
          ▼
@@ -424,9 +391,9 @@ rmw_ret_t rmw_shutdown(rmw_context_t * context) {
 Thread A:
 ┌─────────────────────────────────────────────────────────┐
 │ rmw_publish()                                           │
-│   ├─ trace_context.trace_id = "abc123..."              │
-│   ├─ set_trace_context(trace_context)  // to TLS       │
-│   └─ underlying_rmw_publish()                          │
+│   ├─ trace_context.trace_id = "abc123..."               │
+│   ├─ set_trace_context(trace_context)  // to TLS        │
+│   └─ underlying_rmw_publish()                           │
 └─────────────────────────────────────────────────────────┘
                     │
                     │ (message delivered via DDS)
@@ -434,12 +401,12 @@ Thread A:
                     ▼
 ┌─────────────────────────────────────────────────────────┐
 │ rmw_take_with_info()                                    │
-│   ├─ extracted_context = get_trace_context()  // from TLS│
-│   ├─ if (!extracted_context.is_empty()):               │
+│   ├─ extracted_context = get_trace_context() // from TLS│
+│   ├─ if (!extracted_context.is_empty()):                │
 │   │     // Continue existing trace                      │
-│   │     new_context.trace_id = extracted_context.trace_id│
-│   │     new_context.parent_span_id = extracted_context.span_id│
-│   └─ set_trace_context(new_context)                    │
+│   │   new_context.trace_id = extracted_context.trace_id │
+│   │   new_context.parent_span_id = extracted.span_id    │
+│   └─ set_trace_context(new_context)                     │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -453,14 +420,14 @@ Thread A:
 Process A:
 ┌─────────────────────────────────────────────────────────┐
 │ rmw_publish()                                           │
-│   ├─ trace_context.trace_id = "abc123..."              │
-│   ├─ content_hash = compute_message_hash(msg)          │
-│   └─ Emit TraceEvent:                                  │
-│       - trace_id: "abc123..."                          │
-│       - span_id: "1234567890abcdef"                    │
-│       - event_type: PUBLISH_RMW_START                  │
-│       - content_hash: 0x9f3a2b1c...                    │
-│       - timestamp_ns: 1234567890123456                 │
+│   ├─ trace_context.trace_id = "abc123..."               │
+│   ├─ content_hash = compute_message_hash(msg)           │
+│   └─ Emit TraceEvent:                                   │
+│       - trace_id: "abc123..."                           │
+│       - span_id: "1234567890abcdef"                     │
+│       - event_type: PUBLISH_RMW_START                   │
+│       - content_hash: 0x9f3a2b1c...                     │
+│       - timestamp_ns: 1234567890123456                  │
 └─────────────────────────────────────────────────────────┘
                     │
                     │ DDS message (NO trace context injected)
@@ -469,34 +436,34 @@ Process A:
 Process B:
 ┌─────────────────────────────────────────────────────────┐
 │ rmw_take_with_info()                                    │
-│   ├─ extracted_context = get_trace_context()  // EMPTY!│
-│   ├─ // No context in TLS (different process)          │
-│   ├─ generate_trace_id(new_context.trace_id)           │
-│   │   // Mint NEW trace_id: "xyz789..."                │
+│   ├─ extracted_context = get_trace_context()  // EMPTY! │
+│   ├─ // No context in TLS (different process)           │
+│   ├─ generate_trace_id(new_context.trace_id)            │
+│   │   // Mint NEW trace_id: "xyz789..."                 │
 │   ├─ correlation_metadata.publisher_gid = "deadbeef..." │
-│   ├─ correlation_metadata.source_timestamp_ns = 123... │
-│   ├─ content_hash = compute_message_hash(msg)          │
-│   │   // Same message → same hash: 0x9f3a2b1c...       │
-│   └─ Emit TraceEvent:                                  │
-│       - trace_id: "xyz789..." (NEW, different!)        │
-│       - span_id: "fedcba0987654321"                    │
-│       - event_type: TAKE_RMW_START                     │
-│       - content_hash: 0x9f3a2b1c... (SAME!)            │
-│       - publisher_gid: "deadbeef..." (from msg_info)   │
-│       - source_timestamp_ns: 123... (from msg_info)    │
+│   ├─ correlation_metadata.source_timestamp_ns = 123...  │
+│   ├─ content_hash = compute_message_hash(msg)           │
+│   │   // Same message → same hash: 0x9f3a2b1c...        │
+│   └─ Emit TraceEvent:                                   │
+│       - trace_id: "xyz789..." (NEW, different!)         │
+│       - span_id: "fedcba0987654321"                     │
+│       - event_type: TAKE_RMW_START                      │
+│       - content_hash: 0x9f3a2b1c... (SAME!)             │
+│       - publisher_gid: "deadbeef..." (from msg_info)    │
+│       - source_timestamp_ns: 123... (from msg_info)     │
 └─────────────────────────────────────────────────────────┘
                     │
                     ▼
          robot_agent (post-hoc correlation)
 ┌─────────────────────────────────────────────────────────┐
 │ Match events where:                                     │
-│   - publisher_gid matches                              │
-│   - source_timestamp_ns matches                        │
-│   - content_hash matches                               │
-│   - timestamps within reasonable window                │
-│                                                        │
-│ Link PUBLISH (trace_id="abc123...") →                 │
-│      TAKE (trace_id="xyz789...")                      │
+│   - publisher_gid matches                               │
+│   - source_timestamp_ns matches                         │
+│   - content_hash matches                                │
+│   - timestamps within reasonable window                 │
+│                                                         │
+│ Link PUBLISH (trace_id="abc123...") →                   │
+│      TAKE (trace_id="xyz789...")                        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -826,15 +793,16 @@ rmw_shutdown() {
 
 ### Latency Overhead
 
-| Operation | Without Tracing | With Tracing | Overhead |
-|-----------|----------------|--------------|----------|
-| `rmw_publish()` | ~500ns | ~550ns | ~50ns (10%) |
-| `rmw_take()` | ~300ns | ~330ns | ~30ns (10%) |
+| Operation | Overhead Target |
+|-----------|----------------|
+| `rmw_publish()` | < 1µs (median) |
+| `rmw_take()` | < 1µs (median) |
 
 **Notes:**
 - Overhead primarily from: span ID generation, content hashing
 - xxHash64 is extremely fast (~33ns per 1KB message)
 - Queue push is lock-free, typically <10ns
+- Benchmarks are in progress — see [#41](https://github.com/RobotOpsInc/rmw_robotops/issues/41) for measured results
 
 ### Memory Overhead
 

@@ -17,7 +17,9 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <string>
+#include <thread>
 
 // Forward declaration for introspection type
 struct rosidl_typesupport_introspection_c__MessageMembers_s;
@@ -99,6 +101,14 @@ uint8_t detect_action_event_type(
   const char * topic_name,
   bool is_publisher,
   bool is_start_event) noexcept;
+
+/// Get the current thread ID as a uint64_t
+/// Uses std::hash for portability — not guaranteed unique but consistent per thread
+inline uint64_t get_current_thread_id() noexcept
+{
+  return static_cast<uint64_t>(
+    std::hash<std::thread::id>{}(std::this_thread::get_id()));
+}
 
 /// Convert DDS GID to hex string for correlation
 /// @param gid DDS publisher GUID (24 bytes)

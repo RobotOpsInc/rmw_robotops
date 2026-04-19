@@ -2,6 +2,70 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.3 (2026-04-19)
+-------------------
+
+* ``rmw_service.cpp``: fix ``EVENT_SERVICE_RESPONSE`` to reuse the span_id from ``EVENT_SERVICE_REQUEST`` (stored in thread-local context) so ``span_reconstructor`` can correlate them into a single SERVER span. Previously both events generated independent span_ids, yielding 0 SERVER spans in Parquet.
+* ``demo-agent/tests/e2e``: switch from two-container (publisher + agent) to single combined container; fixes DDS multicast failure in Docker Desktop for macOS. Resolves all 15 e2e ROSQL query assertions.
+* ``demo-agent/src/export/parquet.rs``: replace nested Tokio runtime with ``tokio::task::block_in_place`` to avoid panic on first Parquet flush.
+* ``demo-agent/src/subscribers``: fix QoS mismatch — trace and context subscribers now use ``best_effort()`` to match rmw_robotops publisher QoS.
+* ``demo-agent/tests/e2e/Dockerfile.query``: use ``ubuntu:24.04`` (GLIBC 2.39) instead of ``debian:bookworm-slim`` (GLIBC 2.36) to satisfy ``rosql`` GLIBC >= 2.38 requirement.
+
+0.9.2 (2026-04-19)
+-------------------
+
+* ``demo-agent``: add Docker-based e2e test rig (``demo-agent/tests/e2e/``) that verifies Parquet output is queryable by ROSQL (GH-46)
+
+  * Runs a turtlesim scenario (two processes under ``RMW_IMPLEMENTATION=rmw_robotops``) generating publish/subscribe, service, and action spans plus correlated log records
+  * Asserts producer, consumer, and server span kinds; cross-process correlation; logs↔traces linkage; and resource attribute population via ``rosql query``
+  * Topic-filter variant asserts ``ROBOTOPS_TRACE_TOPIC_FILTER`` suppresses matched topics
+  * Manual-only ``workflow_dispatch`` GitHub Actions workflow (``e2e-rosql.yml``); run locally with ``just e2e``
+
+0.9.1 (2026-04-19)
+-------------------
+
+* ``demo-agent``: align Parquet output schema with ROSQL OtelPostgres profile (GH-43)
+
+  * ``otel_traces``: add ``timestamp`` (``TIMESTAMPTZ`` / ``Timestamp(Microsecond, UTC)``), ``service_name``, ``span_attributes`` (JSON), ``resource_attributes`` (JSON); rename ``duration_ns`` → ``duration``; ``parent_span_id`` is now a non-nullable string (empty = no parent)
+  * ``otel_logs``: add ``timestamp``, ``service_name``, ``resource_attributes``, ``log_attributes`` (JSON, contains ``logger.name``, ``code.*``); rename ``severity`` → ``severity_text``
+  * Subscribe spans now carry the correlated publish span as ``parent_span_id`` — enables ROSQL ``PATH DEVIATION`` and ``TRACE`` queries
+  * ``service_name`` derived per-span from ROS2 node namespace + node name (e.g. ``/talker``)
+  * Add ``--robot-id`` / ``--organization-id`` CLI flags (also ``ROBOTOPS_ROBOT_ID`` / ``ROBOTOPS_ORG_ID``) to populate ``resource_attributes`` for ROSQL ``WHERE robot_id = '...'`` filters
+  * ROS2-specific flat columns retained as extras after the core columns (ROSQL ignores them)
+
+0.9.0 (2026-04-03)
+-------------------
+
+* **BREAKING**: Replace DuckDB output with pure-Rust Parquet export in ``demo-agent`` — eliminates 5-10 min C++ compilation on first build
+* ``demo-agent``: write OTel-compatible Parquet files to ``<output>/robotops_demo_agent/<yyyymmdd-hhmmss>/traces/`` and ``logs/`` (queryable with ``SELECT * FROM read_parquet('...')`` in DuckDB/ROSQL)
+* ``demo-agent``: add S3/S3-compatible output via ``-o s3://bucket/prefix`` (reads ``AWS_PROFILE``, ``AWS_REGION``, ``AWS_ENDPOINT_URL``, ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``)
+* ``demo-agent``: add ``--limit-mb`` flag (default 200) for graceful shutdown when storage limit is reached
+* ``demo-agent``: startup greeting now prints session path, storage limit, and version
+* ``demo-agent``: simplified Dockerfile — removed DuckDB system library install block
+* Remove ``duckdb``, ``postgres``, and ``otlp`` feature flags from demo-agent (single portable output format)
+
+0.8.0 (2026-04-03)
+-------------------
+
+* **NEW FEATURE**: Add ``robotops-demo-agent`` — lightweight standalone Rust demo agent for local trace evaluation (GH-38)
+* ``demo-agent/`` subdirectory: standalone Cargo project, no colcon required, builds with ``cargo build --release``
+* Subscribes to ``/robotops/trace_events``, ``/robotops/trace_context``, and ``/rosout`` via r2r
+* Span reconstruction (START/END pairing) and cross-process correlation (GID + timestamp + content hash) ported from robot_agent
+* Log-to-trace correlation via ``TraceContextRegistry`` (keyed by ROS2 logger name, matching ``/rosout`` ``Log.name`` format)
+* Default output: DuckDB with OTel-compatible ``otel_traces`` and ``otel_logs`` tables conforming to ROSQL protocol (rosql.org)
+* CDR-compatible message structs with round-trip unit tests for drift detection (no ``robotops-msgs`` C library dependency)
+* Added "Getting started: end-to-end evaluation" section to README; not for production — use robot_agent for production deployments
+
+0.7.0 (2026-04-03)
+-------------------
+
+* **NEW FEATURE**: Implement TraceContextChange publisher for end-to-end log-to-trace correlation (ROB-179)
+* Added ``TraceContextChangePublisher``: background thread publishing to ``/robotops/trace_context`` with 512-slot MPSC ring buffer, best-effort QoS, following existing ``trace_publisher.cpp`` pattern
+* Emit ``CONTEXT_ENTERED`` in ``rmw_take_with_info``, ``rmw_take_request``, ``rmw_take_response`` when thread-local trace context is set after receiving a message
+* Emit ``CONTEXT_EXITED`` in ``rmw_publish`` and ``rmw_send_response`` when the downstream operation completes
+* Fills the gap between ROB-94 (robot_agent subscriber) and ROB-55 (rmw_robotops trace events): ``robot_agent`` can now correlate ``/rosout`` logs with active trace spans
+* Added ``get_current_thread_id()`` utility to ``utils.hpp`` for multi-threaded executor support
+
 0.6.0 (2026-02-08)
 -------------------
 

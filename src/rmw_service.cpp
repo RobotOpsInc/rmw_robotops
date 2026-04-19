@@ -23,6 +23,7 @@
 #include "rmw_robotops/config.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
+#include "rmw_robotops/trace_context_change_publisher.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
 #include "rmw_robotops/utils.hpp"
 #include "robotops_msgs/msg/trace_event.h"
@@ -272,6 +273,27 @@ rmw_take_request(
       } else {
         record_trace_success();
       }
+
+      // Emit CONTEXT_ENTERED so robot_agent can correlate /rosout logs with this trace (ROB-179)
+      {
+        rmw_robotops::TraceContextChangeEvent ctx_event;
+        ctx_event.timestamp_ns = event.timestamp_ns;
+        ctx_event.thread_id = rmw_robotops::get_current_thread_id();
+        ctx_event.change_type = rmw_robotops::CONTEXT_CHANGE_ENTERED;
+        std::memcpy(ctx_event.trace_id, new_context.trace_id,
+          sizeof(ctx_event.trace_id) - 1);
+        ctx_event.trace_id[sizeof(ctx_event.trace_id) - 1] = '\0';
+        std::memcpy(ctx_event.span_id, new_context.span_id,
+          sizeof(ctx_event.span_id) - 1);
+        ctx_event.span_id[sizeof(ctx_event.span_id) - 1] = '\0';
+        std::memcpy(ctx_event.node_name, event.node_name,
+          sizeof(ctx_event.node_name) - 1);
+        ctx_event.node_name[sizeof(ctx_event.node_name) - 1] = '\0';
+        std::memcpy(ctx_event.node_namespace, event.node_namespace,
+          sizeof(ctx_event.node_namespace) - 1);
+        ctx_event.node_namespace[sizeof(ctx_event.node_namespace) - 1] = '\0';
+        rmw_robotops::enqueue_context_change(ctx_event);
+      }
     } catch (...) {
       record_trace_failure();
     }
@@ -307,16 +329,18 @@ rmw_send_response(
   char span_id_buf[17] = {0};
   uint64_t start_timestamp_ns = 0;
 
-  // STEP 1: Emit START event (BEFORE underlying send)
+  // STEP 1: Capture trace context and record send timestamp (BEFORE underlying send)
+  // Reads the thread-local context written by rmw_take_request on the same thread.
+  // Reusing context.span_id pairs this RESPONSE event with the earlier REQUEST event
+  // so span_reconstructor can merge them into a single SERVER span.
+  // Note: We do NOT inject into DDS metadata for services —
+  // related_sample_identity is reserved for DDS-RPC request-response correlation.
   if (tracing_active) {
     try {
       context = get_or_mint_trace_context();
-      generate_span_id(span_id_buf);
+      std::memcpy(span_id_buf, context.span_id, sizeof(span_id_buf));
       start_timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
-
-      // Note: We do NOT inject into DDS metadata for services
-      // The related_sample_identity is reserved for DDS-RPC request-response correlation
 
       #ifdef ROS_TRACING_ENABLED
       tracepoint(
@@ -332,7 +356,7 @@ rmw_send_response(
   // STEP 2: REAL RESPONSE FIRST (Safety guarantee)
   rmw_ret_t ret = underlying_rmw_send_response(service, request_header, ros_response);
 
-  // STEP 3: Emit END event
+  // STEP 3: Emit SERVICE_RESPONSE event (paired with SERVICE_REQUEST by shared span_id)
   if (ret == RMW_RET_OK && tracing_active) {
     try {
       #ifdef ROS_TRACING_ENABLED
@@ -385,6 +409,22 @@ rmw_send_response(
         record_trace_failure();
       } else {
         record_trace_success();
+      }
+
+      // Emit CONTEXT_EXITED — the service handler is done processing (ROB-179)
+      {
+        rmw_robotops::TraceContextChangeEvent ctx_event;
+        ctx_event.timestamp_ns = event.timestamp_ns;
+        ctx_event.thread_id = rmw_robotops::get_current_thread_id();
+        ctx_event.change_type = rmw_robotops::CONTEXT_CHANGE_EXITED;
+        std::memcpy(ctx_event.node_name, event.node_name,
+          sizeof(ctx_event.node_name) - 1);
+        ctx_event.node_name[sizeof(ctx_event.node_name) - 1] = '\0';
+        std::memcpy(ctx_event.node_namespace, event.node_namespace,
+          sizeof(ctx_event.node_namespace) - 1);
+        ctx_event.node_namespace[sizeof(ctx_event.node_namespace) - 1] = '\0';
+        // trace_id and span_id remain empty — not needed for CONTEXT_EXITED
+        rmw_robotops::enqueue_context_change(ctx_event);
       }
     } catch (...) {
       record_trace_failure();

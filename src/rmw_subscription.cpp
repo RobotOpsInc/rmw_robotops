@@ -24,6 +24,7 @@
 #include "rmw_robotops/diagnostics_metrics.hpp"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
+#include "rmw_robotops/trace_context_change_publisher.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
 #include "rmw_robotops/utils.hpp"
 #include "robotops_msgs/msg/trace_event.h"
@@ -414,6 +415,27 @@ rmw_take_with_info(
         record_trace_success();
         rmw_robotops::increment_traces_emitted();
         rmw_robotops::increment_traces_emitted();  // Two events emitted (start + end)
+      }
+
+      // Emit CONTEXT_ENTERED so robot_agent can correlate /rosout logs with this trace (ROB-179)
+      {
+        rmw_robotops::TraceContextChangeEvent ctx_event;
+        ctx_event.timestamp_ns = start_event.timestamp_ns;
+        ctx_event.thread_id = rmw_robotops::get_current_thread_id();
+        ctx_event.change_type = rmw_robotops::CONTEXT_CHANGE_ENTERED;
+        std::memcpy(ctx_event.trace_id, new_context.trace_id,
+          sizeof(ctx_event.trace_id) - 1);
+        ctx_event.trace_id[sizeof(ctx_event.trace_id) - 1] = '\0';
+        std::memcpy(ctx_event.span_id, new_context.span_id,
+          sizeof(ctx_event.span_id) - 1);
+        ctx_event.span_id[sizeof(ctx_event.span_id) - 1] = '\0';
+        std::memcpy(ctx_event.node_name, start_event.node_name,
+          sizeof(ctx_event.node_name) - 1);
+        ctx_event.node_name[sizeof(ctx_event.node_name) - 1] = '\0';
+        std::memcpy(ctx_event.node_namespace, start_event.node_namespace,
+          sizeof(ctx_event.node_namespace) - 1);
+        ctx_event.node_namespace[sizeof(ctx_event.node_namespace) - 1] = '\0';
+        rmw_robotops::enqueue_context_change(ctx_event);
       }
     } catch (...) {
       record_trace_failure();
