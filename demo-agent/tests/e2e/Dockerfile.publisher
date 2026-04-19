@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-COPY tests/e2e/scripts /tests/scripts
+COPY demo-agent/tests/e2e/scripts /tests/scripts
 RUN chmod +x /tests/scripts/*.sh
 
 CMD ["/bin/bash"]
