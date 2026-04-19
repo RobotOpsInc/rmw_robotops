@@ -695,8 +695,8 @@ mod tests {
         assert!(bytes.len() > 100);
     }
 
-    #[test]
-    fn test_parquet_exporter_local() {
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_parquet_exporter_local() {
         let dir = tempfile::tempdir().unwrap();
         let mut exporter =
             ParquetExporter::new(dir.path().to_str().unwrap(), 10, 200, "{}".into()).unwrap();
@@ -712,8 +712,8 @@ mod tests {
         assert!(logs_dir.join("part-0001.parquet").exists());
     }
 
-    #[test]
-    fn test_storage_limit() {
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_storage_limit() {
         let dir = tempfile::tempdir().unwrap();
         // batch_size > 1 so auto-flush doesn't trigger; limit of 0 MB triggers on explicit flush
         let mut exporter =
