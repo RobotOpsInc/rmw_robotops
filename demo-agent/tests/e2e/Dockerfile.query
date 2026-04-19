@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.4
 # Query container: installs rosql CLI and Python for the assertion harness.
-FROM debian:bookworm-slim
+# rosql requires GLIBC >= 2.38; Ubuntu 24.04 ships with glibc 2.39
+FROM ubuntu:24.04
 
 RUN apt-get update && apt-get install -y \
     curl \

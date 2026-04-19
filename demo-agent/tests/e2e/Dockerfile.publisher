@@ -7,12 +7,12 @@ FROM rmw_robotops:dev
 # Add turtlesim, rclpy, and Xvfb for headless GUI
 RUN apt-get update && apt-get install -y \
     ros-jazzy-turtlesim \
-    python3-rclpy \
-    python3-geometry-msgs \
+    ros-jazzy-rclpy \
+    ros-jazzy-geometry-msgs \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 COPY demo-agent/tests/e2e/scripts /tests/scripts
 RUN chmod +x /tests/scripts/*.sh
 
-CMD ["/bin/bash"]
+ENTRYPOINT ["/tests/scripts/publisher_entrypoint.sh"]

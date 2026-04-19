@@ -4,8 +4,9 @@
 #   - small batch + short flush interval so data is on disk promptly
 #   - short correlation window so the test doesn't need to wait 30 s
 #   - writes to /data (bind-mounted shared volume)
-set -euo pipefail
+set -eo pipefail
 
+# ROS2 setup files reference unset variables internally; incompatible with set -u
 source /opt/ros/jazzy/setup.bash
 
 echo "[agent] ROS_DOMAIN_ID=${ROS_DOMAIN_ID}"

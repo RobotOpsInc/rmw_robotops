@@ -2,6 +2,15 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.3 (2026-04-19)
+-------------------
+
+* ``rmw_service.cpp``: fix ``EVENT_SERVICE_RESPONSE`` to reuse the span_id from ``EVENT_SERVICE_REQUEST`` (stored in thread-local context) so ``span_reconstructor`` can correlate them into a single SERVER span. Previously both events generated independent span_ids, yielding 0 SERVER spans in Parquet.
+* ``demo-agent/tests/e2e``: switch from two-container (publisher + agent) to single combined container; fixes DDS multicast failure in Docker Desktop for macOS. Resolves all 15 e2e ROSQL query assertions.
+* ``demo-agent/src/export/parquet.rs``: replace nested Tokio runtime with ``tokio::task::block_in_place`` to avoid panic on first Parquet flush.
+* ``demo-agent/src/subscribers``: fix QoS mismatch — trace and context subscribers now use ``best_effort()`` to match rmw_robotops publisher QoS.
+* ``demo-agent/tests/e2e/Dockerfile.query``: use ``ubuntu:24.04`` (GLIBC 2.39) instead of ``debian:bookworm-slim`` (GLIBC 2.36) to satisfy ``rosql`` GLIBC >= 2.38 requirement.
+
 0.9.2 (2026-04-19)
 -------------------
 

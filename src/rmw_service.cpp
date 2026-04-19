@@ -333,7 +333,10 @@ rmw_send_response(
   if (tracing_active) {
     try {
       context = get_or_mint_trace_context();
-      generate_span_id(span_id_buf);
+      // Reuse the span_id set by rmw_take_request (stored in thread-local context)
+      // so EVENT_SERVICE_RESPONSE shares the same span_id as EVENT_SERVICE_REQUEST,
+      // allowing span_reconstructor to correlate the two into a single server span.
+      std::memcpy(span_id_buf, context.span_id, sizeof(span_id_buf));
       start_timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
 

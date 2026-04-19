@@ -2,10 +2,13 @@
 # Publisher container entrypoint.
 # Sources the rmw_robotops colcon overlay so RMW_IMPLEMENTATION=rmw_robotops resolves,
 # then runs turtlesim_node (headless via Xvfb) + the scripted drive scenario.
-set -euo pipefail
+set -eo pipefail
 
+# ROS2 setup files reference unset variables internally; incompatible with set -u
 source /opt/ros/jazzy/setup.bash
-source /workspace/install/setup.bash
+# Colcon installs relative to its CWD (/workspace/src/rmw_robotops), so the
+# overlay lives inside the source bind-mount, not in the /workspace/install volume.
+source /workspace/src/rmw_robotops/e2e_install/local_setup.bash
 
 echo "[publisher] RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION}"
 echo "[publisher] ROBOTOPS_UNDERLYING_RMW=${ROBOTOPS_UNDERLYING_RMW}"

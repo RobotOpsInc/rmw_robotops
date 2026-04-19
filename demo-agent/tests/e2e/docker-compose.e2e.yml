@@ -16,8 +16,8 @@ services:
     volumes:
       # rmw_robotops source (read-only, for entrypoint discovery)
       - ${E2E_REPO_ROOT:?set E2E_REPO_ROOT}:/workspace/src/rmw_robotops:ro
-      # colcon install cache populated by the top-level build service
-      - rmw_robotops_install_cache:/workspace/install:ro
+      # colcon install cache populated by the e2e-specific build (RelWithDebInfo, no ASan)
+      - rmw_robotops_e2e_install_cache:/workspace/install:ro
       # shared output for parquet files (not used by publisher, but harmless)
       - ${E2E_OUTPUT_DIR:?set E2E_OUTPUT_DIR}:/data
     environment:
@@ -53,6 +53,6 @@ services:
         --queries /tests/queries.yml
 
 volumes:
-  rmw_robotops_install_cache:
+  rmw_robotops_e2e_install_cache:
     external: true
-    name: rmw_robotops_install_cache
+    name: rmw_robotops_e2e_install_cache

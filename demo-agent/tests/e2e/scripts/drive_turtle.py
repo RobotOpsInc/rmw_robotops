@@ -73,7 +73,6 @@ class TurtleDriver(Node):
     def _publish_square(self, side_duration=2.0, turn_duration=0.75):
         """Drive a square: four sides + four turns."""
         self.get_logger().info("Driving square path on /turtle1/cmd_vel...")
-        rate = self.create_rate(20)
         for _ in range(4):
             # Straight
             deadline = time.monotonic() + side_duration
@@ -82,7 +81,7 @@ class TurtleDriver(Node):
                 t.linear.x = LINEAR_SPEED
                 self._vel1.publish(t)
                 rclpy.spin_once(self, timeout_sec=0.0)
-                rate.sleep()
+                time.sleep(0.05)
             # Turn
             deadline = time.monotonic() + turn_duration
             while time.monotonic() < deadline:
@@ -90,14 +89,13 @@ class TurtleDriver(Node):
                 t.angular.z = ANGULAR_SPEED
                 self._vel1.publish(t)
                 rclpy.spin_once(self, timeout_sec=0.0)
-                rate.sleep()
+                time.sleep(0.05)
 
     def _publish_circle(self, duration=4.0):
         """Drive a circle on /turtle2/cmd_vel (if turtle2 exists)."""
         if self._vel2_pub is None:
             return
         self.get_logger().info("Driving circle path on /turtle2/cmd_vel...")
-        rate = self.create_rate(20)
         deadline = time.monotonic() + duration
         while time.monotonic() < deadline:
             t = Twist()
@@ -105,7 +103,7 @@ class TurtleDriver(Node):
             t.angular.z = 1.0
             self._vel2_pub.publish(t)
             rclpy.spin_once(self, timeout_sec=0.0)
-            rate.sleep()
+            time.sleep(0.05)
 
     def _do_rotate_absolute(self, theta: float):
         """Send a RotateAbsolute action goal and wait for result."""

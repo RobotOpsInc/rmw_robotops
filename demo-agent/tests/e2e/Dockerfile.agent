@@ -29,4 +29,4 @@ COPY --from=builder /build/target/release/robotops-demo-agent /usr/local/bin/rob
 COPY tests/e2e/scripts /tests/scripts
 RUN chmod +x /tests/scripts/*.sh
 
-CMD ["/bin/bash"]
+ENTRYPOINT ["/tests/scripts/agent_entrypoint.sh"]

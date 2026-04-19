@@ -2,17 +2,22 @@
 # E2E orchestrator for demo-agent + ROSQL validation.
 #
 # Workflow:
-#   1. Build rmw_robotops dev image and populate the colcon install-cache volume.
-#   2. Build the demo-agent CI image (needed as the agent Dockerfile stage-1 base).
-#   3. Build the three e2e images (publisher, agent, query).
-#   4. Start the agent container in the background.
-#   5. Run the publisher container to completion (scripted turtlesim scenario).
-#   6. Wait a settle window, then SIGINT the agent to trigger final Parquet flush.
-#   7. Run the rosql assertion harness.
-#   8. Report and clean up.
+#   1. Build rmw_robotops dev image and compile a clean RelWithDebInfo overlay
+#      into e2e_build/ / e2e_install/ inside the source tree (isolated from the
+#      ASan-compiled dev/test build).
+#   2. Build the demo-agent CI image (Rust toolchain base for cargo build).
+#   3. Build the combined e2e image (turtlesim + drive_turtle + demo-agent) and
+#      the query image.
+#   4. Run the combined container to completion:
+#        - turtlesim_node under RMW_IMPLEMENTATION=rmw_robotops
+#        - robotops-demo-agent (stock FastDDS, no trace loop)
+#        - drive_turtle.py executes the scripted scenario
+#        - agent is SIGINT'd inside the container after a settle window
+#      Both processes share loopback DDS — no cross-container multicast needed.
+#   5. Run the ROSQL assertion harness against the Parquet output.
 #
 # Options (env vars):
-#   E2E_SETTLE_SECS        seconds to wait after publisher exits before SIGINT (default: 8)
+#   E2E_SETTLE_SECS        seconds to wait after scenario ends before SIGINT (default: 8)
 #   E2E_ROS_DOMAIN_ID      ROS domain ID to isolate from host traffic (default: 42)
 #   E2E_FILTER_MODE        set to 1 to run the topic-filter variant (default: 0)
 #   E2E_KEEP_OUTPUT        set to 1 to skip cleanup of the Parquet output dir (default: 0)
@@ -32,26 +37,14 @@ FILTER_MODE="${E2E_FILTER_MODE:-0}"
 KEEP_OUTPUT="${E2E_KEEP_OUTPUT:-0}"
 APT_REPO_URL="${APT_REPO_URL:-https://apt.robotops.com}"
 
-# Compose project name must match the top-level project so we share the named volume
-COMPOSE_PROJECT="rmw_robotops"
-
 OUTPUT_DIR="${E2E_OUTPUT_DIR:-}"
 if [ -z "$OUTPUT_DIR" ]; then
     OUTPUT_DIR="$(mktemp -d /tmp/e2e-rosql-XXXXXX)"
 fi
 
-AGENT_CONTAINER="e2e_agent_run"
-
 log() { echo "[e2e] $*"; }
 
 cleanup() {
-    log "Cleaning up containers..."
-    docker rm -f "$AGENT_CONTAINER" 2>/dev/null || true
-    docker compose \
-        -p e2e \
-        -f "$E2E_DIR/docker-compose.e2e.yml" \
-        down --remove-orphans 2>/dev/null || true
-
     if [ "$KEEP_OUTPUT" = "0" ] && [ -n "$OUTPUT_DIR" ]; then
         log "Removing output dir: $OUTPUT_DIR"
         rm -rf "$OUTPUT_DIR"
@@ -61,19 +54,31 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# ── Step 1: Build rmw_robotops dev image + populate install-cache volume ──────
+# ── Step 1: Build rmw_robotops dev image ─────────────────────────────────────
 log "Step 1: Building rmw_robotops dev image..."
 docker compose \
-    -p "$COMPOSE_PROJECT" \
+    -p rmw_robotops \
     -f "$REPO_ROOT/docker-compose.yml" \
     build dev \
     --build-arg "APT_REPO_URL=${APT_REPO_URL}"
 
-log "Step 1b: Running colcon build to populate install-cache volume..."
-docker compose \
-    -p "$COMPOSE_PROJECT" \
-    -f "$REPO_ROOT/docker-compose.yml" \
-    run --rm build
+# Build rmw_robotops into DEDICATED e2e build/install dirs (e2e_build/ and e2e_install/)
+# inside the source tree. colcon's default ./build and ./install dirs are shared with
+# the dev/test workflow and may contain ASan-compiled artifacts; using separate base
+# dirs guarantees a clean RelWithDebInfo build used by the combined container.
+log "Step 1b: Building colcon overlay into e2e_build/e2e_install (RelWithDebInfo)..."
+docker run --rm \
+    -v "${REPO_ROOT}:/workspace/src/rmw_robotops" \
+    rmw_robotops:dev \
+    bash -c "
+        source /opt/ros/jazzy/setup.bash
+        cd /workspace/src/rmw_robotops
+        colcon build \
+            --build-base e2e_build \
+            --install-base e2e_install \
+            --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            --event-handlers console_direct+
+    "
 
 # ── Step 2: Build demo-agent CI image ────────────────────────────────────────
 log "Step 2: Building robotops-demo-agent:ci image..."
@@ -86,15 +91,9 @@ docker build \
 log "Step 3: Building e2e images..."
 
 docker build \
-    -t rmw_robotops-e2e-publisher:latest \
-    -f "$E2E_DIR/Dockerfile.publisher" \
+    -t rmw_robotops-e2e-combined:latest \
+    -f "$E2E_DIR/Dockerfile.combined" \
     "$REPO_ROOT" \
-    --build-arg "APT_REPO_URL=${APT_REPO_URL}"
-
-docker build \
-    -t rmw_robotops-e2e-agent:latest \
-    -f "$E2E_DIR/Dockerfile.agent" \
-    "$DEMO_AGENT_DIR" \
     --build-arg "APT_REPO_URL=${APT_REPO_URL}"
 
 docker build \
@@ -102,18 +101,8 @@ docker build \
     -f "$E2E_DIR/Dockerfile.query" \
     "$E2E_DIR"
 
-# ── Step 4: Start agent in background ────────────────────────────────────────
-log "Step 4: Starting agent container..."
-docker run \
-    --detach \
-    --name "$AGENT_CONTAINER" \
-    --network host \
-    -e "ROS_DOMAIN_ID=${ROS_DOMAIN_ID}" \
-    -v "${OUTPUT_DIR}:/data" \
-    rmw_robotops-e2e-agent:latest
-
-# ── Step 5: Run publisher to completion ───────────────────────────────────────
-log "Step 5: Running publisher (turtlesim scenario)..."
+# ── Step 4: Run combined container to completion ──────────────────────────────
+log "Step 4: Running combined container (turtlesim + demo-agent + scenario)..."
 
 FILTER_ENV=()
 if [ "$FILTER_MODE" = "1" ]; then
@@ -123,37 +112,28 @@ fi
 
 docker run \
     --rm \
-    --network host \
     -e "ROS_DOMAIN_ID=${ROS_DOMAIN_ID}" \
     -e "RMW_IMPLEMENTATION=rmw_robotops" \
     -e "ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp" \
     -e "ROBOTOPS_TRACING_ENABLED=true" \
     -e "ROBOTOPS_ROBOT_ID=e2e-test-robot" \
     -e "ROBOTOPS_ORG_ID=e2e-test-org" \
-    "${FILTER_ENV[@]}" \
+    -e "E2E_SETTLE_SECS=${SETTLE_SECS}" \
+    ${FILTER_ENV[@]+"${FILTER_ENV[@]}"} \
     -v "${REPO_ROOT}:/workspace/src/rmw_robotops:ro" \
-    -v "${COMPOSE_PROJECT}_install_cache:/workspace/install:ro" \
-    rmw_robotops-e2e-publisher:latest
+    -v "${OUTPUT_DIR}:/data" \
+    -v "${SCRIPT_DIR}:/tests/scripts:ro" \
+    rmw_robotops-e2e-combined:latest
 
-log "Publisher finished."
+log "Combined container finished."
 
-# ── Step 6: Settle, then SIGINT the agent ────────────────────────────────────
-log "Step 6: Waiting ${SETTLE_SECS}s for correlation window + final events..."
-sleep "$SETTLE_SECS"
-
-log "  Sending SIGINT to agent (triggers final Parquet flush)..."
-docker kill --signal SIGINT "$AGENT_CONTAINER" || true
-
-log "  Waiting for agent to flush and exit..."
-docker wait "$AGENT_CONTAINER" || true
-
-# ── Step 7: Run query assertions ──────────────────────────────────────────────
-log "Step 7: Running ROSQL assertion harness..."
+# ── Step 5: Run query assertions ──────────────────────────────────────────────
+log "Step 5: Running ROSQL assertion harness..."
 docker run \
     --rm \
     -e "E2E_FILTER_MODE=${FILTER_MODE}" \
     -v "${OUTPUT_DIR}:/data:ro" \
-    -v "${E2E_DIR}/scripts:/tests/scripts:ro" \
+    -v "${SCRIPT_DIR}:/tests/scripts:ro" \
     -v "${E2E_DIR}/queries.yml:/tests/queries.yml:ro" \
     rmw_robotops-e2e-query:latest \
     python3 /tests/scripts/assert_queries.py \

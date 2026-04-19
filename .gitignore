@@ -62,3 +62,7 @@ conan.lock
 conaninfo.txt
 conanbuildinfo.*
 graph_info.json
+
+# E2E isolated colcon build dirs (non-ASan RelWithDebInfo build for e2e tests)
+e2e_build/
+e2e_install/
