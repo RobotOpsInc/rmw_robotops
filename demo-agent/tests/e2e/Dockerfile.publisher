@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1.4
+# Publisher container: ROS2 Jazzy + rmw_robotops (from colcon overlay) + turtlesim.
+# Extend the top-level dev stage which already has all rmw_robotops build deps,
+# the apt.robotops.com repo, and robotops-msgs.
+FROM rmw_robotops:dev
+
+# Add turtlesim, rclpy, and Xvfb for headless GUI
+RUN apt-get update && apt-get install -y \
+    ros-jazzy-turtlesim \
+    python3-rclpy \
+    python3-geometry-msgs \
+    xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY tests/e2e/scripts /tests/scripts
+RUN chmod +x /tests/scripts/*.sh
+
+CMD ["/bin/bash"]

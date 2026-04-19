@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.4
+# Agent container: builds robotops-demo-agent binary, then creates a slim runtime.
+# Stage 1 reuses the CI image which already has Rust stable + ROS2 Jazzy + robotops-msgs.
+
+# ── Stage 1: compile ──────────────────────────────────────────────────────────
+FROM robotops-demo-agent:ci AS builder
+
+WORKDIR /build
+COPY . .
+RUN bash -c "source /opt/ros/jazzy/setup.bash && cargo build --release"
+
+# ── Stage 2: runtime ──────────────────────────────────────────────────────────
+FROM ros:jazzy
+
+ARG APT_REPO_URL=https://apt.robotops.com
+
+RUN apt-get update && apt-get install -y curl ca-certificates gpg && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL ${APT_REPO_URL}/robotops-public-key.asc \
+        | gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] ${APT_REPO_URL} noble main" \
+        > /etc/apt/sources.list.d/robotops.list && \
+    apt-get update && \
+    apt-get install -y ros-jazzy-robotops-msgs && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/target/release/robotops-demo-agent /usr/local/bin/robotops-demo-agent
+
+COPY tests/e2e/scripts /tests/scripts
+RUN chmod +x /tests/scripts/*.sh
+
+CMD ["/bin/bash"]

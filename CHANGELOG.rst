@@ -2,6 +2,16 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.2 (2026-04-19)
+-------------------
+
+* ``demo-agent``: add Docker-based e2e test rig (``demo-agent/tests/e2e/``) that verifies Parquet output is queryable by ROSQL (GH-46)
+
+  * Runs a turtlesim scenario (two processes under ``RMW_IMPLEMENTATION=rmw_robotops``) generating publish/subscribe, service, and action spans plus correlated log records
+  * Asserts producer, consumer, and server span kinds; cross-process correlation; logs↔traces linkage; and resource attribute population via ``rosql query``
+  * Topic-filter variant asserts ``ROBOTOPS_TRACE_TOPIC_FILTER`` suppresses matched topics
+  * Manual-only ``workflow_dispatch`` GitHub Actions workflow (``e2e-rosql.yml``); run locally with ``just e2e``
+
 0.9.1 (2026-04-19)
 -------------------
 

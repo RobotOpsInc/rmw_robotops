@@ -1,0 +1,58 @@
+version: '3.8'
+
+# E2E test stack for demo-agent + ROSQL validation.
+#
+# Services:
+#   publisher  – turtlesim scenario under RMW_IMPLEMENTATION=rmw_robotops
+#   agent      – robotops-demo-agent writing Parquet to ${E2E_OUTPUT_DIR}
+#   query      – rosql assertion harness reading those Parquet files
+#
+# Usage: driven by tests/e2e/scripts/run.sh — do not start manually.
+
+services:
+  publisher:
+    image: rmw_robotops-e2e-publisher:latest
+    network_mode: host
+    volumes:
+      # rmw_robotops source (read-only, for entrypoint discovery)
+      - ${E2E_REPO_ROOT:?set E2E_REPO_ROOT}:/workspace/src/rmw_robotops:ro
+      # colcon install cache populated by the top-level build service
+      - rmw_robotops_install_cache:/workspace/install:ro
+      # shared output for parquet files (not used by publisher, but harmless)
+      - ${E2E_OUTPUT_DIR:?set E2E_OUTPUT_DIR}:/data
+    environment:
+      - ROS_DOMAIN_ID=${E2E_ROS_DOMAIN_ID:-42}
+      - RMW_IMPLEMENTATION=rmw_robotops
+      - ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
+      - ROBOTOPS_TRACING_ENABLED=true
+      - ROBOTOPS_ROBOT_ID=e2e-test-robot
+      - ROBOTOPS_ORG_ID=e2e-test-org
+      - ROBOTOPS_TRACE_TOPIC_FILTER=${ROBOTOPS_TRACE_TOPIC_FILTER:-}
+    entrypoint: ["/tests/scripts/publisher_entrypoint.sh"]
+
+  agent:
+    image: rmw_robotops-e2e-agent:latest
+    network_mode: host
+    volumes:
+      - ${E2E_OUTPUT_DIR:?set E2E_OUTPUT_DIR}:/data
+    environment:
+      - ROS_DOMAIN_ID=${E2E_ROS_DOMAIN_ID:-42}
+    entrypoint: ["/tests/scripts/agent_entrypoint.sh"]
+
+  query:
+    image: rmw_robotops-e2e-query:latest
+    volumes:
+      - ${E2E_OUTPUT_DIR:?set E2E_OUTPUT_DIR}:/data:ro
+      - ./scripts:/tests/scripts:ro
+      - ./queries.yml:/tests/queries.yml:ro
+    environment:
+      - E2E_FILTER_MODE=${E2E_FILTER_MODE:-0}
+    command: >
+      python3 /tests/scripts/assert_queries.py
+        --data-dir /data
+        --queries /tests/queries.yml
+
+volumes:
+  rmw_robotops_install_cache:
+    external: true
+    name: rmw_robotops_install_cache

@@ -1,0 +1,87 @@
+# E2E query suite for demo-agent + ROSQL validation.
+#
+# expect values:
+#   ">=1"   — query must parse AND return at least one row
+#   ">=0"   — query must parse cleanly; empty result is acceptable
+#   "==0"   — query must parse AND return zero rows (used in filter-mode checks)
+
+queries:
+  # ── Core traces assertions ──────────────────────────────────────────────────
+  - name: traces_any
+    sql: "FROM traces SINCE 2h"
+    expect: ">=1"
+    description: "At least one trace span was captured"
+
+  - name: traces_producer
+    sql: "FROM traces WHERE span_kind = 'PRODUCER' SINCE 2h"
+    expect: ">=1"
+    description: "rmw_robotops emitted publish (PRODUCER) spans"
+
+  - name: traces_consumer
+    sql: "FROM traces WHERE span_kind = 'CONSUMER' SINCE 2h"
+    expect: ">=1"
+    description: "rmw_robotops emitted subscribe (CONSUMER) spans — cross-process correlation data point"
+
+  - name: traces_server
+    sql: "FROM traces WHERE span_kind = 'SERVER' SINCE 2h"
+    expect: ">=1"
+    description: "Service calls (/spawn, /kill) produced SERVER spans"
+
+  - name: traces_cmd_vel
+    sql: "FROM traces WHERE span_name LIKE 'publish /turtle1/cmd_vel%' SINCE 2h"
+    expect: ">=1"
+    description: "Velocity commands appear as named publish spans"
+
+  - name: traces_pose_subscriber
+    sql: "FROM traces WHERE span_name LIKE 'subscribe /turtle1/pose%' SINCE 2h"
+    expect: ">=1"
+    description: "/turtle1/pose subscribe spans prove cross-process correlation worked"
+
+  - name: traces_correlated_consumer
+    sql: "FROM traces WHERE span_kind = 'CONSUMER' AND parent_span_id != '' SINCE 2h"
+    expect: ">=1"
+    description: "At least one CONSUMER span has a parent set by cross-process correlation"
+
+  # ── Core logs assertions ────────────────────────────────────────────────────
+  - name: logs_any
+    sql: "FROM logs SINCE 2h"
+    expect: ">=1"
+    description: "At least one log record was captured from /rosout"
+
+  - name: logs_info_severity
+    sql: "FROM logs WHERE severity_text = 'INFO' SINCE 2h"
+    expect: ">=1"
+    description: "INFO-level logs were captured"
+
+  - name: logs_correlated_to_traces
+    sql: "FROM logs WHERE trace_id != '' SINCE 2h"
+    expect: ">=1"
+    description: "At least one log has a trace_id set (logs-to-traces correlation via TraceContextRegistry)"
+
+  # ── Resource attribute assertions ───────────────────────────────────────────
+  - name: traces_resource_attrs_present
+    sql: "FROM traces WHERE resource_attributes != '{}' SINCE 2h"
+    expect: ">=1"
+    description: "resource_attributes JSON is populated (robot.id / organization.id)"
+
+  # ── Parse-only checks (empty result is fine) ────────────────────────────────
+  - name: traces_error_status
+    sql: "FROM traces WHERE status_code = 'ERROR' SINCE 2h"
+    expect: ">=0"
+    description: "ERROR status filter parses correctly (no errors expected in normal run)"
+
+  - name: traces_action_related
+    sql: "FROM traces WHERE span_name LIKE '%rotate_absolute%' SINCE 2h"
+    expect: ">=0"
+    description: "rotate_absolute action spans parse; row count depends on span naming"
+
+  - name: logs_warn_severity
+    sql: "FROM logs WHERE severity_text = 'WARN' SINCE 2h"
+    expect: ">=0"
+    description: "WARN log filter parses correctly"
+
+  # ── Filter-mode check (==0 only when E2E_FILTER_MODE=1) ────────────────────
+  - name: traces_filtered_topic
+    sql: "FROM traces WHERE span_name LIKE 'publish /turtle2/cmd_vel%' SINCE 2h"
+    expect: "filter_mode_zero"
+    description: "When ROBOTOPS_TRACE_TOPIC_FILTER='^/turtle1/.*', /turtle2 spans must be absent"
