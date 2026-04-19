@@ -66,10 +66,18 @@ impl OtelSpan {
     pub fn from_span(span: ReconstructedSpan, correlated_publish_span_id: Option<String>) -> Self {
         let kind = span_kind_for(&span.operation);
         let span_name = format!("{} {}", span.operation, span.topic_or_service);
-        let parent = if span.parent_span_id.is_empty() {
+        let tls_parent = if span.parent_span_id.is_empty() {
             None
         } else {
             Some(span.parent_span_id.clone())
+        };
+        // For CONSUMER (subscribe) spans, the correlated publish span is the meaningful
+        // cross-process parent for ROSQL PATH/TRACE queries. Subscribe callbacks are
+        // entry points in the receiving process so promoting the publish span here is safe.
+        let parent_span_id = if kind == SpanKind::Consumer {
+            correlated_publish_span_id.clone().or(tls_parent)
+        } else {
+            tls_parent
         };
         let topic = if span.topic_or_service.is_empty() {
             None
@@ -80,7 +88,7 @@ impl OtelSpan {
         OtelSpan {
             trace_id: span.trace_id,
             span_id: span.span_id,
-            parent_span_id: parent,
+            parent_span_id,
             operation: span.operation,
             span_name,
             span_kind: kind,
@@ -190,6 +198,16 @@ mod tests {
             otel.correlated_publish_span_id,
             Some("pub-span-123".to_string())
         );
+        // Publish span is promoted to parent_span_id for cross-process trace linkage.
+        assert_eq!(otel.parent_span_id, Some("pub-span-123".to_string()));
+    }
+
+    #[test]
+    fn test_subscribe_without_correlation_uses_tls_parent() {
+        let otel = OtelSpan::from_span(make_span("subscribe"), None);
+        assert_eq!(otel.span_kind, SpanKind::Consumer);
+        // No correlated publish → falls back to TLS parent from span data.
+        assert_eq!(otel.parent_span_id, Some("parent-1".to_string()));
     }
 
     #[test]
