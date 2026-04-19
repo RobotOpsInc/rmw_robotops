@@ -498,13 +498,13 @@ This document covers:
 │   ┌─────────────────────────────────────────────────────┐   │
 │   │              rmw_robotops                           │   │
 │   │                                                     │   │
-│   │   rmw_publish() → [Real Message First]            │   │
-│   │                 → [Best-Effort Trace Event]        │   │
+│   │   rmw_publish() → [Real Message First]              │   │
+│   │                 → [Best-Effort Trace Event]         │   │
 │   │                                                     │   │
-│   │   rmw_take()    → [Extract Context from DDS]       │   │
-│   │                 → [Set Thread-Local Context]       │   │
+│   │   rmw_take()    → [Extract Context from DDS]        │   │
+│   │                 → [Set Thread-Local Context]        │   │
 │   │                                                     │   │
-│   │   Background Thread → [/robotops/trace_events]     │   │
+│   │   Background Thread → [/robotops/trace_events]      │   │
 │   └─────────────────────────────────────────────────────┘   │
 │                                                             │
 │   ┌─────────────────────────────────────────────────────┐   │
@@ -609,14 +609,6 @@ This is expected during development. Safety tests with ASan are designed to catc
 ```bash
 just test  # Runs with detailed sanitizer output
 ```
-
-## Related Issues
-
-- **ROB-55**: This implementation (rmw_robotops)
-- **ROB-54**: robotops_msgs package (TraceEvent.msg)
-- **ROB-56**: Robot Agent span buffer and export
-- **ROB-33**: Distributed Tracing epic (parent)
-- **ROB-105**: Multi-DDS testing (CycloneDDS, etc.)
 
 ## License
 
