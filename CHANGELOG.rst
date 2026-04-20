@@ -2,6 +2,12 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.4 (2026-04-19)
+-------------------
+
+* ``README.md``: fix rosdep install instructions — the old step 2 wrote a raw YAML to ``/etc/ros/rosdep/sources.list.d/``, which ``rosdep`` silently ignores (it only ingests YAML files referenced from ``.list`` entries). ``rosdep install`` failed with "no rosdep rule for [rmw_robotops|robotops_msgs|robotops-config]".
+* ``rosdep/robotops.yaml``: new — ships the rosdep key mappings in-repo so downstream users can register them via a single ``.list`` entry pointing at the raw GitHub URL. Adds the previously missing ``rmw_robotops`` key (step 3 instructs users to ``<depend>rmw_robotops</depend>``, so rosdep must know how to resolve it).
+
 0.9.3 (2026-04-19)
 -------------------
 

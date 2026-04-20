@@ -66,19 +66,21 @@ sudo apt update
 
 **2. Configure rosdep to resolve RobotOps packages**
 
+Register the RobotOps rosdep index by adding a `.list` file that points at the YAML shipped with this repo. `rosdep` only ingests YAML files referenced from `.list` entries — dropping a raw YAML into `sources.list.d/` looks tempting but is silently ignored.
+
 ```bash
 sudo mkdir -p /etc/ros/rosdep/sources.list.d
-sudo tee /etc/ros/rosdep/sources.list.d/robotops.yaml > /dev/null <<EOF
-robotops-config:
-  ubuntu:
-    - ros-jazzy-robotops-config
-
-robotops_msgs:
-  ubuntu:
-    - ros-jazzy-robotops-msgs
+sudo tee /etc/ros/rosdep/sources.list.d/10-robotops.list > /dev/null <<'EOF'
+yaml https://raw.githubusercontent.com/RobotOpsInc/rmw_robotops/main/rosdep/robotops.yaml
 EOF
 
 rosdep update
+```
+
+Verify the keys resolve:
+
+```bash
+rosdep resolve rmw_robotops robotops_msgs robotops-config
 ```
 
 **3. Declare the dependency in your ROS2 package's `package.xml`**
