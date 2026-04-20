@@ -2,6 +2,12 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.5 (2026-04-19)
+-------------------
+
+* ``README.md``: add ``RMW_IMPLEMENTATION`` / ``ROBOTOPS_UNDERLYING_RMW`` env vars to the demo agent quickstart so users know how to activate rmw_robotops before running a node.
+* ``README.md``: move Usage section before FAQ and Benchmarks for better reading order.
+
 0.9.4 (2026-04-19)
 -------------------
 
