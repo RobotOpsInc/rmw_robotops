@@ -112,7 +112,12 @@ curl -fsSL -o robotops-demo-agent \
   https://github.com/RobotOpsInc/rmw_robotops/releases/latest/download/robotops-demo-agent-linux-amd64
 chmod +x robotops-demo-agent
 
-# Run (the session path is printed on startup)
+# Terminal 1: run your ROS2 node with rmw_robotops active
+export RMW_IMPLEMENTATION=rmw_robotops
+export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
+ros2 run my_package my_node
+
+# Terminal 2: run the demo agent (session path is printed on startup)
 source /opt/ros/jazzy/setup.bash
 ./robotops-demo-agent
 
@@ -125,6 +130,38 @@ rosql query "FROM traces SINCE 1h" \
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
 
 > `rmw_robotops` is production-ready middleware. `robotops-demo-agent` is a lightweight local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [robotops.com](https://robotops.com).
+
+---
+
+## Usage
+
+### Basic Configuration
+
+```bash
+# Required: Use rmw_robotops as the RMW implementation
+export RMW_IMPLEMENTATION=rmw_robotops
+
+# Required: Specify the underlying RMW to delegate to
+export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
+
+# Optional: Disable tracing (pure passthrough mode)
+export ROBOTOPS_TRACING_ENABLED=false
+
+# Optional: Topic filter (regex)
+export ROBOTOPS_TRACE_TOPIC_FILTER="^/camera/.*|^/lidar/.*"
+```
+
+### Running with a ROS2 Node
+
+```bash
+# Terminal 1: Run your robot node with rmw_robotops
+export RMW_IMPLEMENTATION=rmw_robotops
+export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
+ros2 run my_package my_node
+
+# Terminal 2: Monitor trace events
+ros2 topic echo /robotops/trace_events
+```
 
 ---
 
@@ -161,38 +198,6 @@ The benchmark implementation is in progress. Performance targets:
 | Added latency (median) | < 1µs per message |
 | CPU overhead | < 5% vs underlying RMW |
 | Hot-path allocations | Zero |
-
----
-
-## Usage
-
-### Basic Configuration
-
-```bash
-# Required: Use rmw_robotops as the RMW implementation
-export RMW_IMPLEMENTATION=rmw_robotops
-
-# Required: Specify the underlying RMW to delegate to
-export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
-
-# Optional: Disable tracing (pure passthrough mode)
-export ROBOTOPS_TRACING_ENABLED=false
-
-# Optional: Topic filter (regex)
-export ROBOTOPS_TRACE_TOPIC_FILTER="^/camera/.*|^/lidar/.*"
-```
-
-### Running with a ROS2 Node
-
-```bash
-# Terminal 1: Run your robot node with rmw_robotops
-export RMW_IMPLEMENTATION=rmw_robotops
-export ROBOTOPS_UNDERLYING_RMW=rmw_fastrtps_cpp
-ros2 run my_package my_node
-
-# Terminal 2: Monitor trace events
-ros2 topic echo /robotops/trace_events
-```
 
 ## Configuration
 
