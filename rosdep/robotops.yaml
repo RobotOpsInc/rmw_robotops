@@ -1,0 +1,11 @@
+rmw_robotops:
+  ubuntu:
+    - ros-jazzy-rmw-robotops
+
+robotops-config:
+  ubuntu:
+    - ros-jazzy-robotops-config
+
+robotops_msgs:
+  ubuntu:
+    - ros-jazzy-robotops-msgs
