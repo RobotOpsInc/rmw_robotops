@@ -1,18 +1,20 @@
-## Canopy — Knowledge Graph
+## Robot Ops Project Context
 
-The org-wide knowledge graph is at `RobotOpsInc/canopy` (`vault/`). This repo is
-documented at `vault/projects/rmw-robotops/`.
+Use the codebase and Robot Ops project docs in the `RobotOpsInc/canopy` repo's
+vault to keep changes safe and consistent. This repo is documented there at
+`vault/projects/rmw-robotops/`.
 
 The vault slug is the repo name lowercased with underscores replaced by hyphens
 (e.g. `robot_agent` → `robot-agent`, `web_app` → `web-app`).
 
-### Read Canopy before…
+### Cross-check before…
 
-* Making an architectural decision — check `vault/decisions/` and
+* Making an architectural decision — check the codebase, `vault/decisions/`, and
   `vault/projects/rmw-robotops/decisions/`
 * Touching a shared interface (protos, RMW API, config schema) — read the relevant
-  project pages to understand what downstream repos depend on
-* Investigating a regression that might be a known incident — check `vault/incidents/`
+  project docs to understand what downstream repos depend on
+* Investigating a regression that might be a known incident — check the codebase and
+  `vault/incidents/`
 
 ### Leave a raw note when…
 
