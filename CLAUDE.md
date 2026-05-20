@@ -1,7 +1,8 @@
 ## Robot Ops Project Context
 
-Use the codebase and Robot Ops project docs to keep changes safe and consistent.
-This repo is documented at `vault/projects/rmw-robotops/`.
+Use the codebase and Robot Ops project docs in the `RobotOpsInc/canopy` repo's
+vault to keep changes safe and consistent. This repo is documented there at
+`vault/projects/rmw-robotops/`.
 
 The vault slug is the repo name lowercased with underscores replaced by hyphens
 (e.g. `robot_agent` → `robot-agent`, `web_app` → `web-app`).
