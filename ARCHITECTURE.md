@@ -412,7 +412,7 @@ Thread A:
 
 **Result:** trace_id propagates across pub→sub on same thread
 
-### Cross-Process Propagation (Different Processes)
+### Cross-Process Correlation (Different Processes)
 
 **Scenario:** Publisher (Process A) → Subscriber (Process B)
 
@@ -430,13 +430,13 @@ Process A:
 │       - timestamp_ns: 1234567890123456                  │
 └─────────────────────────────────────────────────────────┘
                     │
-                    │ DDS message (NO trace context injected)
+                    │ DDS message (NO trace context injected or modified)
                     │
                     ▼
 Process B:
 ┌─────────────────────────────────────────────────────────┐
 │ rmw_take_with_info()                                    │
-│   ├─ extracted_context = get_trace_context()  // EMPTY! │
+│   ├─ // No DDS trace context is available              │
 │   ├─ // No context in TLS (different process)           │
 │   ├─ generate_trace_id(new_context.trace_id)            │
 │   │   // Mint NEW trace_id: "xyz789..."                 │
@@ -467,7 +467,7 @@ Process B:
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Result:** Two separate traces correlated post-hoc by robot_agent
+**Result:** Two separate traces are correlated post-hoc by robot_agent using `publisher_gid`, `source_timestamp_ns`, and `content_hash` metadata.
 
 ### Fan-In Detection (Multiple Publishers → One Subscriber)
 
@@ -500,7 +500,7 @@ TraceEvent emitted:
 
 ### DDS-Agnostic Approach (Current Implementation)
 
-**Philosophy:** Never inject into DDS, correlate post-hoc using observable metadata.
+**Philosophy:** Never inject trace context into DDS messages or headers; correlate post-hoc using observable RMW metadata.
 
 #### Intra-Process Correlation
 
@@ -523,9 +523,10 @@ TraceEvent emitted:
 - `content_hash` (xxHash64 of message content via introspection)
 
 **How correlation works:**
-1. Publisher emits TraceEvent with: `{trace_id_A, publisher_gid, timestamp, content_hash}`
-2. Subscriber emits TraceEvent with: `{trace_id_B, publisher_gid, timestamp, content_hash}`
-3. robot_agent matches events where:
+1. Publisher sends the original DDS message unchanged; no trace context is injected.
+2. Publisher emits TraceEvent with: `{trace_id_A, publisher_gid, timestamp, content_hash}`
+3. Subscriber emits TraceEvent with: `{trace_id_B, publisher_gid, timestamp, content_hash}`
+4. robot_agent matches events post-hoc where:
    - `publisher_gid` matches exactly
    - `source_timestamp_ns` matches exactly
    - `content_hash` matches exactly

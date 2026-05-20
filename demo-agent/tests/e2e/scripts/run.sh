@@ -22,7 +22,7 @@
 #   E2E_FILTER_MODE        set to 1 to run the topic-filter variant (default: 0)
 #   E2E_KEEP_OUTPUT        set to 1 to skip cleanup of the Parquet output dir (default: 0)
 #   E2E_OUTPUT_DIR         override the output directory (default: auto temp dir)
-#   APT_REPO_URL           override the RobotOps APT repo (default: https://apt.robotops.com)
+#   APT_REPO_URL           override the TraceHouse APT repo (default: https://apt.robotops.com)
 
 set -euo pipefail
 

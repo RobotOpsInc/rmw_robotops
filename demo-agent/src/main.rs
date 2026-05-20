@@ -9,7 +9,7 @@
 //!
 //! **This is a demo/evaluation tool — not for production.** For production deployments
 //! with system metrics, TF monitoring, MCAP recording, offline buffering, and fleet
-//! management, use Robot Ops' robot_agent: https://robotops.com.
+//! management, use TraceHouse's robot_agent: https://robotops.com.
 
 mod cli;
 mod error;
