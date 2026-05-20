@@ -12,7 +12,7 @@ use clap::Parser;
                   for querying with ROSQL or DuckDB.\n\n\
                   This is a demo/evaluation tool — not for production. For production deployments\n\
                   with system metrics, TF monitoring, MCAP recording, offline buffering, and\n\
-                  fleet management, use Robot Ops' robot_agent: https://robotops.com"
+                  fleet management, use TraceHouse's robot_agent: https://robotops.com"
 )]
 pub struct Cli {
     /// Output path: local directory or s3:// URI.

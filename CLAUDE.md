@@ -39,16 +39,16 @@ This file documents project-specific rules and conventions for AI-assisted devel
 
 - **`main`** - Production environment only
 - **`development`** - Active development branch (default base)
-- **Feature branches** - Cut from `development`, NOT `main`
+- **Feature branches** - Created in worktrees from `development`, NOT `main`
 
 ### Branch Naming
 
-Feature branches MUST be named according to the issue's `gitBranchName` field:
+Feature branches MUST be named according to the issue's `gitBranchName` field. Do all issue work in a worktree created from that Linear branch name, and set-head the worktree to `development` before branching:
 
 ```bash
 # Example from Linear issue ROB-55:
 git checkout development
-git checkout -b feature/rob-55-rmw_robotops-custom-rmw-implementation-for-distributed
+git worktree add ../rmw_robotops.worktrees/feature-rob-55-rmw_robotops-custom-rmw-implementation-for-distributed -b feature/rob-55-rmw_robotops-custom-rmw-implementation-for-distributed development
 ```
 
 ### Pull Requests

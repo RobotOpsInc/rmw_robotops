@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     gpg \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure RobotOps APT repository and install robotops-msgs
+# Configure TraceHouse APT repository and install robotops-msgs
 # (r2r needs the message type support libraries at build and runtime)
 RUN curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
         | gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg && \
