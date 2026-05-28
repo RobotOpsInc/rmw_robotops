@@ -11,6 +11,16 @@ Thank you for your interest in contributing to rmw_robotops! This document provi
 
 Please be respectful and considerate in all interactions with the project and its community.
 
+## Use of Generative AI Tools
+
+Robot Ops permits contributions produced in whole or in part with generative AI tools, consistent with OSRF's policy. Disclose AI assistance when contributing, including in the commit message and pull request description. Contributors own the result and must review, test, and verify that it is correct, safe, licensed appropriately, and does not include confidential or unauthorized third-party content.
+
+Commit message disclosure example:
+
+```text
+AI-Assisted: This contribution includes content generated with generative AI tools and reviewed by the contributor.
+```
+
 ## Getting Started
 
 1. Fork the repository

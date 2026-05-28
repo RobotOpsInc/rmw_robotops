@@ -34,6 +34,10 @@ Do not write vault pages directly.
 
 This file documents project-specific rules and conventions for AI-assisted development.
 
+## AI Contribution Policy
+
+Remind developers to disclose substantial AI-generated content in the commit message and pull request description. Do not stage or submit commits on the developer's behalf without explicit confirmation.
+
 ## Git Workflow
 
 ### Branching Strategy

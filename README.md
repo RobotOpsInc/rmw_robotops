@@ -387,3 +387,7 @@ For development setup, workflow, testing, and contribution guidelines, see **[CO
 ## License
 
 Apache-2.0
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, including the generative AI disclosure policy.
