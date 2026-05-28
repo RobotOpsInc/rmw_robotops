@@ -382,7 +382,7 @@ rmw_robotops/
 
 ## Development
 
-For development setup, workflow, testing, and contribution guidelines, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+For development setup, workflow, testing, and contribution guidelines, including the Generative AI Contributions Policy, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## License
 

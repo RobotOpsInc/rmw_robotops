@@ -34,6 +34,10 @@ Do not write vault pages directly.
 
 This file documents project-specific rules and conventions for AI-assisted development.
 
+## AI Contribution Policy
+
+When using generative AI assistance for a contribution, follow the public policy in `CONTRIBUTING.md`: review and test all generated content, do not expose confidential or third-party content without permission, and disclose meaningful AI assistance in the commit message or pull request description.
+
 ## Git Workflow
 
 ### Branching Strategy
