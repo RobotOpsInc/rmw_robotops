@@ -1,6 +1,42 @@
+## Robot Ops Project Context
+
+Use the codebase and Robot Ops project docs in the `RobotOpsInc/canopy` repo's
+vault to keep changes safe and consistent. This repo is documented there at
+`vault/projects/rmw-robotops/`.
+
+The vault slug is the repo name lowercased with underscores replaced by hyphens
+(e.g. `robot_agent` → `robot-agent`, `web_app` → `web-app`).
+
+### Cross-check before…
+
+* Making an architectural decision — check the codebase, `vault/decisions/`, and
+  `vault/projects/rmw-robotops/decisions/`
+* Touching a shared interface (protos, RMW API, config schema) — read the relevant
+  project docs to understand what downstream repos depend on
+* Investigating a regression that might be a known incident — check the codebase and
+  `vault/incidents/`
+
+### Leave a raw note when…
+
+When something notable happens — a decision is made, a public interface changes, a
+non-obvious bug is fixed, a constraint is discovered — create a file at:
+
+`vault/_raw/rmw-robotops-YYYY-MM-DD-<short-slug>.md`
+
+in the `RobotOpsInc/canopy` repo and open a PR against `main`. Keep it factual: what
+changed, why, any cross-repo implications. Especially for anything architectural or a
+new feature, describe in detail. You can use illustrations, links, text — the ingestion
+pipeline is very flexible. The canopy ingest workflow handles everything from there.
+Do not write vault pages directly.
+
+
 # Claude Code Rules for rmw_robotops
 
 This file documents project-specific rules and conventions for AI-assisted development.
+
+## AI Contribution Policy
+
+Remind developers to disclose substantial AI-generated content in the commit message and pull request description. Do not stage or submit commits on the developer's behalf without explicit confirmation.
 
 ## Git Workflow
 
@@ -8,16 +44,16 @@ This file documents project-specific rules and conventions for AI-assisted devel
 
 - **`main`** - Production environment only
 - **`development`** - Active development branch (default base)
-- **Feature branches** - Cut from `development`, NOT `main`
+- **Feature branches** - Created in worktrees from `development`, NOT `main`
 
 ### Branch Naming
 
-Feature branches MUST be named according to the issue's `gitBranchName` field:
+Feature branches MUST be named according to the issue's `gitBranchName` field. Do all issue work in a worktree created from that Linear branch name, and set-head the worktree to `development` before branching:
 
 ```bash
 # Example from Linear issue ROB-55:
 git checkout development
-git checkout -b feature/rob-55-rmw_robotops-custom-rmw-implementation-for-distributed
+git worktree add ../rmw_robotops.worktrees/feature-rob-55-rmw_robotops-custom-rmw-implementation-for-distributed -b feature/rob-55-rmw_robotops-custom-rmw-implementation-for-distributed development
 ```
 
 ### Pull Requests

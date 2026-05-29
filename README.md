@@ -1,13 +1,13 @@
 # rmw_robotops
 
-ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS, CycloneDDS, etc.) to add distributed tracing capabilities with OpenTelemetry-compatible context propagation.
+ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS, CycloneDDS, etc.) to add distributed tracing capabilities with OpenTelemetry-compatible trace correlation.
 
 ## Overview
 
 `rmw_robotops` is a **safety-critical** RMW layer that:
 
 - Intercepts all ROS2 pub/sub/service/action communication
-- Propagates trace context (trace_id, span_id) through DDS metadata
+- Tracks local trace context and emits DDS-agnostic correlation metadata
 - Publishes trace events to `/robotops/trace_events` for collection
 - Maintains 8 critical safety guarantees to ensure robot operation is never compromised
 
@@ -17,7 +17,7 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 2. **Best-Effort QoS** - Trace events never block the system
 3. **No allocations in hot path** - Pre-allocated thread-local buffers
 4. **No exceptions propagate** - All trace code is `noexcept`
-5. **Lock-free context propagation** - Thread-local storage only
+5. **Lock-free context tracking** - Thread-local storage only
 6. **Runtime kill switch** - Zero overhead when disabled
 7. **Auto-disable on failures** - Self-protecting circuit breaker
 8. **Background thread for publishing** - Non-blocking queue from robot threads
@@ -34,7 +34,7 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 │   │   rmw_publish() → [Real Message First]              │   │
 │   │                 → [Best-Effort Trace Event]         │   │
 │   │                                                     │   │
-│   │   rmw_take()    → [Extract Context from DDS]        │   │
+│   │   rmw_take()    → [Correlate from RMW Metadata]     │   │
 │   │                 → [Set Thread-Local Context]        │   │
 │   │                                                     │   │
 │   │   Background Thread → [/robotops/trace_events]      │   │
@@ -46,15 +46,15 @@ ROS2 RMW (ROS Middleware) implementation that wraps any underlying RMW (FastDDS,
 └─────────────────────────────────────────────────────────────┘
 ```
 
-For a deep dive into component responsibilities, data flows, safety guarantees, trace context propagation, thread safety, and edge cases, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+For a deep dive into component responsibilities, data flows, safety guarantees, trace context tracking and correlation, thread safety, and edge cases, see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ---
 
 ## Installation
 
-Building from source ensures ABI compatibility with your exact environment — compiler version, glibc, FastDDS version, etc. Dependencies are fetched from the public RobotOps APT repository (no credentials required).
+Building from source ensures ABI compatibility with your exact environment — compiler version, glibc, FastDDS version, etc. Dependencies are fetched from the public TraceHouse APT repository (no credentials required).
 
-**1. Add the RobotOps APT repository**
+**1. Add the TraceHouse APT repository**
 
 ```bash
 curl -fsSL https://apt.robotops.com/robotops-public-key.asc \
@@ -64,9 +64,9 @@ echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] https://a
 sudo apt update
 ```
 
-**2. Configure rosdep to resolve RobotOps packages**
+**2. Configure rosdep to resolve TraceHouse packages**
 
-Register the RobotOps rosdep index by adding a `.list` file that points at the YAML shipped with this repo. `rosdep` only ingests YAML files referenced from `.list` entries — dropping a raw YAML into `sources.list.d/` looks tempting but is silently ignored.
+Register the TraceHouse rosdep index by adding a `.list` file that points at the YAML shipped with this repo. `rosdep` only ingests YAML files referenced from `.list` entries — dropping a raw YAML into `sources.list.d/` looks tempting but is silently ignored.
 
 ```bash
 sudo mkdir -p /etc/ros/rosdep/sources.list.d
@@ -129,7 +129,7 @@ rosql query "FROM traces SINCE 1h" \
 
 For full setup instructions, CLI reference, S3 configuration, and schema documentation see **[demo-agent/README.md](demo-agent/README.md)**.
 
-> `rmw_robotops` is production-ready middleware. `robotops-demo-agent` is a lightweight local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [robotops.com](https://robotops.com).
+> `rmw_robotops` is production-ready middleware. `robotops-demo-agent` is a lightweight local evaluation tool — for production-grade telemetry with fleet management, MCAP recording, and offline buffering, see [TraceHouse](https://robotops.com).
 
 ---
 
@@ -315,7 +315,7 @@ This repository uses **semantic versioning** expressed in `package.xml` and enfo
 
 ### Lockstep Major Versions
 
-**Major versions** move in lockstep across the entire RobotOps ecosystem:
+**Major versions** move in lockstep across the entire TraceHouse ecosystem:
 
 - `robotops_config`
 - `robotops_msgs`
@@ -387,3 +387,7 @@ For development setup, workflow, testing, and contribution guidelines, see **[CO
 ## License
 
 Apache-2.0
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, including the generative AI disclosure policy.

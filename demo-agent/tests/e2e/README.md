@@ -45,7 +45,7 @@ E2E_FILTER_MODE=1 just e2e
 | `E2E_FILTER_MODE` | `0` | Set to `1` to run the topic-filter variant |
 | `E2E_KEEP_OUTPUT` | `0` | Set to `1` to preserve the Parquet session dir |
 | `E2E_OUTPUT_DIR` | auto temp | Override the Parquet output directory |
-| `APT_REPO_URL` | `https://apt.robotops.com` | Override the RobotOps APT repo |
+| `APT_REPO_URL` | `https://apt.robotops.com` | Override the TraceHouse APT repo |
 
 ## Query suite
 
