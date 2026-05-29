@@ -2,6 +2,11 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.6 (2026-05-29)
+-------------------
+
+* ``CONTRIBUTING.md`` / ``README.md`` / ``CLAUDE.md``: add the Generative AI contributions policy and remind contributors to review AI-assisted work before submission.
+
 0.9.5 (2026-04-19)
 -------------------
 
