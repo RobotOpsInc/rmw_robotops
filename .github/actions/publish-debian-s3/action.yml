@@ -97,6 +97,20 @@ runs:
           echo "No existing repository found in S3"
         fi
 
+    # NOTE (ROB-325): this action publishes the SAME package set to every
+    # distribution (noble/jammy/focal) from a single shared aptly repo, and it
+    # is reused verbatim across all RobotOps package repos writing one S3 aptly
+    # DB. With the Humble (jammy) rmw build added alongside Jazzy (noble), each
+    # .deb still lands in all three dists. That is safe because bloom stamps the
+    # Ubuntu codename into the version (ros-jazzy-* → <ver>-0noble, ros-humble-*
+    # → <ver>-0jammy) AND the package names differ (ros-jazzy-rmw-robotops vs
+    # ros-humble-rmw-robotops), so the two arm64 artifacts never collide in the
+    # pool. The ros-humble-* deb appearing in the noble dist is inert (it hard-
+    # depends on Jammy's rmw/rcl runtime and won't install on Noble). Do NOT
+    # switch this to per-channel repos here — that would break the other repos
+    # that share this action. A future change should route each .deb to only its
+    # matching distribution (jazzy → noble, humble → jammy) keyed off the
+    # ros-<distro>-* package name, coordinated across all repos at once.
     - name: Create or Update Repository
       shell: bash
       run: |
