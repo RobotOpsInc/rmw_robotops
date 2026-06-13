@@ -116,12 +116,34 @@ jobs:
     permissions:
       contents: write  # Needed to upload release assets
     strategy:
+      fail-fast: false
       matrix:
+        # Each entry builds one (ROS distro, Ubuntu codename, arch) .deb. The
+        # ros_distro selects the ros:<distro>-ros-base base image (Dockerfile
+        # ROS_DISTRO build-arg) + /opt/ros/<distro>; os_version is the Ubuntu
+        # codename bloom stamps into the .deb and the apt.robotops.com channel
+        # it publishes to (jazzy → Noble, humble → Jammy). The runner arch must
+        # match the deb's target so the in-container rmw/rcl build links the
+        # right ABI.
+        #   - jazzy  → Ubuntu 24.04 Noble, amd64 + arm64 (the current target).
+        #   - humble → Ubuntu 22.04 Jammy, arm64 only — robot_agent's Jetson
+        #     (Orin Nano) Humble build depends on ros-humble-rmw-robotops
+        #     (ROB-325). bloom names the deb ros-<distro>-rmw-robotops_*, so
+        #     ros-jazzy-* (noble) and ros-humble-* (jammy) never collide even on
+        #     the shared arm64 architecture.
         include:
           - arch: amd64
             runner: ubuntu-24.04
+            ros_distro: jazzy
+            os_version: noble
           - arch: arm64
             runner: ubuntu-24.04-arm
+            ros_distro: jazzy
+            os_version: noble
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            ros_distro: humble
+            os_version: jammy
     steps:
       - uses: actions/checkout@v4
 
@@ -143,25 +165,26 @@ jobs:
           target: base
           push: false
           load: true
-          tags: rmw-robotops:build-${{ matrix.arch }}
+          tags: rmw-robotops:build-${{ matrix.ros_distro }}-${{ matrix.arch }}
           build-args: |
             APT_REPO_URL=${{ env.APT_REPO_URL }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ROS_DISTRO=${{ matrix.ros_distro }}
+          cache-from: type=gha,scope=${{ matrix.ros_distro }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.ros_distro }}-${{ matrix.arch }}
 
       - name: Build Debian package
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/ws/src/rmw_robotops \
             -v ${{ github.workspace }}:/output \
-            rmw-robotops:build-${{ matrix.arch }} bash -c "
+            rmw-robotops:build-${{ matrix.ros_distro }}-${{ matrix.arch }} bash -c "
               cd /ws && \
               apt-get update && \
-              apt-get install --only-upgrade -y ros-jazzy-robotops-msgs ros-jazzy-robotops-config || true && \
+              apt-get install --only-upgrade -y ros-${{ matrix.ros_distro }}-robotops-msgs ros-${{ matrix.ros_distro }}-robotops-config || true && \
               rosdep update && \
-              rosdep install --from-paths src --ignore-src -r -y && \
+              rosdep install --from-paths src --ignore-src -r -y --rosdistro ${{ matrix.ros_distro }} && \
               cd /ws/src/rmw_robotops && \
-              bloom-generate rosdebian --os-name ubuntu --os-version noble --ros-distro jazzy && \
+              bloom-generate rosdebian --os-name ubuntu --os-version ${{ matrix.os_version }} --ros-distro ${{ matrix.ros_distro }} && \
               dpkg-buildpackage -us -uc -b && \
               cp /ws/src/*.deb /output/
             "
@@ -169,14 +192,17 @@ jobs:
       - name: Find built package
         id: deb
         run: |
-          DEB_FILE=$(ls *.deb | head -n1)
+          # bloom names the deb ros-<distro>-rmw-robotops_<ver>_<arch>.deb, so the
+          # distro is already encoded; pick the matching one explicitly so the
+          # ros-jazzy-* and ros-humble-* arm64 builds never grab each other's.
+          DEB_FILE=$(ls ros-${{ matrix.ros_distro }}-rmw-robotops_*_${{ matrix.arch }}.deb | head -n1)
           echo "file=$DEB_FILE" >> $GITHUB_OUTPUT
           echo "Built package: $DEB_FILE"
 
       - name: Upload Debian package as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: debian-package-${{ matrix.arch }}
+          name: debian-package-${{ matrix.ros_distro }}-${{ matrix.arch }}
           path: ${{ steps.deb.outputs.file }}
           retention-days: 1
 
@@ -259,6 +285,15 @@ jobs:
           role-to-assume: ${{ env.DEPLOY_ROLE }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # Download every (ros_distro, arch) deb artifact built above, flattened
+      # into one directory. The shared publish-debian-s3 action adds them all to
+      # the single `robotops` aptly repo, which is published to every Ubuntu
+      # codename (noble/jammy/focal). The ros-jazzy-* (Noble) and ros-humble-*
+      # (Jammy) debs are distinct packages, so a Jammy client installs
+      # ros-humble-rmw-robotops while the ros-jazzy-* deb is present-but-
+      # uninstallable there (harmless) — see ROB-325. The publish action is
+      # SHARED across all RobotOps package repos writing one S3 aptly DB, so it
+      # is intentionally NOT switched to per-channel repos here.
       - name: Download all Debian packages
         uses: actions/download-artifact@v4
         with:

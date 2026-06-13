@@ -18,7 +18,21 @@
 #include <dlfcn.h>
 #include <cstdio>
 
-#include "rmw/dynamic_message_type_support.h"
+// Several RMW APIs forwarded by the stubs below were introduced in ROS 2 Iron
+// and are present on Jazzy, but do NOT exist on Humble's older rmw (6.1.x):
+//   - discovery options (rmw_discovery_options_t + init/equal/copy/fini)
+//   - dynamic message type support (rmw_take_dynamic_message* /
+//     rmw_serialization_support_init, via rosidl_dynamic_typesupport_* types)
+//   - the topic type-hash setter (rosidl_type_hash_t)
+// Probe for rmw/discovery_options.h (an Iron+ marker absent on Humble) to gate
+// all three regions and the dynamic-typesupport include, so this file compiles
+// unchanged on Jazzy while dropping the non-existent-on-Humble forwarders on
+// Humble. The underlying RMW on Humble lacks these symbols anyway, so the
+// dropped stubs would never have had anything to dlsym to. ROB-325.
+#if defined(__has_include) && __has_include("rmw/discovery_options.h")
+#  define RMW_ROBOTOPS_HAS_IRON_RMW_API 1
+#  include "rmw/dynamic_message_type_support.h"
+#endif
 #include "rmw/error_handling.h"
 #include "rmw/event.h"
 #include "rmw/features.h"
@@ -384,6 +398,7 @@ rmw_convert_rcutils_ret_to_rmw_ret(rcutils_ret_t rcutils_ret)
   return underlying_func(rcutils_ret);
 }
 
+#ifdef RMW_ROBOTOPS_HAS_IRON_RMW_API
 rmw_discovery_options_t
 rmw_get_zero_initialized_discovery_options(void)
 {
@@ -496,7 +511,9 @@ rmw_discovery_options_fini(rmw_discovery_options_t * discovery_options)
 
   return underlying_func(discovery_options);
 }
+#endif  // RMW_ROBOTOPS_HAS_IRON_RMW_API (discovery options)
 
+#ifdef RMW_ROBOTOPS_HAS_IRON_RMW_API
 rmw_ret_t
 rmw_take_dynamic_message(
   const rmw_subscription_t * subscription,
@@ -573,6 +590,7 @@ rmw_serialization_support_init(
 
   return underlying_func(serialization_lib_name, allocator, serialization_support);
 }
+#endif  // RMW_ROBOTOPS_HAS_IRON_RMW_API (dynamic message type support)
 
 rmw_event_t
 rmw_get_zero_initialized_event(void)
@@ -3280,6 +3298,7 @@ rmw_topic_endpoint_info_set_topic_type(
   return underlying_func(topic_endpoint_info, topic_type, allocator);
 }
 
+#ifdef RMW_ROBOTOPS_HAS_IRON_RMW_API
 rmw_ret_t
 rmw_topic_endpoint_info_set_topic_type_hash(
   rmw_topic_endpoint_info_t * topic_endpoint_info,
@@ -3303,6 +3322,7 @@ rmw_topic_endpoint_info_set_topic_type_hash(
 
   return underlying_func(topic_endpoint_info, type_hash);
 }
+#endif  // RMW_ROBOTOPS_HAS_IRON_RMW_API (topic type hash)
 
 rmw_ret_t
 rmw_topic_endpoint_info_set_node_name(
