@@ -31,11 +31,16 @@
   <!-- ros2_tracing for LTTng tracepoint emission -->
   <depend>tracetools</depend>
 
-  <!-- FastDDS dependencies (can be swapped at runtime) -->
+  <!-- FastDDS dependencies (can be swapped at runtime).
+       No version floor: the underlying RMW is selected/loaded by library name
+       at runtime (see src/rmw_init.cpp) and CMake imposes no FastDDS version,
+       so these are plain deps. Pinning a floor here breaks Humble, which ships
+       older FastDDS than Jazzy (fastrtps 2.6.x / fastcdr 1.0.x vs Jazzy's
+       2.14.x / 2.x) — the old 2.10.0/2.2.0 floors were Jazzy-only (ROB-325). -->
   <depend>rmw_fastrtps_cpp</depend>
   <depend>rmw_fastrtps_shared_cpp</depend>
-  <depend version_gte="2.10.0">fastrtps</depend>
-  <depend version_gte="2.2.0">fastcdr</depend>
+  <depend>fastrtps</depend>
+  <depend>fastcdr</depend>
 
   <!-- YAML parsing for configuration -->
   <depend>yaml-cpp</depend>
