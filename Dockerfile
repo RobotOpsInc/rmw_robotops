@@ -3,7 +3,19 @@
 # ============================================================================
 # Base stage - Common dependencies for all targets
 # ============================================================================
-FROM ros:jazzy-ros-base AS base
+#
+# Parameterized by ROS distro so a single Dockerfile builds for either
+# Jazzy (Ubuntu 24.04 Noble) or Humble (Ubuntu 22.04 Jammy, the arm64/Jetson
+# target). Pass --build-arg ROS_DISTRO=humble for the Humble build.
+#
+#   ROS_DISTRO  ROS 2 distribution (jazzy | humble). Selects the
+#               `ros:${ROS_DISTRO}-ros-base` base image and /opt/ros/${ROS_DISTRO},
+#               and the ros-${ROS_DISTRO}-robotops-* deps pulled from apt.
+ARG ROS_DISTRO=jazzy
+FROM ros:${ROS_DISTRO}-ros-base AS base
+
+# Re-declare after FROM so the value is in scope in the build stage.
+ARG ROS_DISTRO
 
 # Build argument for configurable APT repository environment
 # Production: apt.robotops.com
@@ -33,17 +45,24 @@ RUN apt-get update && apt-get install -y \
 # Install just command runner (make installation non-fatal in case of download issues)
 RUN curl -fsSL https://just.systems/install.sh | bash -s -- --to /usr/local/bin || echo "Warning: just installation failed, but continuing..."
 
-# Configure RobotOps APT repository
-RUN curl -fsSL ${APT_REPO_URL}/robotops-public-key.asc | gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] ${APT_REPO_URL} noble main" \
+# Configure RobotOps APT repository.
+# The shared `robotops` aptly repo publishes the same package set to every
+# Ubuntu codename (noble/jammy/focal), so pull from the channel matching this
+# image's distro: jazzy → noble, humble → jammy. $UBUNTU_CODENAME is exported by
+# /etc/os-release in the ros:${ROS_DISTRO}-ros-base base image.
+RUN . /etc/os-release && \
+    curl -fsSL ${APT_REPO_URL}/robotops-public-key.asc | gpg --dearmor -o /usr/share/keyrings/robotops-archive-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/robotops-archive-keyring.gpg] ${APT_REPO_URL} ${UBUNTU_CODENAME} main" \
     > /etc/apt/sources.list.d/robotops.list && \
     apt-get update
 
-# Add custom rosdep rules for RobotOps packages
+# Add custom rosdep rules for RobotOps packages.
+# The robotops_msgs / robotops-config package.xml deps resolve to the
+# ros-${ROS_DISTRO}-* debs published to apt.robotops.com (ros-jazzy-* / ros-humble-*).
 RUN mkdir -p /etc/ros/rosdep/sources.list.d && \
     printf '%s\n' \
-    'robotops-config:' '  ubuntu:' '    - ros-jazzy-robotops-config' \
-    'robotops_msgs:' '  ubuntu:' '    - ros-jazzy-robotops-msgs' \
+    'robotops-config:' '  ubuntu:' "    - ros-${ROS_DISTRO}-robotops-config" \
+    'robotops_msgs:' '  ubuntu:' "    - ros-${ROS_DISTRO}-robotops-msgs" \
     > /etc/ros/rosdep/custom.yaml && \
     echo 'yaml file:///etc/ros/rosdep/custom.yaml' > /etc/ros/rosdep/sources.list.d/50-custom.list
 
@@ -54,7 +73,7 @@ COPY package.xml .
 # Initialize rosdep and install dependencies from package.xml
 # This respects version constraints like version_gte="0.2.1" in package.xml
 RUN rosdep update && \
-    rosdep install --from-paths . --ignore-src -y --rosdistro jazzy
+    rosdep install --from-paths . --ignore-src -y --rosdistro ${ROS_DISTRO}
 
 WORKDIR /workspace
 
@@ -63,8 +82,11 @@ WORKDIR /workspace
 # ============================================================================
 FROM base AS dev
 
+# Re-declare after FROM so ROS_DISTRO is in scope in this stage.
+ARG ROS_DISTRO
+
 # Source ROS in bashrc for interactive use
-RUN echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
 
 CMD ["/bin/bash"]
 

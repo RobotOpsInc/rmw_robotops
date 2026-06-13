@@ -6,7 +6,23 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # One entry per (ROS distro, Ubuntu codename, arch). ros_distro selects
+        # the ros:<distro>-ros-base base image (Dockerfile ROS_DISTRO build-arg)
+        # + the sourced /opt/ros/<distro> underlay; the runner arch must match
+        # the distro target so the in-container rmw/rcl build links the right
+        # ABI (ROB-325):
+        #   - jazzy  → Ubuntu 24.04 Noble, amd64 (the current target).
+        #   - humble → Ubuntu 22.04 Jammy, arm64 (robot_agent's Jetson links
+        #     against the ros-humble-rmw-robotops underlay).
+        include:
+          - ros_distro: jazzy
+            runner: ubuntu-latest
+          - ros_distro: humble
+            runner: ubuntu-22.04-arm
 
     steps:
       - name: Checkout code
@@ -23,11 +39,12 @@ jobs:
           target: test
           push: false
           load: true
-          tags: rmw_robotops:ci
+          tags: rmw_robotops:ci-${{ matrix.ros_distro }}
           build-args: |
             APT_REPO_URL=https://apt.robotops.com
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ROS_DISTRO=${{ matrix.ros_distro }}
+          cache-from: type=gha,scope=${{ matrix.ros_distro }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.ros_distro }}
 
       - name: Run CI suite (lint, build, test)
         run: |
@@ -39,21 +56,21 @@ jobs:
             -e UBSAN_OPTIONS=print_stacktrace=1 \
             -w /workspace/src/rmw_robotops \
             --entrypoint "" \
-            rmw_robotops:ci \
+            rmw_robotops:ci-${{ matrix.ros_distro }} \
             just ci-inner
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: benchmark-results
+          name: benchmark-results-${{ matrix.ros_distro }}
           path: benchmark_results.txt
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-${{ matrix.ros_distro }}
           path: |
             build/rmw_robotops/test_results/**/*.xml
             build/rmw_robotops/Testing/**/*

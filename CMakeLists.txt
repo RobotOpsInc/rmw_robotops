@@ -123,7 +123,18 @@ if(BUILD_TESTING)
   ament_flake8(--exclude LICENSE CONTRIBUTING.md)
   # ament_lint_cmake() disabled - fails on auto-generated CMake config files in install/
   ament_pep257()
-  ament_uncrustify(--exclude LICENSE CONTRIBUTING.md)
+  # uncrustify enforces formatting against a specific uncrustify version, and the
+  # tool's own rules changed between releases: uncrustify 0.78 (Jazzy/Noble)
+  # formats e.g. function-pointer casts as `void *(*)(...)` whereas 0.72
+  # (Humble/Jammy) demands `void * (*)(...)`. The codebase is formatted to the
+  # Jazzy (0.78) style, so running 0.72 on Humble flags ~every file with false
+  # positives that can't be satisfied without breaking Jazzy. Enforce uncrustify
+  # only on the distro whose uncrustify the code is formatted for (jazzy); all
+  # other linters (cpplint/cppcheck/flake8/pep257) still run on every distro.
+  # ROB-325.
+  if(NOT "$ENV{ROS_DISTRO}" STREQUAL "humble")
+    ament_uncrustify(--exclude LICENSE CONTRIBUTING.md)
+  endif()
 
   # Unit tests
   ament_add_gtest(test_trace_context

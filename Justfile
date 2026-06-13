@@ -13,6 +13,13 @@ export CLOUDSMITH_API_KEY := env_var_or_default('CLOUDSMITH_API_KEY', '')
 ## Production:
 export CLOUDSMITH_REPO := env_var_or_default('CLOUDSMITH_REPO', 'robotops')
 
+# ROS 2 distro selecting the build image (ros:${ROS_DISTRO}-ros-base) and the
+# sourced /opt/ros/${ROS_DISTRO} underlay. MUST match the distro the .deb is
+# built/linked for (jazzy → Ubuntu 24.04 Noble, the default; humble → Ubuntu
+# 22.04 Jammy, the arm64/Jetson target — see ROB-325). Override with:
+#   just ROS_DISTRO=humble <recipe>
+export ROS_DISTRO := env_var_or_default('ROS_DISTRO', 'jazzy')
+
 # Default recipe - show available commands
 default:
     @just --list
@@ -101,7 +108,7 @@ test:
 # Run safety tests only (MUST pass before deployment)
 test-safety:
     docker-compose run --rm dev bash -c " \
-        source /opt/ros/jazzy/setup.bash && \
+        source /opt/ros/\$ROS_DISTRO/setup.bash && \
         colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug && \
         source install/setup.bash && \
         colcon test --packages-select rmw_robotops --ctest-args -R test_safety && \
@@ -111,7 +118,7 @@ test-safety:
 # Run performance benchmarks
 benchmark:
     docker-compose run --rm dev bash -c " \
-        source /opt/ros/jazzy/setup.bash && \
+        source /opt/ros/\$ROS_DISTRO/setup.bash && \
         colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo && \
         source install/setup.bash && \
         ./install/rmw_robotops/lib/rmw_robotops/benchmark_latency \
@@ -120,7 +127,7 @@ benchmark:
 # Run stress test (10,000 msg/sec)
 stress:
     docker-compose run --rm dev bash -c " \
-        source /opt/ros/jazzy/setup.bash && \
+        source /opt/ros/\$ROS_DISTRO/setup.bash && \
         colcon build && \
         source install/setup.bash && \
         ros2 run rmw_robotops stress_test \
@@ -173,7 +180,7 @@ check-setup:
 ci-lint:
     #!/usr/bin/env bash
     echo "🔍 Running lint checks..."
-    source /opt/ros/jazzy/setup.bash
+    source /opt/ros/${ROS_DISTRO}/setup.bash
     cd /workspace
     colcon build --packages-select rmw_robotops
     colcon test --packages-select rmw_robotops --ctest-args -R lint
@@ -183,7 +190,7 @@ ci-lint:
 ci-test:
     #!/usr/bin/env bash
     echo "🧪 Running tests with sanitizers..."
-    source /opt/ros/jazzy/setup.bash
+    source /opt/ros/${ROS_DISTRO}/setup.bash
     cd /workspace
     colcon build --packages-select rmw_robotops \
       --cmake-args -DCMAKE_BUILD_TYPE=Debug \
@@ -196,7 +203,7 @@ ci-test:
 ci-benchmark:
     #!/usr/bin/env bash
     echo "📊 Running benchmarks..."
-    source /opt/ros/jazzy/setup.bash
+    source /opt/ros/${ROS_DISTRO}/setup.bash
     cd /workspace
     colcon build --packages-select rmw_robotops --cmake-args -DCMAKE_BUILD_TYPE=Release
     source /workspace/install/setup.bash
