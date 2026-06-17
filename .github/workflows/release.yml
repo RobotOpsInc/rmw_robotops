@@ -144,6 +144,10 @@ jobs:
             runner: ubuntu-24.04-arm
             ros_distro: humble
             os_version: jammy
+          - arch: amd64
+            runner: ubuntu-22.04
+            ros_distro: humble
+            os_version: jammy
     steps:
       - uses: actions/checkout@v4
 
