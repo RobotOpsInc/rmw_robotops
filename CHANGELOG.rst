@@ -2,6 +2,11 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.7 (2026-06-16)
+-------------------
+
+* ``release.yml``: add an amd64 row to the Humble/jammy ``build-packages`` matrix (mirrors the existing humble/arm64 row) so ``ros-humble-rmw-robotops`` is published for amd64 in addition to arm64 (ROB-402). The build apt-installs the now-published ``ros-humble-robotops-msgs`` / ``ros-humble-robotops-config`` amd64 debs.
+
 0.9.6 (2026-05-29)
 -------------------
 
