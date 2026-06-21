@@ -107,6 +107,8 @@ install(
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   find_package(std_msgs REQUIRED)
+  find_package(rosidl_runtime_cpp REQUIRED)
+  find_package(rosidl_typesupport_cpp REQUIRED)
 
   # Linting - Manual configuration to exclude ament_copyright
   # Note: ament_copyright doesn't support custom copyright holders like "Robot Ops Inc."
@@ -181,6 +183,16 @@ if(BUILD_TESTING)
     test/test_metadata_extraction.cpp
   )
   target_link_libraries(test_metadata_extraction ${PROJECT_NAME})
+  ament_target_dependencies(test_metadata_extraction
+    rmw
+    rcutils
+    robotops_msgs
+    rosidl_runtime_c
+    rosidl_runtime_cpp
+    rosidl_typesupport_cpp
+    rosidl_typesupport_introspection_c
+    std_msgs
+  )
 
   # Pub/sub tracing integration test
   ament_add_gtest(test_pubsub_tracing

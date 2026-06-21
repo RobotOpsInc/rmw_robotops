@@ -14,16 +14,20 @@
 
 #include "rmw_robotops/utils.hpp"
 
+#include <rcutils/error_handling.h>
 #include <rcutils/logging_macros.h>
 #include <xxhash.h>
 
 #include <cstring>
 
 #include "robotops_msgs/msg/trace_event.h"
+#include "rosidl_runtime_c/message_type_support_struct.h"
 #include "rosidl_runtime_c/string.h"
 #include "rosidl_runtime_c/primitives_sequence.h"
+#include "rosidl_typesupport_introspection_c/identifier.h"
 #include "rosidl_typesupport_introspection_c/field_types.h"
 #include "rosidl_typesupport_introspection_c/message_introspection.h"
+#include "rosidl_typesupport_introspection_cpp/identifier.hpp"
 
 namespace rmw_robotops
 {
@@ -38,6 +42,39 @@ uint64_t compute_content_hash(const void * data, size_t size) noexcept
   // XXH3 is the latest generation - optimized for both small and large inputs
   // Performance: 2-5x faster than FNV-1a with better collision resistance
   return XXH3_64bits(data, size);
+}
+
+const rosidl_typesupport_introspection_c__MessageMembers *
+resolve_introspection_members(
+  const rosidl_message_type_support_t * type_support) noexcept
+{
+  if (type_support == nullptr || type_support->data == nullptr) {
+    return nullptr;
+  }
+
+  // Probe the C introspection identifier first (C / rclc nodes).
+  const rosidl_message_type_support_t * ts =
+    get_message_typesupport_handle(
+    type_support, rosidl_typesupport_introspection_c__identifier);
+  if (ts == nullptr) {
+    // Expected miss for C++ nodes: clear the stale error state before the next probe
+    // so it cannot trip rcutils' "error state is being overwritten" guard (ROB-403).
+    rcutils_reset_error();
+
+    // Probe the C++ introspection identifier (rclcpp nodes).
+    ts = get_message_typesupport_handle(
+      type_support, rosidl_typesupport_introspection_cpp::typesupport_identifier);
+    if (ts == nullptr) {
+      // Neither variant resolved (e.g. a wrapper without introspection support).
+      // Clear the error so nothing downstream inherits it; metadata is simply skipped.
+      rcutils_reset_error();
+      return nullptr;
+    }
+  }
+
+  // The C and C++ introspection MessageMembers structs are layout-compatible, so the
+  // C++ handle's data can be reinterpreted as the C struct used throughout the hashing code.
+  return static_cast<const rosidl_typesupport_introspection_c__MessageMembers *>(ts->data);
 }
 
 /// Hash a single field using introspection

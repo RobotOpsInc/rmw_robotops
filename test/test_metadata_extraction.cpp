@@ -16,9 +16,14 @@
 
 #include <cstring>
 
+#include "rcutils/error_handling.h"
 #include "rmw_robotops/span_id_generator.hpp"
 #include "rmw_robotops/trace_context.hpp"
 #include "rmw_robotops/trace_event_queue.hpp"
+#include "rmw_robotops/utils.hpp"
+#include "rosidl_typesupport_cpp/message_type_support.hpp"
+#include "rosidl_typesupport_introspection_c/message_introspection.h"
+#include "std_msgs/msg/string.hpp"
 
 using rmw_robotops::generate_span_id;
 using rmw_robotops::generate_trace_id;
@@ -152,4 +157,44 @@ TEST(MetadataExtractionTest, MetadataFieldsHaveCorrectLengths) {
   event.message_type[MAX_MESSAGE_TYPE_LENGTH - 1] = '\0';
 
   EXPECT_EQ(MAX_MESSAGE_TYPE_LENGTH - 1, std::strlen(event.message_type));
+}
+
+// --- resolve_introspection_members() (ROB-403) ---------------------------------------
+//
+// These tests verify that the introspection-members resolver works for the C++ wrapper
+// handle that rclcpp nodes hand the RMW, AND that it never leaves a stale rcutils error
+// state behind. The stale-error leak was the root cause of the
+// "Handle's typesupport identifier (rosidl_typesupport_cpp) is not supported ...
+//  / service's implementation is invalid" log spam seen on real robots.
+
+using rmw_robotops::resolve_introspection_members;
+
+TEST(IntrospectionResolveTest, ResolvesCppTypeSupportHandle) {
+  // This is exactly the handle a C++ (rclcpp) node passes to rmw_create_subscription:
+  // identifier == "rosidl_typesupport_cpp", whose map contains introspection_cpp (not _c).
+  const rosidl_message_type_support_t * cpp_handle =
+    rosidl_typesupport_cpp::get_message_type_support_handle<std_msgs::msg::String>();
+  ASSERT_NE(nullptr, cpp_handle);
+
+  rcutils_reset_error();
+  const rosidl_typesupport_introspection_c__MessageMembers * members =
+    resolve_introspection_members(cpp_handle);
+
+  // Before the fix this returned nullptr for C++ nodes (only the _c id was probed),
+  // so C++ publishers/subscribers got no tracing type metadata at all.
+  ASSERT_NE(nullptr, members);
+  EXPECT_STREQ("String", members->message_name_);
+  // The C++ introspection variant reports the namespace with C++ scoping ("std_msgs::msg");
+  // the C variant reports "std_msgs". We only require that resolution succeeded.
+  ASSERT_NE(nullptr, members->message_namespace_);
+  EXPECT_NE(nullptr, std::strstr(members->message_namespace_, "std_msgs"));
+
+  // Critical: no stale rcutils error may be left behind for the next thread-local consumer.
+  EXPECT_FALSE(rcutils_error_is_set());
+}
+
+TEST(IntrospectionResolveTest, NullHandleIsSafeAndLeavesNoError) {
+  rcutils_reset_error();
+  EXPECT_EQ(nullptr, resolve_introspection_members(nullptr));
+  EXPECT_FALSE(rcutils_error_is_set());
 }
