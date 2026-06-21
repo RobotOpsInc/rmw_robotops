@@ -26,6 +26,9 @@ struct rosidl_typesupport_introspection_c__MessageMembers_s;
 typedef struct rosidl_typesupport_introspection_c__MessageMembers_s
   rosidl_typesupport_introspection_c__MessageMembers;
 
+// Forward declaration for the message type support handle (defined in rosidl_runtime_c).
+struct rosidl_message_type_support_t;
+
 namespace rmw_robotops
 {
 
@@ -83,6 +86,34 @@ uint64_t compute_content_hash(const void * data, size_t size) noexcept;
 uint64_t compute_message_hash(
   const void * ros_message,
   const rosidl_typesupport_introspection_c__MessageMembers * members) noexcept;
+
+/// Resolve the introspection MessageMembers from an arbitrary message type support handle.
+///
+/// rcl/rclcpp/rclc hand the RMW the top-level "wrapper" type support handle whose
+/// `typesupport_identifier` is one of `rosidl_typesupport_c` (C nodes) or
+/// `rosidl_typesupport_cpp` (C++ nodes). The introspection members we need for tracing
+/// metadata (type name, content hashing) live under a serialization-specific sub-handle:
+/// `rosidl_typesupport_introspection_c` for C wrappers and
+/// `rosidl_typesupport_introspection_cpp` for C++ wrappers.
+///
+/// `get_message_typesupport_handle()` only matches one identifier at a time and, on a
+/// miss, sets the thread-local rcutils error state
+/// ("Handle's typesupport identifier (...) is not supported by this library"). If that
+/// stale error is left in place, the *next* rcutils consumer in the same thread trips the
+/// "This error state is being overwritten" guard and spams stderr (ROB-403). Worse, only
+/// probing the `_c` identifier means C++ nodes never resolve their members at all, so
+/// tracing metadata was silently dropped for every C++ publisher/subscriber.
+///
+/// This helper probes `_c` first, then `_cpp`, and ALWAYS calls `rcutils_reset_error()`
+/// after a miss so no stale error escapes. The C and C++ introspection `MessageMembers`
+/// structs are layout-compatible, so the returned pointer is always reinterpreted as the
+/// `_c` struct (matching the rest of the hashing code).
+///
+/// @param type_support Top-level message type support handle from rcl (may be null)
+/// @return Introspection members pointer, or nullptr if neither variant resolves
+const rosidl_typesupport_introspection_c__MessageMembers *
+resolve_introspection_members(
+  const rosidl_message_type_support_t * type_support) noexcept;
 
 /// Detect action event type from topic name
 /// @param topic_name ROS topic name

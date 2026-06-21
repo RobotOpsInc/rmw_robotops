@@ -2,6 +2,12 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.8 (2026-06-21)
+-------------------
+
+* Fix service/subscription typesupport error spam at node startup (ROB-403). Every C++ (rclcpp) node printed ``Handle's typesupport identifier (rosidl_typesupport_cpp) is not supported by this library ... / service's implementation is invalid`` repeatedly. Root cause: ``store_subscription_metadata`` / ``store_publisher_metadata`` probed only the ``rosidl_typesupport_introspection_c`` identifier when resolving introspection members. For C++ nodes the message type support wrapper is ``rosidl_typesupport_cpp`` (whose map holds the ``_cpp`` introspection variant), so the lookup missed and ``get_message_typesupport_handle`` set a thread-local rcutils error that rmw_robotops never reset — the next rcutils consumer on that thread then tripped the "error state is being overwritten" guard and dumped the message to stderr. Services and topics were never functionally broken (the original type support handle is forwarded unchanged to the underlying RMW), but the noise was alarming and the introspection metadata (type name, content hash for dedup) was silently dropped for all C++ publishers/subscribers.
+* New shared helper ``rmw_robotops::resolve_introspection_members()`` resolves the introspection ``MessageMembers`` from either a C or C++ wrapper handle (probes ``_c`` then ``_cpp``) and always calls ``rcutils_reset_error()`` after an expected miss, so no stale error escapes. Both the publisher and subscription metadata paths now use it, which also restores tracing metadata for C++ nodes.
+
 0.9.7 (2026-06-16)
 -------------------
 
