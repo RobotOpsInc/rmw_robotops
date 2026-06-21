@@ -2,6 +2,11 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.9.9 (2026-06-21)
+-------------------
+
+* ``test/test_metadata_extraction.cpp``: add ``IntrospectionResolveTest.HashesNestedMessageUnderCppHandle`` to close a coverage gap left by the v0.9.8 (ROB-403) fix. v0.9.8's tests exercised ``resolve_introspection_members()`` and content hashing only on FLAT messages (``std_msgs/String``, ``add_two_ints``); the recursive nested-message path (``ROS_TYPE_MESSAGE`` in ``hash_field`` -> ``hash_message_members``, which reinterprets ``member->members_->data`` as the C ``MessageMembers`` struct) was never driven through a C++ (rclcpp) introspection handle, even though that layout-compatibility reinterpret is exactly what the C++ handle relies on. The new test resolves the C++ handle for ``std_msgs/msg/Header`` (nests ``builtin_interfaces/msg/Time`` plus a string ``frame_id``), hashes a populated instance, and asserts the hash is non-zero, deterministic across calls, sensitive to changes in the nested sub-message, and leaves no stale ``rcutils`` error behind. Test-only change; no ``src/`` logic was modified.
+
 0.9.8 (2026-06-21)
 -------------------
 
