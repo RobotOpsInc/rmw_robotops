@@ -28,7 +28,6 @@
 #include "rmw_robotops/trace_event_queue.hpp"
 #include "rmw_robotops/utils.hpp"
 #include "robotops_msgs/msg/trace_event.h"
-#include "rosidl_typesupport_introspection_c/identifier.h"
 #include "rosidl_typesupport_introspection_c/message_introspection.h"
 
 // LTTng tracepoints (optional - gracefully degrades if not available)
@@ -88,28 +87,21 @@ void store_subscription_metadata(
     std::memcpy(metadata.node_namespace, node->namespace_, ns_len);
     metadata.node_namespace[ns_len] = '\0';
 
-    // Store message type name and introspection members from type support
+    // Store message type name and introspection members from type support.
+    // resolve_introspection_members() handles both C and C++ wrapper handles and resets
+    // the rcutils error state on an expected lookup miss (ROB-403).
     metadata.members = nullptr;
-    if (type_support != nullptr && type_support->data != nullptr) {
-      const rosidl_message_type_support_t * ts =
-        get_message_typesupport_handle(
-          type_support,
-          rosidl_typesupport_introspection_c__identifier);
-
-      if (ts != nullptr) {
-        const auto * members =
-          static_cast<const rosidl_typesupport_introspection_c__MessageMembers *>(ts->data);
-        if (members != nullptr) {
-          snprintf(
-            metadata.message_type,
-            MAX_MESSAGE_TYPE_LENGTH,
-            "%s/%s",
-            members->message_namespace_,
-            members->message_name_);
-          // Cache members pointer for content hashing
-          metadata.members = members;
-        }
-      }
+    const rosidl_typesupport_introspection_c__MessageMembers * members =
+      rmw_robotops::resolve_introspection_members(type_support);
+    if (members != nullptr) {
+      snprintf(
+        metadata.message_type,
+        MAX_MESSAGE_TYPE_LENGTH,
+        "%s/%s",
+        members->message_namespace_,
+        members->message_name_);
+      // Cache members pointer for content hashing
+      metadata.members = members;
     }
 
     // Store in cache
