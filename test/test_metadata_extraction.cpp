@@ -23,6 +23,7 @@
 #include "rmw_robotops/utils.hpp"
 #include "rosidl_typesupport_cpp/message_type_support.hpp"
 #include "rosidl_typesupport_introspection_c/message_introspection.h"
+#include "std_msgs/msg/header.hpp"
 #include "std_msgs/msg/string.hpp"
 
 using rmw_robotops::generate_span_id;
@@ -167,6 +168,7 @@ TEST(MetadataExtractionTest, MetadataFieldsHaveCorrectLengths) {
 // "Handle's typesupport identifier (rosidl_typesupport_cpp) is not supported ...
 //  / service's implementation is invalid" log spam seen on real robots.
 
+using rmw_robotops::compute_message_hash;
 using rmw_robotops::resolve_introspection_members;
 
 TEST(IntrospectionResolveTest, ResolvesCppTypeSupportHandle) {
@@ -196,5 +198,55 @@ TEST(IntrospectionResolveTest, ResolvesCppTypeSupportHandle) {
 TEST(IntrospectionResolveTest, NullHandleIsSafeAndLeavesNoError) {
   rcutils_reset_error();
   EXPECT_EQ(nullptr, resolve_introspection_members(nullptr));
+  EXPECT_FALSE(rcutils_error_is_set());
+}
+
+// --- Nested-message hashing under a C++ handle (ROB-403 follow-up) --------------------
+//
+// The v0.9.8 fix exercised resolve_introspection_members() and hashing only on FLAT
+// messages (std_msgs/String, add_two_ints). The recursive nested-message path
+// (ROS_TYPE_MESSAGE in hash_field -> hash_message_members) was never driven through a
+// C++ (rclcpp) introspection handle, even though that path reinterprets
+// `member->members_->data` as the C MessageMembers struct and recurses — exactly the
+// layout-compatibility assumption the C++ handle relies on. std_msgs/msg/Header is the
+// minimal real case: it nests builtin_interfaces/msg/Time (int32 sec, uint32 nanosec)
+// plus a string frame_id, and std_msgs is already a test dependency.
+TEST(IntrospectionResolveTest, HashesNestedMessageUnderCppHandle) {
+  // C++ wrapper handle, identical to what an rclcpp node hands the RMW.
+  const rosidl_message_type_support_t * cpp_handle =
+    rosidl_typesupport_cpp::get_message_type_support_handle<std_msgs::msg::Header>();
+  ASSERT_NE(nullptr, cpp_handle);
+
+  rcutils_reset_error();
+  const rosidl_typesupport_introspection_c__MessageMembers * members =
+    resolve_introspection_members(cpp_handle);
+  ASSERT_NE(nullptr, members);
+  EXPECT_STREQ("Header", members->message_name_);
+
+  // Populate the nested sub-message and the string so the hash is driven by the
+  // recursive ROS_TYPE_MESSAGE branch, not just the top-level scalars.
+  std_msgs::msg::Header header;
+  header.stamp.sec = 1718928000;       // nested builtin_interfaces/Time field
+  header.stamp.nanosec = 123456789u;   // nested builtin_interfaces/Time field
+  header.frame_id = "base_link";
+
+  const uint64_t hash1 = compute_message_hash(&header, members);
+  const uint64_t hash2 = compute_message_hash(&header, members);
+
+  // A populated nested message must hash to a non-zero, deterministic value. A zero or
+  // non-deterministic result here would mean the nested recursion failed under the C++
+  // handle (the v0.9.8 layout-compat assumption broke) — a real bug, not a test nit.
+  EXPECT_NE(0u, hash1);
+  EXPECT_EQ(hash1, hash2);
+
+  // Changing only the nested sub-message must change the hash — proves the recursion
+  // actually visited builtin_interfaces/Time rather than skipping the nested member.
+  std_msgs::msg::Header other;
+  other.stamp.sec = 999;
+  other.stamp.nanosec = 0u;
+  other.frame_id = "base_link";
+  EXPECT_NE(hash1, compute_message_hash(&other, members));
+
+  // Critical: the nested recursion must not leak an rcutils error (ROB-403 invariant).
   EXPECT_FALSE(rcutils_error_is_set());
 }
