@@ -1,11 +1,17 @@
+# Distro-aware keys: rosdep resolves by Ubuntu codename, so Jammy (Humble) and
+# Noble (Jazzy) each map to their matching ros-<distro>-* package. Both sets are
+# published on apt.robotops.com for amd64 + arm64.
 rmw_robotops:
   ubuntu:
-    - ros-jazzy-rmw-robotops
+    jammy: [ros-humble-rmw-robotops]
+    noble: [ros-jazzy-rmw-robotops]
 
 robotops-config:
   ubuntu:
-    - ros-jazzy-robotops-config
+    jammy: [ros-humble-robotops-config]
+    noble: [ros-jazzy-robotops-config]
 
 robotops_msgs:
   ubuntu:
-    - ros-jazzy-robotops-msgs
+    jammy: [ros-humble-robotops-msgs]
+    noble: [ros-jazzy-robotops-msgs]
