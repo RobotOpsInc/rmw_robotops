@@ -85,85 +85,57 @@ runs:
         }
         EOF
 
-    - name: Sync Existing Repo from S3
+    - name: Sync pool from S3 (source of truth)
       shell: bash
       run: |
-        # Check if repo exists in S3 and sync it
-        if aws s3 ls s3://${{ inputs.apt-bucket }}/dists/ 2>/dev/null; then
-          echo "Existing repository found, syncing from S3..."
-          mkdir -p ~/.aptly/public
-          aws s3 sync s3://${{ inputs.apt-bucket }}/ ~/.aptly/public/ || echo "No existing repo to sync"
-        else
-          echo "No existing repository found in S3"
-        fi
+        # Stateless rebuild model (ROB-416). The S3 pool of .debs is the ONLY
+        # source of truth. We sync it, rebuild a FRESH aptly repo from it plus
+        # this release's new debs, and publish from scratch. We never restore the
+        # aptly database from S3 — its stale publication state is exactly what
+        # corrupted the shared multi-repo apt repo ("prefix/distribution already
+        # used"; failing `publish update`/`publish repo`). Proven empirically:
+        # with a fresh db, `aptly publish repo` idempotently overwrites the S3
+        # publication on the first publish AND every re-publish.
+        mkdir -p ~/pool-sync/pool
+        aws s3 sync s3://${{ inputs.apt-bucket }}/pool/ ~/pool-sync/pool/ || echo "No existing pool yet"
+        echo "Existing pool debs: $(find ~/pool-sync/pool -name '*.deb' | wc -l)"
 
-    # NOTE (ROB-325): this action publishes the SAME package set to every
-    # distribution (noble/jammy/focal) from a single shared aptly repo, and it
-    # is reused verbatim across all RobotOps package repos writing one S3 aptly
-    # DB. With the Humble (jammy) rmw build added alongside Jazzy (noble), each
-    # .deb still lands in all three dists. That is safe because bloom stamps the
-    # Ubuntu codename into the version (ros-jazzy-* → <ver>-0noble, ros-humble-*
-    # → <ver>-0jammy) AND the package names differ (ros-jazzy-rmw-robotops vs
-    # ros-humble-rmw-robotops), so the two arm64 artifacts never collide in the
-    # pool. The ros-humble-* deb appearing in the noble dist is inert (it hard-
-    # depends on Jammy's rmw/rcl runtime and won't install on Noble). Do NOT
-    # switch this to per-channel repos here — that would break the other repos
-    # that share this action. A future change should route each .deb to only its
-    # matching distribution (jazzy → noble, humble → jammy) keyed off the
-    # ros-<distro>-* package name, coordinated across all repos at once.
-    - name: Create or Update Repository
+    - name: Rebuild repository from pool (fresh db)
       shell: bash
       run: |
         REPO_NAME="robotops"
-        DISTRIBUTIONS="noble jammy focal"
-
-        # Try to restore from S3 snapshot if it exists
-        if aws s3 ls s3://${{ inputs.apt-bucket }}/.aptly/ 2>/dev/null; then
-          echo "Restoring Aptly database from S3..."
-          mkdir -p ~/.aptly
-          aws s3 sync s3://${{ inputs.apt-bucket }}/.aptly/ ~/.aptly/ || echo "No snapshot to restore"
+        # FRESH aptly db every run — never restored from S3.
+        rm -rf ~/.aptly/db ~/.aptly/pool ~/.aptly/public
+        aptly repo create -distribution=noble -component=main ${REPO_NAME}
+        # Rebuild the full repo from every existing pool deb...
+        if find ~/pool-sync/pool -name '*.deb' -print -quit | grep -q .; then
+          aptly repo add ${REPO_NAME} ~/pool-sync/pool/
         fi
-
-        # Check if repo exists, create if not
-        if ! aptly repo list -raw | grep -q "^${REPO_NAME}$"; then
-          echo "Creating new Aptly repository: ${REPO_NAME}"
-          aptly repo create -distribution=noble -component=main ${REPO_NAME}
-        else
-          echo "Repository ${REPO_NAME} already exists"
-        fi
-
-        # Add all .deb files
-        echo "Adding packages to repository..."
+        # ...plus this release's new debs (needed on the first run before they
+        # are in the pool; a no-op duplicate add otherwise).
         for deb in ${{ inputs.deb-files }}; do
-          if [ -f "$deb" ]; then
-            echo "Adding: $deb"
-            aptly repo add ${REPO_NAME} "$deb"
-          fi
+          if [ -f "$deb" ]; then aptly repo add ${REPO_NAME} "$deb"; fi
         done
+        echo "Repository rebuilt; package count:"
+        aptly repo show ${REPO_NAME} | grep -i 'number of packages' || true
 
-    - name: Publish to S3
+    - name: Publish to S3 (idempotent overwrite)
       shell: bash
       env:
         GPG_PASSPHRASE: ${{ inputs.gpg-passphrase }}
       run: |
         REPO_NAME="robotops"
         DISTRIBUTIONS="noble jammy focal"
-
-        # For each distribution
+        # With a fresh db + full-pool repo, `aptly publish repo` (create)
+        # idempotently OVERWRITES each distribution's S3 publication. This is the
+        # fix for the "already used" failures: there is no stale db state to
+        # conflict with, so it works on the first publish AND every re-publish.
         for dist in $DISTRIBUTIONS; do
-          # Check if this distribution is already published
-          if aptly publish list -raw | grep -q "^s3:robotops:\. ${dist}$"; then
-            echo "Updating existing publication for ${dist}..."
-            aptly publish update -batch -passphrase="${GPG_PASSPHRASE}" -gpg-key="${GPG_KEY_ID}" ${dist} s3:robotops:
-          else
-            echo "Creating new publication for ${dist}..."
-            aptly publish repo -batch -passphrase="${GPG_PASSPHRASE}" -gpg-key="${GPG_KEY_ID}" -distribution=${dist} -component=main ${REPO_NAME} s3:robotops:
-          fi
+          echo "Publishing ${dist}..."
+          aptly publish repo -batch -passphrase="${GPG_PASSPHRASE}" -gpg-key="${GPG_KEY_ID}" -distribution=${dist} -component=main ${REPO_NAME} s3:robotops:
         done
-
-        # Backup Aptly database to S3 for future runs
-        echo "Backing up Aptly database to S3..."
-        aws s3 sync ~/.aptly/ s3://${{ inputs.apt-bucket }}/.aptly/ --exclude "public/*"
+        # No aptly-db backup: the published dists/ + pool/ in S3 are the source
+        # of truth; the local db is ephemeral and rebuilt from the pool each run.
 
     - name: Invalidate CloudFront Cache
       shell: bash
