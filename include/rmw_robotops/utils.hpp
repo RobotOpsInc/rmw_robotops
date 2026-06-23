@@ -28,6 +28,8 @@ typedef struct rosidl_typesupport_introspection_c__MessageMembers_s
 
 // Forward declaration for the message type support handle (defined in rosidl_runtime_c).
 struct rosidl_message_type_support_t;
+// Forward declaration for service type support (defined in rosidl_runtime_c)
+struct rosidl_service_type_support_t;
 
 namespace rmw_robotops
 {
@@ -114,6 +116,25 @@ uint64_t compute_message_hash(
 const rosidl_typesupport_introspection_c__MessageMembers *
 resolve_introspection_members(
   const rosidl_message_type_support_t * type_support) noexcept;
+
+/// Extract the introspection members for a service's REQUEST payload (ROB-406).
+/// @param service_type_support The `rosidl_service_type_support_t *` handed to
+///        rmw_create_service / rmw_create_client (passed as void* to keep this
+///        header free of rosidl service headers).
+/// @return Pointer to the request `MessageMembers`, or nullptr if the
+///         introspection typesupport is unavailable.
+///
+/// @note Used so the client-send and service-take paths can compute a
+///       `content_hash` of the request payload that MATCHES on both ends — the
+///       same correlation scheme the pub/sub paths use. The two ends serialize
+///       byte-identical request payloads, so the FNV-1a hash agrees.
+const rosidl_typesupport_introspection_c__MessageMembers *
+get_service_request_members(const void * service_type_support) noexcept;
+
+/// Extract the introspection members for a service's RESPONSE payload (ROB-406).
+/// @see get_service_request_members
+const rosidl_typesupport_introspection_c__MessageMembers *
+get_service_response_members(const void * service_type_support) noexcept;
 
 /// Detect action event type from topic name
 /// @param topic_name ROS topic name

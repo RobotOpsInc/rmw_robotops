@@ -134,21 +134,80 @@ TEST_F(ServiceTracingTest, ServiceResponseEventStructure) {
   EXPECT_STREQ("PARENT_SPAN_ID", events[0].parent_span_id);
 }
 
-TEST_F(ServiceTracingTest, ServiceRequestMintsRootSpan) {
-  // Verify service requests create root spans (no parent)
+TEST_F(ServiceTracingTest, ServiceTakeLeavesTraceEmptyForCorrelation) {
+  // ROB-406: the service take path must NO LONGER mint a fresh root trace.
+  // Previously rmw_take_request minted a new trace_id + empty parent on every
+  // take, guaranteeing every service request rendered as a separate root span.
+  // The new contract leaves trace_id AND parent_span_id EMPTY so the robot_agent
+  // CorrelationEngine can rewrite them to the client-send's trace (mirroring the
+  // subscribe path). The local thread context keeps the span_id (with an empty
+  // trace_id) so send_response can pair its RESPONSE to this REQUEST.
 
   EXPECT_TRUE(get_trace_context().is_empty());
 
-  // Simulate service receiving request
+  // Simulate the new service take behavior: span_id set, trace_id left empty.
   TraceContext new_context;
-  rmw_robotops::generate_trace_id(new_context.trace_id);
+  new_context.trace_id[0] = '\0';  // Empty → agent correlates
   rmw_robotops::generate_span_id(new_context.span_id);
-  new_context.parent_span_id[0] = '\0';  // Root span
+  new_context.parent_span_id[0] = '\0';
   set_trace_context(new_context);
 
   auto retrieved = get_trace_context();
-  EXPECT_FALSE(retrieved.is_empty());
-  EXPECT_EQ(0u, std::strlen(retrieved.parent_span_id));  // Root span
+  // span_id is present so send_response can pair with this request...
+  EXPECT_GT(std::strlen(retrieved.span_id), 0u);
+  // ...but trace_id is intentionally empty (the agent fills it in).
+  EXPECT_EQ(0u, std::strlen(retrieved.trace_id));
+  EXPECT_EQ(0u, std::strlen(retrieved.parent_span_id));
+}
+
+TEST_F(ServiceTracingTest, ServiceRequestCarriesConsumerDirectionAndHash) {
+  // ROB-406: a service-take SERVICE_REQUEST event is the CONSUMER end of the
+  // RPC and must carry DIRECTION_CONSUMER + a content hash + empty trace/parent
+  // so the agent correlates it to the client-send by content hash.
+  TraceEvent event;
+  event.event_type = robotops_msgs__msg__TraceEvent__EVENT_SERVICE_REQUEST;
+  event.trace_id[0] = '\0';
+  event.parent_span_id[0] = '\0';
+  rmw_robotops::generate_span_id(event.span_id);
+  event.correlation_method = robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
+  event.direction = robotops_msgs__msg__TraceEvent__DIRECTION_CONSUMER;
+  event.content_hash = 0xfeed'face'dead'beefULL;
+  snprintf(event.topic_or_service, sizeof(event.topic_or_service), "/test_service");
+
+  auto & queue = get_trace_event_queue();
+  ASSERT_TRUE(queue.try_push(event));
+
+  auto events = drain_queue();
+  ASSERT_EQ(1u, events.size());
+  EXPECT_EQ(0u, std::strlen(events[0].trace_id));        // empty → correlated
+  EXPECT_EQ(0u, std::strlen(events[0].parent_span_id));  // empty → correlated
+  EXPECT_EQ(
+    static_cast<uint8_t>(robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH),
+    events[0].correlation_method);
+  EXPECT_EQ(
+    static_cast<uint8_t>(robotops_msgs__msg__TraceEvent__DIRECTION_CONSUMER),
+    events[0].direction);
+  EXPECT_EQ(0xfeed'face'dead'beefULL, events[0].content_hash);
+}
+
+TEST_F(ServiceTracingTest, ClientRequestCarriesProducerDirection) {
+  // ROB-406: the client send_request SERVICE_REQUEST event is the PRODUCER end
+  // and seeds the correlation window in the agent.
+  TraceEvent event;
+  event.event_type = robotops_msgs__msg__TraceEvent__EVENT_SERVICE_REQUEST;
+  event.direction = robotops_msgs__msg__TraceEvent__DIRECTION_PRODUCER;
+  event.correlation_method = robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
+  event.content_hash = 0x0123'4567'89ab'cdefULL;
+
+  auto & queue = get_trace_event_queue();
+  ASSERT_TRUE(queue.try_push(event));
+
+  auto events = drain_queue();
+  ASSERT_EQ(1u, events.size());
+  EXPECT_EQ(
+    static_cast<uint8_t>(robotops_msgs__msg__TraceEvent__DIRECTION_PRODUCER),
+    events[0].direction);
+  EXPECT_EQ(0x0123'4567'89ab'cdefULL, events[0].content_hash);
 }
 
 TEST_F(ServiceTracingTest, ServiceResponseContinuesTrace) {
