@@ -102,6 +102,9 @@ bool convert_to_ros_message(
     msg.dds_domain_id = event.dds_domain_id;
     msg.correlation_method = event.correlation_method;
 
+    // Producer-vs-consumer direction for service/action RPC events (ROB-406)
+    msg.direction = event.direction;
+
     return true;
   } catch (...) {
     // Safety guarantee: Never propagate exceptions

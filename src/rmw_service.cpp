@@ -27,6 +27,7 @@
 #include "rmw_robotops/trace_event_queue.hpp"
 #include "rmw_robotops/utils.hpp"
 #include "robotops_msgs/msg/trace_event.h"
+#include "rosidl_typesupport_introspection_c/message_introspection.h"
 
 // LTTng tracepoints (optional)
 #ifdef ROS_TRACING_ENABLED
@@ -59,6 +60,10 @@ struct ServiceMetadata
   char node_name[MAX_NODE_NAME_LENGTH];
   char node_namespace[MAX_NODE_NAME_LENGTH];
   char service_name[MAX_TOPIC_NAME_LENGTH];  // Services use same length as topics
+  // Cached introspection members for content hashing (ROB-406). nullptr if the
+  // service's package was built without rosidl_typesupport_introspection_c.
+  const rosidl_typesupport_introspection_c__MessageMembers * request_members;
+  const rosidl_typesupport_introspection_c__MessageMembers * response_members;
 };
 
 /// Cache of service metadata
@@ -69,6 +74,7 @@ std::mutex service_metadata_mutex;
 void store_service_metadata(
   const rmw_service_t * service,
   const rmw_node_t * node,
+  const rosidl_service_type_support_t * type_support,
   const char * service_name) noexcept
 {
   try {
@@ -85,6 +91,12 @@ void store_service_metadata(
     size_t svc_len = std::min(std::strlen(service_name), MAX_TOPIC_NAME_LENGTH - 1);
     std::memcpy(metadata.service_name, service_name, svc_len);
     metadata.service_name[svc_len] = '\0';
+
+    // Cache introspection members for content hashing (ROB-406)
+    metadata.request_members =
+      rmw_robotops::get_service_request_members(type_support);
+    metadata.response_members =
+      rmw_robotops::get_service_response_members(type_support);
 
     std::lock_guard<std::mutex> lock(service_metadata_mutex);
     service_metadata_cache[service] = metadata;
@@ -144,7 +156,7 @@ rmw_create_service(
 
   // Store metadata for later use
   if (service != nullptr) {
-    store_service_metadata(service, node, service_name);
+    store_service_metadata(service, node, type_support, service_name);
   }
 
   return service;
@@ -210,16 +222,23 @@ rmw_take_request(
   // STEP 3: Emit END event and set trace context
   if (ret == RMW_RET_OK && *taken && tracing_active) {
     try {
-      // Mint new trace for service request (start of new trace)
-      // Note: We cannot extract trace context from DDS for services because
-      // related_sample_identity is reserved for DDS-RPC request-response correlation
+      // ROB-406: Do NOT mint a fresh trace_id here. Previously this path minted
+      // a new root trace on every service take, guaranteeing every service
+      // request rendered as a separate root span. Instead we leave trace_id and
+      // parent_span_id EMPTY and emit a CONSUMER-direction content_hash so the
+      // agent's CorrelationEngine can rewrite them to the client-send's trace —
+      // exactly mirroring how the subscribe (rmw_take_with_info) path works.
+      //
+      // The local thread context still carries this span_id (with an empty
+      // trace_id) so rmw_send_response on the same thread pairs its RESPONSE
+      // event to this REQUEST via the shared span_id.
       TraceContext new_context;
-      rmw_robotops::generate_trace_id(new_context.trace_id);
+      new_context.trace_id[0] = '\0';  // Filled in by the agent on correlation
 
       std::memcpy(new_context.span_id, span_id_buf, sizeof(new_context.span_id) - 1);
       new_context.span_id[sizeof(new_context.span_id) - 1] = '\0';
 
-      new_context.parent_span_id[0] = '\0';  // Root span
+      new_context.parent_span_id[0] = '\0';
 
       set_trace_context(new_context);
 
@@ -227,31 +246,50 @@ rmw_take_request(
       tracepoint(robotops, take_request_end, ros_request, new_context.trace_id, span_id_buf);
       #endif
 
+      // Compute content hash of the REQUEST payload for cross-process
+      // correlation. The client-send hashes the byte-identical request, so the
+      // two hashes agree and the engine can match them (ROB-406).
+      uint64_t content_hash = 0;
+      uint32_t domain_id = get_dds_domain_id();
+
       // Emit service request TraceEvent
       TraceEvent event;
       event.timestamp_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
       event.event_type = robotops_msgs__msg__TraceEvent__EVENT_SERVICE_REQUEST;
 
-      std::memcpy(event.trace_id, new_context.trace_id, sizeof(event.trace_id) - 1);
-      event.trace_id[sizeof(event.trace_id) - 1] = '\0';
+      event.trace_id[0] = '\0';        // Empty → agent correlates (ROB-406)
+      event.parent_span_id[0] = '\0';  // Empty → agent correlates (ROB-406)
 
       std::memcpy(event.span_id, span_id_buf, sizeof(event.span_id) - 1);
       event.span_id[sizeof(event.span_id) - 1] = '\0';
 
-      event.parent_span_id[0] = '\0';  // Root span
-
-      event.dds_domain_id = get_dds_domain_id();
+      event.dds_domain_id = domain_id;
+      // Content-hash correlation (the v0.3.0 scheme), now applied to services.
       event.correlation_method =
-        robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE;
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
+      // This is the CONSUMER end of the RPC: it correlates against the client.
+      event.direction = robotops_msgs__msg__TraceEvent__DIRECTION_CONSUMER;
+      // publisher_gid intentionally left empty: services share no DDS GID, so
+      // both client-send and service-take emit "" and the key matches on
+      // (service_name, content_hash, timestamp_bucket).
 
       if (request_header != nullptr) {
         event.sequence_number = request_header->request_id.sequence_number;
+        // source_timestamp_ns seeds the correlation timestamp bucket; use the
+        // DDS-provided source timestamp so client and server bucket together.
+        event.source_timestamp_ns =
+          static_cast<int64_t>(request_header->source_timestamp);
       }
 
       // Get service metadata
       ServiceMetadata metadata;
       if (get_service_metadata(service, metadata)) {
+        if (metadata.request_members != nullptr) {
+          content_hash = rmw_robotops::compute_message_hash(
+            ros_request, metadata.request_members);
+        }
+        event.content_hash = content_hash;
         size_t svc_len = std::min(std::strlen(metadata.service_name),
             sizeof(event.topic_or_service) - 1);
         std::memcpy(event.topic_or_service, metadata.service_name, svc_len);
@@ -379,8 +417,12 @@ rmw_send_response(
       event.parent_span_id[sizeof(event.parent_span_id) - 1] = '\0';
 
       event.dds_domain_id = get_dds_domain_id();
+      // ROB-406: content-hash correlation. This RESPONSE is the PRODUCER end of
+      // the response leg — the client's rmw_take_response (CONSUMER) correlates
+      // against it by the response payload's content_hash.
       event.correlation_method =
-        robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE;
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
+      event.direction = robotops_msgs__msg__TraceEvent__DIRECTION_PRODUCER;
 
       if (request_header != nullptr) {
         event.sequence_number = request_header->sequence_number;
@@ -389,6 +431,11 @@ rmw_send_response(
       // Get service metadata
       ServiceMetadata metadata;
       if (get_service_metadata(service, metadata)) {
+        if (metadata.response_members != nullptr) {
+          event.content_hash = rmw_robotops::compute_message_hash(
+            ros_response, metadata.response_members);
+        }
+
         size_t svc_len = std::min(std::strlen(metadata.service_name),
             sizeof(event.topic_or_service) - 1);
         std::memcpy(event.topic_or_service, metadata.service_name, svc_len);

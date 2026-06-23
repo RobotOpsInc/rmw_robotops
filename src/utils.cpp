@@ -22,8 +22,11 @@
 #include "robotops_msgs/msg/trace_event.h"
 #include "rosidl_runtime_c/string.h"
 #include "rosidl_runtime_c/primitives_sequence.h"
+#include "rosidl_runtime_c/service_type_support_struct.h"
 #include "rosidl_typesupport_introspection_c/field_types.h"
+#include "rosidl_typesupport_introspection_c/identifier.h"
 #include "rosidl_typesupport_introspection_c/message_introspection.h"
+#include "rosidl_typesupport_introspection_c/service_introspection.h"
 
 namespace rmw_robotops
 {
@@ -285,6 +288,49 @@ uint64_t compute_message_hash(
     RCUTILS_LOG_ERROR_NAMED("rmw_robotops", "Exception in compute_message_hash");
     return 0;
   }
+}
+
+/// Resolve the introspection ServiceMembers from a service type support handle.
+/// Returns nullptr if the introspection typesupport is unavailable (e.g. a
+/// package built without rosidl_typesupport_introspection_c).
+static const rosidl_typesupport_introspection_c__ServiceMembers *
+get_service_members(const void * service_type_support) noexcept
+{
+  try {
+    if (service_type_support == nullptr) {
+      return nullptr;
+    }
+    const auto * ts_handle =
+      static_cast<const rosidl_service_type_support_t *>(service_type_support);
+
+    const rosidl_service_type_support_t * ts =
+      get_service_typesupport_handle(
+        ts_handle,
+        rosidl_typesupport_introspection_c__identifier);
+
+    if (ts == nullptr || ts->data == nullptr) {
+      return nullptr;
+    }
+    return static_cast<const rosidl_typesupport_introspection_c__ServiceMembers *>(ts->data);
+  } catch (...) {
+    return nullptr;
+  }
+}
+
+const rosidl_typesupport_introspection_c__MessageMembers *
+get_service_request_members(const void * service_type_support) noexcept
+{
+  const rosidl_typesupport_introspection_c__ServiceMembers * members =
+    get_service_members(service_type_support);
+  return members != nullptr ? members->request_members_ : nullptr;
+}
+
+const rosidl_typesupport_introspection_c__MessageMembers *
+get_service_response_members(const void * service_type_support) noexcept
+{
+  const rosidl_typesupport_introspection_c__ServiceMembers * members =
+    get_service_members(service_type_support);
+  return members != nullptr ? members->response_members_ : nullptr;
 }
 
 /// Helper: Check if string ends with suffix
