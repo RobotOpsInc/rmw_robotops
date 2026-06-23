@@ -2,6 +2,11 @@
 Changelog for package rmw_robotops
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.10.0 (2026-06-23)
+-------------------
+
+* Service/action span stitching (ROB-406): ``rmw_service`` / ``rmw_client`` compute a request/response payload ``content_hash`` and emit a producer/consumer ``direction``, so the agent correlates RPC spans into one distributed trace instead of minting a fresh root span per service/action call.
+
 0.9.9 (2026-06-21)
 -------------------
 
