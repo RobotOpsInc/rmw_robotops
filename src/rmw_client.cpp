@@ -61,6 +61,10 @@ struct ClientMetadata
   char node_name[MAX_NODE_NAME_LENGTH];
   char node_namespace[MAX_NODE_NAME_LENGTH];
   char service_name[MAX_TOPIC_NAME_LENGTH];  // Services use same length as topics
+  // Cached introspection members for content hashing (ROB-406). nullptr if the
+  // service's package was built without rosidl_typesupport_introspection_c.
+  const rosidl_typesupport_introspection_c__MessageMembers * request_members;
+  const rosidl_typesupport_introspection_c__MessageMembers * response_members;
 };
 
 /// Pending request context (for response correlation)
@@ -83,6 +87,7 @@ std::mutex pending_requests_mutex;
 void store_client_metadata(
   const rmw_client_t * client,
   const rmw_node_t * node,
+  const rosidl_service_type_support_t * type_support,
   const char * service_name) noexcept
 {
   try {
@@ -99,6 +104,12 @@ void store_client_metadata(
     size_t svc_len = std::min(std::strlen(service_name), MAX_TOPIC_NAME_LENGTH - 1);
     std::memcpy(metadata.service_name, service_name, svc_len);
     metadata.service_name[svc_len] = '\0';
+
+    // Cache introspection members for content hashing (ROB-406)
+    metadata.request_members =
+      rmw_robotops::get_service_request_members(type_support);
+    metadata.response_members =
+      rmw_robotops::get_service_response_members(type_support);
 
     std::lock_guard<std::mutex> lock(client_metadata_mutex);
     client_metadata_cache[client] = metadata;
@@ -158,7 +169,7 @@ rmw_create_client(
 
   // Store metadata for later use
   if (client != nullptr) {
-    store_client_metadata(client, node, service_name);
+    store_client_metadata(client, node, type_support, service_name);
   }
 
   return client;
@@ -266,16 +277,29 @@ rmw_send_request(
       event.parent_span_id[sizeof(event.parent_span_id) - 1] = '\0';
 
       event.dds_domain_id = get_dds_domain_id();
+      // ROB-406: content-hash correlation. This client send_request is the
+      // PRODUCER end of the request leg; the service's rmw_take_request
+      // (CONSUMER) correlates against it by the request payload's content_hash.
       event.correlation_method =
-        robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE;
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
+      event.direction = robotops_msgs__msg__TraceEvent__DIRECTION_PRODUCER;
 
       if (sequence_id != nullptr) {
         event.sequence_number = static_cast<uint64_t>(*sequence_id);
       }
+      // Seed the correlation timestamp bucket with this send time so the
+      // service-take (which uses the DDS source_timestamp of the same sample)
+      // buckets together.
+      event.source_timestamp_ns = static_cast<int64_t>(start_timestamp_ns);
 
       // Get client metadata
       ClientMetadata metadata;
       if (get_client_metadata(client, metadata)) {
+        if (metadata.request_members != nullptr) {
+          event.content_hash = rmw_robotops::compute_message_hash(
+            ros_request, metadata.request_members);
+        }
+
         size_t svc_len = std::min(std::strlen(metadata.service_name),
             sizeof(event.topic_or_service) - 1);
         std::memcpy(event.topic_or_service, metadata.service_name, svc_len);
@@ -408,16 +432,30 @@ rmw_take_response(
       event.parent_span_id[sizeof(event.parent_span_id) - 1] = '\0';
 
       event.dds_domain_id = get_dds_domain_id();
+      // ROB-406: this client take_response is the CONSUMER end of the response
+      // leg. The client's local trace is already continued via the
+      // sequence_id-keyed pending-request lookup above (intra-process), so we
+      // keep that trace_id/parent. We additionally tag direction + content_hash
+      // so the response leg can be cross-process correlated to the server's
+      // send_response in a later phase; for Phase 1 it is informational.
       event.correlation_method =
-        robotops_msgs__msg__TraceEvent__CORRELATION_FASTDDS_SEQUENCE;
+        robotops_msgs__msg__TraceEvent__CORRELATION_FALLBACK_HASH;
+      event.direction = robotops_msgs__msg__TraceEvent__DIRECTION_CONSUMER;
 
       if (request_header != nullptr) {
         event.sequence_number = request_header->request_id.sequence_number;
+        event.source_timestamp_ns =
+          static_cast<int64_t>(request_header->source_timestamp);
       }
 
       // Get client metadata
       ClientMetadata metadata;
       if (get_client_metadata(client, metadata)) {
+        if (metadata.response_members != nullptr) {
+          event.content_hash = rmw_robotops::compute_message_hash(
+            ros_response, metadata.response_members);
+        }
+
         size_t svc_len = std::min(std::strlen(metadata.service_name),
             sizeof(event.topic_or_service) - 1);
         std::memcpy(event.topic_or_service, metadata.service_name, svc_len);

@@ -101,6 +101,17 @@ struct TraceEvent
   // It's now the primary/only correlation method (content-based via introspection)
   uint8_t correlation_method;  // From robotops_msgs TraceEvent constants
 
+  // Producer-vs-consumer direction for request/response-style events (ROB-406).
+  // For services/actions the same event_type is emitted on both ends of the RPC
+  // (client send_request and server take_request are both EVENT_SERVICE_REQUEST),
+  // so the agent's CorrelationEngine needs this to tell who SEEDS the window
+  // (producer) from who CORRELATES against it (consumer).
+  // Values match robotops_msgs::msg::TraceEvent::DIRECTION_* constants:
+  //   0 = DIRECTION_UNSPECIFIED (pub/sub: direction implicit in event_type)
+  //   1 = DIRECTION_PRODUCER    (client send_request / send_response)
+  //   2 = DIRECTION_CONSUMER    (service take_request / client take_response)
+  uint8_t direction;
+
   // Legacy operation field (deprecated, use event_type instead)
   OperationType operation;
 
@@ -115,6 +126,7 @@ struct TraceEvent
     message_size_bytes(0),
     dds_domain_id(0),
     correlation_method(0),
+    direction(0),
     operation(OP_PUBLISH)
   {
     trace_id[0] = '\0';
